@@ -14,17 +14,19 @@ const outfit = localFont({
   display: "swap",
 });
 
-const title = "WellnessXpress | Coming soon";
+const seoTitle = "Weight Loss Solutions and Support in Nigeria | WellnessXpressBrand";
+const seoDescription = "WellnessXpressBrand is preparing practical weight-loss solutions and support for Nigerians. Join the early-access list to hear when we launch.";
+const ogTitle = "Your Weight Loss Journey Starts Here | WellnessXpressBrand";
 export const metadata: Metadata = {
-  title: "Coming soon",
-  description: site.description,
+  title: { absolute: seoTitle },
+  description: seoDescription,
   robots: { index: true, follow: false },
-  openGraph: { title, description: site.description, url: site.url, siteName: site.name, images: [{ url: "/og.png", width: 1200, height: 630, alt: "WellnessXpress logo" }] },
-  twitter: { card: "summary_large_image", title, description: site.description, images: ["/og.png"] },
+  openGraph: { title: ogTitle, description: seoDescription, url: site.url, siteName: site.name, images: [{ url: "/og.png", width: 1200, height: 630, alt: "WellnessXpressBrand logo" }] },
+  twitter: { card: "summary_large_image", title: ogTitle, description: seoDescription, images: ["/og.png"] },
 };
 
 const headline = [
-  ["Your", 0], ["Journey", 1], ["to", 2], ["Better", 3, "hl"], ["Wellness", 4, "hl"], ["Starts", 5], ["Here.", 6],
+  ["Your", 0], ["Weight", 1, "hl"], ["Loss", 2, "hl"], ["Journey", 3], ["Starts", 4], ["Here.", 5],
 ] as const;
 
 function Leaf({ className }: { className: string }) {
@@ -36,9 +38,9 @@ function Leaf({ className }: { className: string }) {
 }
 
 export default function ComingSoon() {
-  const wa = whatsappLink("Hello WellnessXpress, I would like to hear when you launch.");
+  const wa = whatsappLink("Hello WellnessXpressBrand, I'm interested in your upcoming weight-loss products and would like to know when you launch.");
   const phone = displayPhone(site.whatsapp);
-  const org = { "@context": "https://schema.org", "@type": "Organization", name: site.name, url: site.url, logo: `${site.url}/brand/logo-1000.webp`, email: site.email || undefined };
+  const org = { "@context": "https://schema.org", "@type": "Organization", name: site.name, url: site.url, description: seoDescription, logo: `${site.url}/brand/logo-1000.webp`, email: site.email || undefined };
   const srcset = (ext: string) => `/brand/logo-480.${ext} 480w, /brand/logo-720.${ext} 720w, /brand/logo-1000.${ext} 1000w`;
   const sizes = "(min-width: 1024px) 42vw, (min-width: 640px) 60vw, 86vw";
 
@@ -78,8 +80,12 @@ export default function ComingSoon() {
                 ))}
               </h1>
               <p className="lead">
-                We&rsquo;re bringing you a better way to make wellness part of everyday life. Get ready for quality products, thoughtful choices and a healthier lifestyle.
+                Getting started with weight loss should not feel complicated. WellnessXpressBrand is preparing practical weight-loss solutions and support to help you make healthier choices and build habits that fit your everyday life.
               </p>
+              <div className="su-intro">
+                <p className="su-h">Be First to Start Your Weight Loss Journey.</p>
+                <p className="su-d">Join our early-access list and be among the first to hear when WellnessXpressBrand launches.</p>
+              </div>
               <Signup />
               <div className="contacts">
                 {wa && phone ? (
@@ -142,7 +148,7 @@ export default function ComingSoon() {
           <div className="track">
             {[0, 1].map((k) => (
               <ul key={k}>
-                {["Quality products", "Thoughtful choices", "Healthier lifestyle", "Everyday wellness"].map((t) => (
+                {["Practical weight-loss support", "Better food choices", "Healthy eating habits", "Consistency every day"].map((t) => (
                   <li key={t + k}>{t}<b /></li>
                 ))}
               </ul>
@@ -153,12 +159,12 @@ export default function ComingSoon() {
         <section className="expect" aria-labelledby="expect-h">
           <div className="wrap">
             <p className="kicker rv">What to expect</p>
-            <h2 id="expect-h" className="h2 rv" style={{ ["--d" as string]: "80ms" }}>Wellness, made simple.</h2>
+            <h2 id="expect-h" className="h2 rv" style={{ ["--d" as string]: "80ms" }}>Weight loss, made practical.</h2>
             <ul className="cards">
               {[
-                ["01", "Quality products", "A focused range, chosen with care for everyday use."],
-                ["02", "Thoughtful choices", "Clear information, so you can decide with confidence."],
-                ["03", "A healthier lifestyle", "Simple steps that fit into your daily routine."],
+                ["01", "Practical solutions", "Accessible weight-loss products and support that fit real life in Nigeria."],
+                ["02", "Better food choices", "Clear guidance on healthier eating habits you can keep up with everyday meals."],
+                ["03", "Support along the way", "Help to stay consistent and build sustainable habits, one day at a time."],
               ].map(([n, t, d], i) => (
                 <li key={n} className="card rv" style={{ ["--d" as string]: `${160 + i * 120}ms` }}>
                   <span className="num">{n}</span>
@@ -175,7 +181,7 @@ export default function ComingSoon() {
           <i className="cb c2" aria-hidden="true" />
           <div className="wrap cta-in">
             <h2 id="cta-h" className="h2 rv">Questions before we launch?</h2>
-            <p className="rv" style={{ ["--d" as string]: "100ms" }}>Message us and the team will reply.</p>
+            <p className="rv" style={{ ["--d" as string]: "100ms" }}>Message us on WhatsApp or email and the team will reply.</p>
             <div className="cta-btns rv" style={{ ["--d" as string]: "200ms" }}>
               {wa && phone ? <a className="btn-white" href={wa} rel="noopener">WhatsApp {phone}</a> : null}
               {site.email ? <a className="btn-line" href={`mailto:${site.email}`}>{site.email}</a> : null}
@@ -188,7 +194,7 @@ export default function ComingSoon() {
         <div className="wrap foot-in">
           <div>
             <p className="foot-name">{site.name}</p>
-            <p className="foot-line">Wellness and lifestyle, made part of everyday life.</p>
+            <p className="foot-line">Practical weight-loss solutions and support for Nigerians.</p>
           </div>
           <div className="foot-links">
             {site.email ? <a href={`mailto:${site.email}`}>{site.email}</a> : null}
