@@ -1,9 +1,9 @@
 export const site = {
   name: "WellnessXpressBrand",
   shortName: "WellnessXpress",
-  tagline: "Wellness and lifestyle products for everyday living",
+  tagline: "Practical weight-loss solutions and support for Nigerians",
   description:
-    "WellnessXpressBrand is preparing a better way to make wellness part of your everyday life. Quality products, thoughtful choices and a healthier lifestyle are coming soon.",
+    "WellnessXpressBrand is preparing practical weight-loss solutions and support for Nigerians. Join the early-access list to hear when we launch.",
   url: (process.env.NEXT_PUBLIC_SITE_URL || "https://wellnessxpressbrand.com").replace(/\/$/, ""),
   whatsapp: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "").replace(/\D/g, ""),
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
