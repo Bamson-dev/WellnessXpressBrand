@@ -42,3 +42,8 @@ Legal pages contain `[CONFIRM]` markers. Add real products, prices, images, busi
 
 ## Known limits
 No customer accounts, no admin dashboard and no stock counts yet. Rate limiting is in memory per instance.
+
+## Coming Soon mode
+
+The public site shows only the Coming Soon page (`src/app/coming-soon`). `src/middleware.ts` rewrites every URL to it, keeps `/api/health` and `/api/newsletter` active, and returns 503 for the other API routes (orders and contact).
+The storefront lives in `src/app/(store)` and stays in the repo. To launch it: set `COMING_SOON=false` in Coolify, restore the full list in `src/app/sitemap.ts`, and redeploy. The branch `storefront-v1` holds the storefront as it was before Coming Soon mode.

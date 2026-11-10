@@ -3,7 +3,7 @@ export const site = {
   shortName: "WellnessXpress",
   tagline: "Wellness and lifestyle products for everyday living",
   description:
-    "WellnessXpressBrand is an online store for wellness and lifestyle products. Browse the catalogue, order online and get support from our team.",
+    "WellnessXpressBrand is preparing a better way to make wellness part of your everyday life. Quality products, thoughtful choices and a healthier lifestyle are coming soon.",
   url: (process.env.NEXT_PUBLIC_SITE_URL || "https://wellnessxpressbrand.com").replace(/\/$/, ""),
   whatsapp: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "").replace(/\D/g, ""),
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
@@ -24,3 +24,9 @@ export const nav = [
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ];
+
+/** Formats a number like 2347079586361 as +234 707 958 6361 (Nigeria) or +digits otherwise. */
+export function displayPhone(n: string) {
+  const m = /^234(\d{3})(\d{3})(\d{4})$/.exec(n);
+  return m ? `+234 ${m[1]} ${m[2]} ${m[3]}` : n ? `+${n}` : "";
+}
