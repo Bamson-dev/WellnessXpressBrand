@@ -1,0 +1,28 @@
+[
+  {
+    "sku": "SAMPLE-001",
+    "slug": "sample-product-one",
+    "name": "Sample Product One",
+    "description": "Placeholder entry that shows how a product page is laid out. Replace with a real product before publishing.",
+    "price": 10000,
+    "salePrice": null,
+    "images": [],
+    "category": "wellness",
+    "availability": "in_stock",
+    "attributes": { "Size": "Placeholder" },
+    "status": "sample"
+  },
+  {
+    "sku": "SAMPLE-002",
+    "slug": "sample-product-two",
+    "name": "Sample Product Two",
+    "description": "Placeholder entry that shows how a product page is laid out. Replace with a real product before publishing.",
+    "price": 15000,
+    "salePrice": 12500,
+    "images": [],
+    "category": "lifestyle",
+    "availability": "in_stock",
+    "attributes": { "Size": "Placeholder" },
+    "status": "sample"
+  }
+]
