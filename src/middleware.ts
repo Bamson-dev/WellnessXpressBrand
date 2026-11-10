@@ -5,13 +5,13 @@ import { NextResponse, type NextRequest } from "next/server";
  * The storefront code stays in src/app/(store) and returns when COMING_SOON=false
  * is set in Coolify and the app is redeployed.
  */
-const PASS = ["/api/health", "/api/newsletter", "/coming-soon", "/robots.txt", "/sitemap.xml", "/icon.svg", "/favicon.ico"];
+const PASS = ["/api/health", "/api/newsletter", "/coming-soon", "/robots.txt", "/sitemap.xml", "/icon.svg", "/favicon.ico", "/og.png"];
 
 export function middleware(req: NextRequest) {
   if (process.env.COMING_SOON === "false") return NextResponse.next();
   const { pathname } = req.nextUrl;
 
-  if (PASS.includes(pathname)) return NextResponse.next();
+  if (PASS.includes(pathname) || pathname.startsWith("/brand/")) return NextResponse.next();
 
   if (pathname.startsWith("/api/")) {
     return NextResponse.json(

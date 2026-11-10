@@ -1,12 +1,14 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 
 type State = "idle" | "loading" | "done" | "duplicate" | "error";
 
 export default function Signup() {
+  const uid = useId();
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>("idle");
   const [msg, setMsg] = useState("");
+  const finished = state === "done" || state === "duplicate";
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -46,27 +48,40 @@ export default function Signup() {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="cs-form" aria-describedby="cs-status">
-      <div className="cs-row">
-        <label htmlFor="cs-email" className="sr-only">Email address</label>
-        <input
-          id="cs-email"
-          name="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="Your email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          aria-invalid={state === "error"}
-          className="cs-input"
-        />
-        <input name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" className="cs-hp" />
-        <button type="submit" disabled={state === "loading"} className="cs-btn">
-          {state === "loading" ? "Sending..." : "Notify Me When We Launch"}
-        </button>
-      </div>
-      <p id="cs-status" role="status" aria-live="polite" className={`cs-status ${state === "error" ? "cs-bad" : "cs-ok"}`}>{msg}</p>
+    <form onSubmit={submit} noValidate className={`su ${finished ? "su-done" : ""}`} aria-describedby={`${uid}-s`}>
+      {finished ? (
+        <div className="su-ok" role="status">
+          <svg className="su-check" viewBox="0 0 52 52" aria-hidden="true">
+            <circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" strokeWidth="3" />
+            <path d="M15 27l8 8 15-17" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p>{msg}</p>
+        </div>
+      ) : (
+        <>
+          <div className="su-row">
+            <label htmlFor={`${uid}-e`} className="sr-only">Email address</label>
+            <input
+              id={`${uid}-e`}
+              name="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="Your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={state === "error"}
+              className="su-input"
+            />
+            <input name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" className="su-hp" />
+            <button type="submit" disabled={state === "loading"} className="btn-lime">
+              <span>{state === "loading" ? "Sending" : "Notify Me When We Launch"}</span>
+              {state === "loading" ? <i className="su-spin" aria-hidden="true" /> : <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            </button>
+          </div>
+          <p id={`${uid}-s`} role="status" aria-live="polite" className={`su-msg ${state === "error" ? "su-bad" : ""}`}>{msg}</p>
+        </>
+      )}
     </form>
   );
 }
