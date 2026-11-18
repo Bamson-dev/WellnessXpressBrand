@@ -8,5 +8,18 @@ export function limited(key: string, limit = 8, windowMs = 60_000) {
   if (hits.size > 5000) hits.clear();
   return arr.length > limit;
 }
-export const ipOf = (req: Request) =>
-  (req.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+export const ipOf = (req: Request | { headers: Headers }) =>
+  (req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+
+/** Rejects cross-site POSTs to JSON/form endpoints. */
+export function sameOrigin(req: Request) {
+  const origin = req.headers.get("origin");
+  if (!origin) return true;
+  try {
+    const o = new URL(origin);
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    return o.host === host;
+  } catch {
+    return false;
+  }
+}

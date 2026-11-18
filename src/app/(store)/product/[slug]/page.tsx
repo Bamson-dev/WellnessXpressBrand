@@ -1,59 +1,132 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import AddToCart from "@/components/AddToCart";
-import { ProductImage } from "@/components/ProductCard";
-import { effectivePrice, getCategories, getProduct, isSample } from "@/lib/products";
+import Image from "next/image";
+import { notFound } from "next/navigation";
+import { effective, getProduct, inStock, priceRange, relatedProducts } from "@/lib/catalog";
+import { getContact } from "@/lib/settings";
+import { PurchaseBox } from "@/components/AddToCart";
+import ProductCard from "@/components/ProductCard";
+import Gallery from "@/components/Gallery";
+import { TrackView } from "@/components/pixel";
+import { IconBank, IconChevron, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 import { naira, site } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
-type Props = { params: { slug: string } };
-
-export function generateMetadata({ params }: Props): Metadata {
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const p = getProduct(params.slug);
-  if (!p) return {};
-  return { title: p.name, description: p.description.slice(0, 155), alternates: { canonical: `/product/${p.slug}` }, openGraph: { title: p.name, description: p.description.slice(0, 155), images: p.images[0] ? [p.images[0]] : undefined } };
+  if (!p) return { title: "Product not found" };
+  const r = priceRange(p);
+  const desc = `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Order from WellnessXpressBrand.`.trim();
+  return {
+    title: p.name, description: desc, alternates: { canonical: `/product/${p.slug}` },
+    openGraph: { title: p.name, description: desc, url: `${site.url}/product/${p.slug}`, images: p.images[0] ? [{ url: p.images[0], width: 1200, height: 1200, alt: p.name }] : undefined },
+  };
 }
 
-export default function ProductPage({ params }: Props) {
+export default function ProductPage({ params }: { params: { slug: string } }) {
   const p = getProduct(params.slug);
-  if (!p) notFound();
-  const price = effectivePrice(p);
-  const cat = getCategories().find((c) => c.slug === p.category);
-  const sample = isSample(p);
+  if (!p || !p.variants.length) notFound();
+  const contact = getContact();
+  const related = relatedProducts(p);
+  const r = priceRange(p);
+  const variants = p.variants.map((v) => ({
+    id: v.id, label: v.label, price: effective(v), compareAt: v.salePrice != null && v.salePrice < v.price ? v.price : null, inStock: inStock(v),
+    detail: [v.size && v.size !== v.label ? v.size : "", v.duration && v.duration.toLowerCase() !== v.label.toLowerCase() ? v.duration : ""].filter(Boolean).join(" · "),
+  }));
   const ld = {
-    "@context": "https://schema.org", "@type": "Product", name: p.name, sku: p.sku, description: p.description,
-    image: p.images.map((i) => (i.startsWith("http") ? i : site.url + i)),
-    offers: { "@type": "Offer", priceCurrency: "NGN", price, url: `${site.url}/product/${p.slug}`,
-      availability: p.availability === "in_stock" ? "https://schema.org/InStock" : p.availability === "preorder" ? "https://schema.org/PreOrder" : "https://schema.org/OutOfStock" },
+    "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description, sku: p.variants[0]?.sku,
+    image: p.images.map((i) => site.url + i), brand: { "@type": "Brand", name: "WellnessXpress" },
+    offers: r ? {
+      "@type": "AggregateOffer", priceCurrency: "NGN", lowPrice: r.min, highPrice: r.max, offerCount: p.variants.length,
+      availability: p.variants.some(inStock) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `${site.url}/product/${p.slug}`,
+    } : undefined,
   };
-  const avail = { in_stock: "In stock", out_of_stock: "Out of stock", preorder: "Pre-order" }[p.availability];
+  const wa = contact.whatsapp ? `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(`Hello WellnessXpressBrand. I have a question about ${p.name}.`)}` : null;
+
   return (
-    <div className="container-x py-12">
-      <nav aria-label="Breadcrumb" className="text-sm text-ink/60">
-        <Link href="/shop">Shop</Link> / {cat && <><Link href={`/category/${cat.slug}`}>{cat.name}</Link> / </>}{p.name}
+    <div className="container-x py-6 sm:py-10">
+      <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-1 text-sm text-neutral-500">
+        <Link href="/" className="hover:text-brand-700">Home</Link><IconChevron className="h-3.5 w-3.5" />
+        <Link href={`/category/${p.category}`} className="hover:text-brand-700">{p.type === "combo" ? "Combo Sets" : "Individual Products"}</Link><IconChevron className="h-3.5 w-3.5" />
+        <span className="text-ink">{p.name}</span>
       </nav>
-      <div className="mt-6 grid gap-10 md:grid-cols-2">
-        <div className="aspect-square overflow-hidden rounded-3xl border border-sage-100"><ProductImage p={p} /></div>
+
+      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+        <Gallery images={p.images} name={p.name} />
         <div>
-          {sample && <p className="mb-2 rounded-lg bg-clay-400/20 p-2 text-sm font-semibold text-clay-500">Sample entry for layout only. Not a real product.</p>}
-          <h1 className="text-3xl sm:text-4xl">{p.name}</h1>
-          <p className="mt-4 text-2xl font-semibold">
-            {naira(price)}{price < p.price && <span className="ml-3 text-lg font-normal text-ink/50 line-through">{naira(p.price)}</span>}
-          </p>
-          <p className="mt-2 text-sm text-ink/70">{avail} &middot; SKU {p.sku}</p>
-          <p className="mt-6 leading-7 text-ink/85">{p.description}</p>
-          {Object.keys(p.attributes).length > 0 && (
-            <dl className="mt-6 divide-y divide-sage-100 rounded-xl bg-white text-sm">
-              {Object.entries(p.attributes).map(([k, v]) => (
-                <div key={k} className="flex justify-between p-3"><dt className="font-medium">{k}</dt><dd>{v}</dd></div>
-              ))}
-            </dl>
-          )}
-          <AddToCart sku={p.sku} slug={p.slug} name={p.name} price={price} disabled={p.availability === "out_of_stock"} />
-          <p className="mt-6 text-xs text-ink/60">General information only. Not medical advice.</p>
+          {p.type === "combo" ? <span className="tag">Combo set</span> : null}
+          <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">{p.name}</h1>
+          <p className="mt-3 text-lg text-neutral-700">{p.shortDescription}</p>
+          <div className="mt-6">
+            <PurchaseBox product={{ slug: p.slug, name: p.name, image: p.images[0] || null }} variants={variants} />
+          </div>
+
+          {p.type === "combo" && p.items.length ? (
+            <section className="mt-8 rounded-2xl border border-neutral-200 p-5" aria-labelledby="inc-h">
+              <h2 id="inc-h" className="text-lg">What is in this set</h2>
+              <ul className="mt-3 divide-y divide-neutral-100">
+                {p.items.map((it) => (
+                  <li key={it.id} className="flex items-center gap-3 py-3">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-brand-50">
+                      {it.itemImage ? <Image src={it.itemImage} alt="" fill sizes="56px" className="object-contain" /> : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {it.itemSlug ? <Link href={`/product/${it.itemSlug}`} className="font-semibold hover:text-brand-700">{it.itemName}</Link> : <span className="font-semibold">{it.itemName}</span>}
+                      <p className="text-sm text-neutral-500">
+                        {it.sizeNote ? `Size: ${it.sizeNote}` : "Size: ask us on WhatsApp"}{it.quantityNote ? ` · Quantity: ${it.quantityNote}` : ""}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <ul className="mt-8 grid gap-3 text-[15px] text-neutral-700 sm:grid-cols-2">
+            <li className="flex gap-3 rounded-xl bg-brand-50/70 p-4"><IconBank className="h-5 w-5 shrink-0 text-brand-700" /> Pay by bank transfer. We confirm your payment before we process your order.</li>
+            <li className="flex gap-3 rounded-xl bg-brand-50/70 p-4"><IconTruck className="h-5 w-5 shrink-0 text-brand-700" /> Delivery fee depends on your state and is confirmed before you pay.</li>
+          </ul>
+          {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#178a45] hover:underline"><IconWhatsApp /> Questions about {p.name}? Ask us on WhatsApp</a> : null}
         </div>
       </div>
+
+      <div className="mt-12 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className="space-y-6">
+          <section className="card p-6">
+            <h2 className="text-xl">Description</h2>
+            {p.description.split(/\n{2,}/).map((t, i) => <p key={i} className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{t}</p>)}
+          </section>
+          {p.ingredients ? (
+            <section className="card p-6"><h2 className="text-xl">Ingredients</h2><p className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{p.ingredients}</p></section>
+          ) : null}
+          <section className="card p-6">
+            <h2 className="text-xl">Directions for use</h2>
+            <p className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{p.directions || "Read the product label. For directions for use, message us on WhatsApp before you order."}</p>
+          </section>
+          {p.information ? (
+            <section className="card p-6"><h2 className="text-xl">Product information</h2><p className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{p.information}</p></section>
+          ) : null}
+          {p.faqs.length ? (
+            <section className="card p-6">
+              <h2 className="text-xl">Questions</h2>
+              {p.faqs.map((f) => (<details key={f.q} className="mt-3 border-t border-neutral-100 pt-3"><summary className="cursor-pointer font-semibold">{f.q}</summary><p className="mt-2 text-neutral-700">{f.a}</p></details>))}
+            </section>
+          ) : null}
+        </div>
+        <aside className="h-fit rounded-2xl border border-brand-100 bg-brand-50/60 p-6">
+          <div className="flex items-center gap-2"><IconInfo className="h-5 w-5 text-brand-700" /><h2 className="text-lg">Before you use</h2></div>
+          <p className="mt-3 text-neutral-700">Read the product label before use. If you are pregnant, breastfeeding, taking medication or have a medical condition, speak to a healthcare professional first.</p>
+          <Link href="/product-information" className="mt-3 inline-block font-semibold text-brand-700 hover:underline">Important product information</Link>
+        </aside>
+      </div>
+
+      {related.length ? (
+        <section className="mt-14" aria-labelledby="rel-h">
+          <h2 id="rel-h" className="text-2xl">You may also like</h2>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-4">{related.map((x) => <ProductCard key={x.id} p={x} />)}</div>
+        </section>
+      ) : null}
+
+      <TrackView event="ViewContent" data={{ content_ids: p.variants.map((v) => v.sku), content_type: "product", currency: "NGN", value: r?.min || 0 }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
     </div>
   );

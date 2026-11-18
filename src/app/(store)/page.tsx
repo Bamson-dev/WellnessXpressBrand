@@ -1,115 +1,169 @@
 import Link from "next/link";
+import Image from "next/image";
+import type { Metadata } from "next";
+import { CATEGORIES, listProducts } from "@/lib/catalog";
+import { getContact, getSetting } from "@/lib/settings";
 import ProductCard from "@/components/ProductCard";
-import Newsletter from "@/components/Newsletter";
-import { getCategories, getProducts } from "@/lib/products";
-import { faqs } from "@/lib/faqs";
-import { site, whatsappLink } from "@/lib/site";
+import { IconBank, IconChevron, IconInfo, IconShield, IconTruck, IconUser, IconWhatsApp } from "@/components/icons";
+import { site } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: { absolute: `${site.name} | Your Weightloss Journey Starts Here.` },
+  description: site.description,
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
-  const categories = getCategories();
-  const featured = getProducts().slice(0, 4);
-  const wa = whatsappLink();
-  const reasons = [
-    ["Clear product information", "Every product page lists what it is, what it costs and whether it is in stock."],
-    ["Simple ordering", "Add items to your cart, review the summary and send your order details in a few steps."],
-    ["Real support", "Reach the team through the contact page or WhatsApp when you have a question about an order."],
-    ["Written policies", "Shipping, returns and privacy policies are published so you know what to expect before you buy."],
-  ];
+  const singles = listProducts({ category: "individual", featured: true, perPage: 8 }).items;
+  const combos = listProducts({ category: "combos", perPage: 12 }).items;
+  const contact = getContact();
+  const notice = getSetting<string>("productNotice");
+
   return (
     <>
-      <section className="bg-sage-50">
-        <div className="container-x grid items-center gap-10 py-16 md:grid-cols-2 md:py-24">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-clay-500">Wellness and lifestyle</p>
-            <h1 className="mt-3 text-4xl leading-tight sm:text-5xl">Products for a healthier, simpler everyday routine.</h1>
-            <p className="mt-5 max-w-lg text-lg leading-8 text-ink/75">{site.name} is an online store for wellness and lifestyle products. Browse the catalogue and order from your phone or computer.</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/shop" className="btn btn-primary">Shop now</Link>
-              <Link href="/about" className="btn btn-outline">About the brand</Link>
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-neutral-100 bg-white">
+        <div aria-hidden className="pointer-events-none absolute -right-24 top-0 h-full w-[62%] -skew-x-12 bg-gradient-to-br from-brand-50 to-brand-100/60 max-lg:hidden" />
+        <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-brand-50 lg:hidden" />
+        <div className="container-x relative grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-2 lg:gap-12 lg:py-20">
+          <div className="max-w-xl">
+            <p className="eyebrow">WellnessXpressBrand</p>
+            <h1 className="mt-3 text-[2.4rem] font-extrabold leading-[1.05] sm:text-5xl lg:text-[3.6rem]">
+              Your weightloss journey <span className="text-brand-700">starts here.</span>
+            </h1>
+            <p className="mt-5 text-lg leading-relaxed text-neutral-700">
+              Explore WellnessXpressBrand products and practical wellness resources designed to support your everyday wellness journey.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Link href="/shop" className="btn btn-primary px-8 text-base">Shop now</Link>
+              <Link href="#combos" className="btn btn-outline px-8 text-base">Explore our products</Link>
             </div>
+            <ul className="mt-8 grid grid-cols-1 gap-3 text-[15px] text-neutral-700 sm:grid-cols-3">
+              <li className="flex items-center gap-2"><IconUser className="h-5 w-5 text-brand-700" /> No account needed</li>
+              <li className="flex items-center gap-2"><IconBank className="h-5 w-5 text-brand-700" /> Pay by bank transfer</li>
+              <li className="flex items-center gap-2"><IconTruck className="h-5 w-5 text-brand-700" /> Delivery in Nigeria</li>
+            </ul>
           </div>
-          <div className="aspect-[4/3] rounded-3xl bg-gradient-to-br from-sage-200 to-sage-100 p-8" role="img" aria-label="Brand image placeholder">
-            <div className="flex h-full items-end rounded-2xl border border-white/60 p-6">
-              <p className="font-serif text-2xl text-sage-700">{site.shortName}</p>
-            </div>
+          <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+            <Image src="/images/banners/hero-products.webp" alt="WellnessXpress Tummy Balance, Get Snatched Oil, Appetite Suppressant, Trim Down Coffee and Metabolic Reset" width={1400} height={1200} priority sizes="(max-width: 1024px) 100vw, 50vw" className="h-auto w-full rounded-3xl" />
           </div>
         </div>
       </section>
 
-      <section className="container-x py-16" aria-labelledby="cats">
-        <h2 id="cats" className="text-3xl">Shop by category</h2>
+      {/* Categories */}
+      <section className="container-x py-14 sm:py-16" aria-labelledby="cat-h">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow">Shop by category</p>
+            <h2 id="cat-h" className="mt-2 text-2xl sm:text-3xl">Find what you need</h2>
+          </div>
+        </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {categories.map((c) => (
-            <Link key={c.slug} href={`/category/${c.slug}`} className="rounded-2xl border border-sage-100 bg-white p-8 transition hover:shadow-md">
-              <h3 className="text-2xl">{c.name}</h3>
-              <p className="mt-2 text-ink/70">{c.description}</p>
-              <span className="mt-4 inline-block text-sm font-semibold text-sage-600">Browse {c.name.toLowerCase()} &rarr;</span>
+          {CATEGORIES.map((c) => (
+            <Link key={c.slug} href={`/category/${c.slug}`} className="group card flex items-center gap-4 overflow-hidden p-4 transition hover:-translate-y-0.5 hover:shadow-lg sm:gap-6 sm:p-5">
+              <div className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-xl bg-brand-50 sm:w-36">
+                <Image src={c.image} alt="" fill sizes="144px" className="object-contain" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xl">{c.name}</h3>
+                <p className="mt-1 text-neutral-600">{c.description}</p>
+                <span className="mt-3 inline-flex items-center gap-1 font-semibold text-brand-700">Shop now <IconChevron className="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
+              </div>
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="container-x py-8" aria-labelledby="featured">
-        <div className="flex items-end justify-between">
-          <h2 id="featured" className="text-3xl">Featured products</h2>
-          <Link href="/shop" className="text-sm font-semibold text-sage-600">View all</Link>
-        </div>
-        {featured.length ? (
-          <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">{featured.map((p) => <ProductCard key={p.sku} p={p} />)}</div>
-        ) : (
-          <div className="mt-8 rounded-2xl border border-dashed border-sage-200 bg-white p-10 text-center">
-            <p className="font-serif text-xl">The catalogue is being prepared.</p>
-            <p className="mt-2 text-ink/70">Products will appear here soon. Join the newsletter below to hear when the store opens.</p>
+      {/* Featured products */}
+      <section className="bg-brand-50/50 py-14 sm:py-16" aria-labelledby="feat-h">
+        <div className="container-x">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Individual products</p>
+              <h2 id="feat-h" className="mt-2 text-2xl sm:text-3xl">Our products</h2>
+            </div>
+            <Link href="/category/individual" className="hidden font-semibold text-brand-700 hover:underline sm:inline">View all</Link>
           </div>
-        )}
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-5">
+            {singles.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 2} />)}
+          </div>
+          <Link href="/category/individual" className="btn btn-outline mt-6 w-full sm:hidden">View all products</Link>
+        </div>
       </section>
 
-      <section className="container-x py-16" aria-labelledby="about-brand">
-        <div className="grid gap-10 md:grid-cols-2">
+      {/* Combos */}
+      <section id="combos" className="container-x scroll-mt-28 py-14 sm:py-16" aria-labelledby="combo-h">
+        <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 id="about-brand" className="text-3xl">About {site.name}</h2>
-            <p className="mt-4 leading-7 text-ink/80">We sell wellness and lifestyle products online. Our aim is a store where product details, prices and policies are easy to find and easy to understand.</p>
-            <Link href="/about" className="btn btn-outline mt-6">Read more</Link>
+            <p className="eyebrow">Combo sets</p>
+            <h2 id="combo-h" className="mt-2 text-2xl sm:text-3xl">Products packed together</h2>
           </div>
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {reasons.map(([t, d]) => (
-              <li key={t} className="rounded-2xl bg-white p-5 shadow-sm">
-                <h3 className="text-lg">{t}</h3>
-                <p className="mt-2 text-sm leading-6 text-ink/75">{d}</p>
-              </li>
+          <Link href="/category/combos" className="hidden font-semibold text-brand-700 hover:underline sm:inline">View all</Link>
+        </div>
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3">
+          {combos.map((p) => <ProductCard key={p.id} p={p} />)}
+        </div>
+      </section>
+
+      {/* Why us — only what the store actually does */}
+      <section className="border-y border-neutral-100 bg-white py-14 sm:py-16" aria-labelledby="why-h">
+        <div className="container-x">
+          <p className="eyebrow">Why WellnessXpressBrand</p>
+          <h2 id="why-h" className="mt-2 max-w-2xl text-2xl sm:text-3xl">Simple ordering, from cart to your door</h2>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { icon: <IconUser className="h-6 w-6" />, t: "No account needed", d: "Order as a guest. We only ask for the details we need to deliver your order." },
+              { icon: <IconBank className="h-6 w-6" />, t: "Pay by bank transfer", d: "Transfer to our account and send us your payment confirmation from your order page." },
+              { icon: <IconShield className="h-6 w-6" />, t: "Payment checked by a person", d: "We confirm every transfer in our bank account before we process your order." },
+              { icon: <IconWhatsApp className="h-6 w-6" />, t: "Help on WhatsApp", d: "Questions before or after you order? Message us and include your order number." },
+            ].map((x) => (
+              <div key={x.t} className="card p-5">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-700">{x.icon}</span>
+                <h3 className="mt-4 text-lg">{x.t}</h3>
+                <p className="mt-1.5 text-neutral-600">{x.d}</p>
+              </div>
             ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="bg-sage-700 py-14 text-white" aria-labelledby="support">
-        <div className="container-x text-center">
-          <h2 id="support" className="text-3xl">Need help with an order?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-sage-100">Send us a message and the team will reply.</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/contact" className="btn bg-white text-sage-700 hover:bg-sage-50">Contact us</Link>
-            {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="btn border border-white text-white hover:bg-white/10">WhatsApp</a>}
           </div>
         </div>
       </section>
 
-      <section className="container-x py-16" aria-labelledby="faq-h">
-        <h2 id="faq-h" className="text-3xl">Frequently asked questions</h2>
-        <div className="mt-6 divide-y divide-sage-100 rounded-2xl bg-white">
-          {faqs.slice(0, 4).map((f) => (
-            <details key={f.q} className="group p-5">
-              <summary className="cursor-pointer list-none font-semibold">{f.q}</summary>
-              <p className="mt-3 leading-7 text-ink/80">{f.a}</p>
-            </details>
-          ))}
+      {/* How ordering works / guides */}
+      <section className="container-x py-14 sm:py-16" aria-labelledby="how-h">
+        <div className="grid gap-10 lg:grid-cols-2">
+          <div>
+            <p className="eyebrow">Guide</p>
+            <h2 id="how-h" className="mt-2 text-2xl sm:text-3xl">How to order</h2>
+            <ol className="mt-6 space-y-4">
+              {[
+                "Add products to your cart and tap Checkout.",
+                "Enter your name, phone number and delivery address. No account needed.",
+                "Transfer the exact amount shown to our bank account.",
+                "Send your payment confirmation from your order page.",
+                "We confirm your payment and process your order.",
+              ].map((s, i) => (
+                <li key={s} className="flex gap-4">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-700 text-sm font-bold text-white">{i + 1}</span>
+                  <span className="pt-1.5 text-[17px] text-neutral-800">{s}</span>
+                </li>
+              ))}
+            </ol>
+            <Link href="/faq" className="mt-6 inline-flex items-center gap-1 font-semibold text-brand-700 hover:underline">Read the FAQs <IconChevron className="h-4 w-4" /></Link>
+          </div>
+          <div id="product-info" className="rounded-3xl border border-brand-100 bg-brand-50/70 p-6 sm:p-8">
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-white text-brand-700"><IconInfo className="h-6 w-6" /></span>
+              <h2 className="text-xl sm:text-2xl">Important product information</h2>
+            </div>
+            <div className="mt-4 space-y-3 text-[16px] leading-relaxed text-neutral-800">
+              {notice.split("\n").filter(Boolean).map((l) => <p key={l}>{l}</p>)}
+            </div>
+            {contact.whatsapp ? (
+              <a href={`https://wa.me/${contact.whatsapp}?text=${encodeURIComponent("Hello WellnessXpressBrand. I have a question about a product.")}`} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-6">
+                <IconWhatsApp /> Ask about a product
+              </a>
+            ) : null}
+          </div>
         </div>
-        <Link href="/faq" className="mt-4 inline-block text-sm font-semibold text-sage-600">See all questions</Link>
-      </section>
-
-      <section className="container-x pb-8 text-center" aria-labelledby="nl">
-        <h2 id="nl" className="text-3xl">Stay in the loop</h2>
-        <p className="mt-2 text-ink/70">Get store news by email. Unsubscribe any time by contacting us.</p>
-        <Newsletter />
       </section>
     </>
   );

@@ -1,45 +1,66 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/components/CartProvider";
+import { useQuote } from "@/components/useQuote";
+import QtyControl from "@/components/QtyControl";
+import { IconCart, IconTrash } from "@/components/icons";
 import { naira } from "@/lib/site";
 
 export default function CartPage() {
-  const { lines, subtotal, setQty, remove, ready } = useCart();
-  if (!ready) return <div className="container-x py-16"><p>Loading your cart...</p></div>;
-  if (!lines.length)
+  const { lines, setQty, remove, ready } = useCart();
+  const { quote } = useQuote();
+  const q = (id: number) => quote?.lines.find((l) => l.variantId === id);
+  const blocked = quote?.lines.some((l) => !l.available) || (quote && quote.lines.length < lines.length);
+
+  if (ready && !lines.length) {
     return (
-      <div className="container-x py-20 text-center">
-        <h1 className="text-4xl">Your cart is empty</h1>
-        <p className="mt-3 text-ink/70">Add products from the shop to get started.</p>
-        <Link href="/shop" className="btn btn-primary mt-8">Go to shop</Link>
+      <div className="container-x flex flex-col items-center py-20 text-center">
+        <span className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-700"><IconCart className="h-8 w-8" /></span>
+        <h1 className="mt-4 text-3xl">Your cart is empty</h1>
+        <p className="mt-2 text-neutral-600">Add products to your cart to place an order.</p>
+        <Link href="/shop" className="btn btn-primary mt-6">Shop products</Link>
       </div>
     );
+  }
   return (
-    <div className="container-x py-12">
-      <h1 className="text-4xl">Your cart</h1>
-      <div className="mt-8 grid gap-8 lg:grid-cols-3">
-        <ul className="divide-y divide-sage-100 rounded-2xl bg-white lg:col-span-2">
-          {lines.map((l) => (
-            <li key={l.sku} className="flex flex-wrap items-center gap-4 p-5">
-              <div className="min-w-0 flex-1">
-                <Link href={`/product/${l.slug}`} className="font-semibold hover:text-sage-600">{l.name}</Link>
-                <p className="text-sm text-ink/70">{naira(l.price)} each</p>
-              </div>
-              <label className="sr-only" htmlFor={`q-${l.sku}`}>Quantity for {l.name}</label>
-              <input id={`q-${l.sku}`} type="number" min={1} max={20} value={l.qty} onChange={(e) => setQty(l.sku, Number(e.target.value))} className="field w-20 !py-2" />
-              <p className="w-28 text-right font-semibold">{naira(l.price * l.qty)}</p>
-              <button onClick={() => remove(l.sku)} className="text-sm text-red-700 underline" aria-label={`Remove ${l.name}`}>Remove</button>
-            </li>
-          ))}
+    <div className="container-x py-8 sm:py-12">
+      <h1 className="text-3xl sm:text-4xl">Your cart</h1>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
+        <ul className="divide-y divide-neutral-200 rounded-2xl border border-neutral-200 bg-white">
+          {lines.map((l) => {
+            const s = q(l.variantId);
+            return (
+              <li key={l.variantId} className="flex gap-4 p-4 sm:p-5">
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-brand-50">{l.image ? <Image src={l.image} alt="" fill sizes="96px" className="object-contain" /> : null}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <Link href={`/product/${l.slug}`} className="text-[17px] font-semibold hover:text-brand-700">{l.name}</Link>
+                      <p className="text-sm text-neutral-500">{l.label} · {naira(s?.unitPrice ?? l.price)} each</p>
+                    </div>
+                    <button onClick={() => remove(l.variantId)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-neutral-400 hover:bg-red-50 hover:text-red-700" aria-label={`Remove ${l.name}`}><IconTrash className="h-5 w-5" /></button>
+                  </div>
+                  {s && !s.available ? <p className="err">{s.reason}. Remove it or change the quantity.</p> : null}
+                  {quote && !s ? <p className="err">This item is no longer available. Remove it to continue.</p> : null}
+                  <div className="mt-3 flex items-center justify-between">
+                    <QtyControl value={l.qty} onChange={(n) => setQty(l.variantId, n)} small label={`Quantity of ${l.name}`} />
+                    <span className="text-lg font-bold">{naira((s?.unitPrice ?? l.price) * l.qty)}</span>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
-        <aside className="h-fit rounded-2xl bg-white p-6">
-          <h2 className="text-2xl">Order summary</h2>
-          <dl className="mt-4 space-y-2 text-sm">
-            <div className="flex justify-between"><dt>Subtotal</dt><dd className="font-semibold">{naira(subtotal)}</dd></div>
-            <div className="flex justify-between"><dt>Delivery</dt><dd>Confirmed after you order</dd></div>
+        <aside className="card h-fit p-6 lg:sticky lg:top-28">
+          <h2 className="text-xl">Order summary</h2>
+          <dl className="mt-4 space-y-2 text-[15px]">
+            <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
+            <div className="flex justify-between"><dt className="text-neutral-600">Delivery</dt><dd className="text-neutral-600">At checkout</dd></div>
           </dl>
-          <Link href="/checkout" className="btn btn-primary mt-6 w-full">Go to checkout</Link>
-          <p className="mt-3 text-xs text-ink/60">Final prices and availability are checked again when you submit.</p>
+          <Link href="/checkout" aria-disabled={!!blocked} className={`btn btn-primary mt-6 w-full text-base ${blocked ? "pointer-events-none opacity-50" : ""}`}>Checkout</Link>
+          <Link href="/shop" className="btn btn-outline mt-2 w-full">Continue shopping</Link>
+          <p className="mt-4 text-sm text-neutral-500">No account needed. Pay by bank transfer after you place your order.</p>
         </aside>
       </div>
     </div>

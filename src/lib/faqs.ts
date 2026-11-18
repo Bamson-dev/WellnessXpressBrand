@@ -1,8 +1,11 @@
 export const faqs = [
-  { q: "How do I place an order?", a: "Add products to your cart, open the cart, then go to checkout and enter your delivery details. Online payment is not yet enabled, so your order is recorded as a request and the team will contact you to confirm payment and delivery." },
-  { q: "Can I pay online at checkout?", a: "Not yet. Online payment will be switched on after a payment provider is connected. Until then, no payment is taken on the website and an order is never marked as paid by the site." },
-  { q: "Where do you deliver?", a: "Delivery areas, fees and timelines are set out on the Shipping and delivery page once confirmed by the business. Contact us to ask about your location." },
-  { q: "How do returns work?", a: "Read the Returns and refunds page for the current policy. Contact us with your order reference if you have a problem with an order." },
-  { q: "Are your products medicines?", a: "Information on this site is general and is not medical advice. Speak to a qualified health professional before you start any new wellness product, especially if you are pregnant, have a medical condition or take medication." },
-  { q: "How do I contact the team?", a: "Use the contact page to send a message. A WhatsApp link appears on the site once the business number is configured." },
+  { q: "Do I need an account to order?", a: "No. Add products to your cart, go to checkout and enter your name, phone number and delivery address. That is all." },
+  { q: "How do I pay?", a: "By bank transfer. After you place your order, your order page shows our bank details, your order number and the exact amount to pay. Transfer that exact amount." },
+  { q: "What do I do after I transfer?", a: "Go back to your order page and tap \"I have paid\". Enter the name on the account you paid from and the transfer reference, or upload your receipt. You can also send your receipt on WhatsApp with your order number." },
+  { q: "When is my payment confirmed?", a: "We check every transfer in our bank account. Your order is marked Paid only after we confirm the money has arrived. Sending a receipt does not confirm the payment by itself." },
+  { q: "How much is delivery?", a: "The delivery fee depends on your state. If we have set a fee for your state, you see it at checkout. If not, we confirm the fee with you first and your order page shows the final amount. Do not pay until you see the final amount." },
+  { q: "Is a product in stock?", a: "Products you can add to your cart are available to order. If something becomes unavailable after you order, we contact you before we process your order." },
+  { q: "How do I check my order?", a: "Use the link on your order confirmation page. Save it, or message us on WhatsApp with your order number and we will update you." },
+  { q: "What if there is a problem with my order?", a: "Contact us on WhatsApp or by email with your order number and a short description. Read our Returns and Refunds page for more." },
+  { q: "Where can I find directions for use?", a: "Read the product label, and message us on WhatsApp before you order if you have questions about a product." },
 ];

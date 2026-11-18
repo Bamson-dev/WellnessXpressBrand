@@ -1,21 +1,36 @@
+import localFont from "next/font/local";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import { CartProvider } from "@/components/CartProvider";
+import { StorePixel } from "@/components/pixel";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
+import { getContact } from "@/lib/settings";
 import { site } from "@/lib/site";
 
+export const dynamic = "force-dynamic";
+
+const outfit = localFont({ src: "../fonts/Outfit-latin.woff2", variable: "--font-outfit", display: "swap", weight: "300 800" });
+
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
-  const org = { "@context": "https://schema.org", "@type": "Organization", name: site.name, url: site.url };
+  const c = getContact();
+  const org = {
+    "@context": "https://schema.org", "@type": "Organization", name: site.name, url: site.url, logo: `${site.url}/brand/logo-1000.webp`,
+    slogan: site.tagline, email: c.email || undefined,
+    contactPoint: c.whatsapp ? [{ "@type": "ContactPoint", telephone: "+" + c.whatsapp, contactType: "customer service", areaServed: "NG" }] : undefined,
+  };
   return (
-    <>
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-3">Skip to content</a>
+    <div className={`${outfit.variable} font-sans`}>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-white focus:p-3 focus:shadow">Skip to content</a>
       <CartProvider>
         <Header />
         <main id="main">{children}</main>
         <Footer />
+        <FloatingWhatsApp whatsapp={c.whatsapp} />
       </CartProvider>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }} />
       <Analytics />
-    </>
+      <StorePixel />
+    </div>
   );
 }

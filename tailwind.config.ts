@@ -4,15 +4,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        sage: { 50: "#f1f5f2", 100: "#dde8e0", 200: "#bcd0c2", 500: "#4f7a60", 600: "#3f6350", 700: "#325041", 900: "#1c2b23" },
-        cream: "#f8f5ef",
-        clay: { 400: "#d3a981", 500: "#c08f62" },
-        ink: "#1f2a24",
+        brand: { 900: "#074606", 700: "#117006", 500: "#298B06", 400: "#4EA708", 300: "#86CB07", 50: "#F2F8EE", 100: "#E4F1DC" },
+        ink: "#111111",
       },
       fontFamily: {
-        sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
-        serif: ["ui-serif", "Georgia", "Cambria", "Times New Roman", "serif"],
+        sans: ["var(--font-outfit)", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Arial", "sans-serif"],
       },
+      boxShadow: { card: "0 1px 2px rgba(17,17,17,.04), 0 8px 24px rgba(7,70,6,.06)" },
+      borderRadius: { xl2: "1.25rem" },
     },
   },
   plugins: [],
