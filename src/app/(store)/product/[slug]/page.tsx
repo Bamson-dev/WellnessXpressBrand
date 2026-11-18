@@ -51,7 +51,14 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-        <Gallery images={p.images} name={p.name} />
+        <div>
+          <Gallery images={p.images} name={p.name} />
+          {p.slug === "tummy-set" ? (
+            <p className="mt-3 rounded-xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm font-semibold text-brand-900">
+              Set contents: Tummy Balance Big + Detox Seed
+            </p>
+          ) : null}
+        </div>
         <div>
           {p.type === "combo" ? <span className="tag">Combo set</span> : null}
           <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">{p.name}</h1>
