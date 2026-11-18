@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default function sitemap(): MetadataRoute.Sitemap {
   const u = (p: string, priority = 0.6): MetadataRoute.Sitemap[number] => ({ url: site.url + p, changeFrequency: "weekly", priority });
   // During Coming Soon only the home page is public.
-  if (process.env.COMING_SOON !== "false") return [u("/", 1)];
+  if (process.env.COMING_SOON === "true") return [u("/", 1)];
   const products = listProducts({ perPage: 500 }).items;
   return [
     u("/", 1), u("/shop", 0.9), ...CATEGORIES.map((c) => u(`/category/${c.slug}`, 0.8)),
