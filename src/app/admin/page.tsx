@@ -22,7 +22,7 @@ export default async function Dashboard({ searchParams }: { searchParams: { deni
     { ok: zones > 0, t: zones ? `Delivery fees set for ${zones} state${zones === 1 ? "" : "s"}` : "No delivery fees set. Every order will wait for a fee confirmation.", href: "/admin/delivery" },
     { ok: flagged.length === 0, t: flagged.length ? `${flagged.length} price option${flagged.length === 1 ? "" : "s"} still need confirmation` : "All prices confirmed", href: "/admin/products" },
     { ok: persistent !== false, t: persistent ? "Order data is on a persistent volume" : persistent === null ? "Could not check the data volume" : "DATA_DIR is NOT on a persistent volume. Orders would be lost on redeploy.", href: "" },
-    { ok: process.env.COMING_SOON === "false", t: process.env.COMING_SOON === "false" ? "Store is live" : "Store is hidden behind Coming Soon (set COMING_SOON=false in Coolify to launch)", href: "" },
+    { ok: process.env.COMING_SOON !== "true", t: process.env.COMING_SOON !== "true" ? "Store is live" : "Store is hidden behind Coming Soon (COMING_SOON=true is set in Coolify)", href: "" },
   ];
   const card = (label: string, value: string | number, href?: string, tone = "") => {
     const inner = (<><p className="text-sm text-neutral-500">{label}</p><p className={`mt-1 text-2xl font-bold ${tone}`}>{value}</p></>);
