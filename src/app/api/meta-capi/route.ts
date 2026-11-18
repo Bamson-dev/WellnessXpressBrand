@@ -1,18 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-/**
- * Server-side Meta Conversions API relay.
- * Receives the same events the browser Pixel fires (matched by event_id for deduplication)
- * and forwards them to Meta. The access token exists only as a server environment variable.
- *
- * Required env (Coolify): META_CAPI_ACCESS_TOKEN
- * Optional env: META_PIXEL_ID (default below), META_CAPI_TEST_EVENT_CODE, META_GRAPH_VERSION
- */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const DEFAULT_PIXEL_ID = "29204690629182298";
-const ALLOWED_EVENTS = new Set(["PageView", "ViewContent", "TelegramJoinClick"]);
+/**
+ * Server-side Meta Conversions API relay.
+ * Receives the same events the browser Pixel fires (matched by event_id for deduplication)
+ * and forwards them to Meta. Access tokens exist only as server environment variables.
+ *
+ * Funnel routing (by validated event_source_url pathname):
+ *   /whatsapp-weightloss/ → Edith Pixel 1 (META_PIXEL_ID_WHATSAPP, META_CAPI_ACCESS_TOKEN_WHATSAPP)
+ *   all other permitted paths            → Telegram Pixel (META_PIXEL_ID / DEFAULT, META_CAPI_ACCESS_TOKEN)
+ *
+ * WhatsApp events are NEVER routed to Telegram credentials as a fallback.
+ * If META_CAPI_ACCESS_TOKEN_WHATSAPP is absent the endpoint returns 500 and refuses the event.
+ *
+ * Required env (Coolify): META_CAPI_ACCESS_TOKEN, META_CAPI_ACCESS_TOKEN_WHATSAPP
+ * Optional env: META_PIXEL_ID (default below), META_PIXEL_ID_WHATSAPP (default below),
+ *               META_CAPI_TEST_EVENT_CODE, META_GRAPH_VERSION
+ */
+
+const DEFAULT_PIXEL_ID_TELEGRAM = "29204690629182298";
+const DEFAULT_PIXEL_ID_WHATSAPP = "1290890196474517";
+const WHATSAPP_PATH_PREFIX = "/whatsapp-weightloss/";
+
+const ALLOWED_EVENTS = new Set([
+  "PageView",
+  "ViewContent",
+  "TelegramJoinClick",
+  "WhatsAppJoinClick",
+]);
 const ALLOWED_ORIGINS = new Set([
   "https://weightloss.wellnessxpressbrand.com",
   "https://wellnessxpressbrand.com",
@@ -33,17 +50,20 @@ function limited(ip: string) {
 }
 
 function cors(origin: string | null) {
-  const h: Record<string, string> = { "Cache-Control": "no-store", Vary: "Origin" };
+  const h: Record<string, string> = {
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
   if (origin && ALLOWED_ORIGINS.has(origin)) {
     h["Access-Control-Allow-Origin"] = origin;
-    h["Access-Control-Allow-Methods"] = "POST, OPTIONS";
-    h["Access-Control-Allow-Headers"] = "Content-Type";
+    h["Vary"] = "Origin";
   }
   return h;
 }
 
 export async function OPTIONS(req: NextRequest) {
-  return new NextResponse(null, { status: 204, headers: cors(req.headers.get("origin")) });
+  const origin = req.headers.get("origin");
+  return new NextResponse(null, { status: 204, headers: cors(origin) });
 }
 
 export async function POST(req: NextRequest) {
@@ -53,19 +73,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403, headers });
   }
 
-  const token = process.env.META_CAPI_ACCESS_TOKEN;
-  if (!token) {
-    return NextResponse.json({ error: "not_configured" }, { status: 503, headers });
-  }
-
-  const ip = req.headers.get("cf-connecting-ip") || (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
+  const ip =
+    req.headers.get("cf-connecting-ip") ||
+    (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() ||
+    "unknown";
   if (limited(ip)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429, headers });
   }
 
   let body: Record<string, unknown>;
   try {
-    // sendBeacon posts text/plain, so parse the raw text instead of relying on content-type.
     body = JSON.parse(await req.text());
   } catch {
     return NextResponse.json({ error: "bad_json" }, { status: 400, headers });
@@ -77,59 +94,117 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_event" }, { status: 400, headers });
   }
 
+  // Parse and validate event_source_url. Only accept URLs from permitted origins.
   let safeUrl = "https://weightloss.wellnessxpressbrand.com/masterclass/";
+  let sourcePath = "/masterclass/";
   try {
     const u = new URL(String(body.event_source_url || ""));
-    if (ALLOWED_ORIGINS.has(u.origin)) safeUrl = u.origin + u.pathname;
-  } catch {}
-
-  const cookie = (v: unknown) => (typeof v === "string" && /^[\w.\-]{1,200}$/.test(v) ? v : undefined);
-  const userData: Record<string, string> = {
-    client_user_agent: req.headers.get("user-agent") || "",
-  };
-  if (ip !== "unknown") userData.client_ip_address = ip;
-  const fbp = cookie(body.fbp);
-  const fbc = cookie(body.fbc);
-  if (fbp) userData.fbp = fbp;
-  if (fbc) userData.fbc = fbc;
-
-  const custom: Record<string, string> = {};
-  const cd = (body.custom_data || {}) as Record<string, unknown>;
-  for (const k of ["content_name", "content_category", "button_text", "page_path"]) {
-    if (typeof cd[k] === "string") custom[k] = (cd[k] as string).slice(0, 120);
+    if (ALLOWED_ORIGINS.has(u.origin)) {
+      safeUrl = u.origin + u.pathname;
+      sourcePath = u.pathname;
+    }
+  } catch {
+    // keep defaults
   }
 
-  const event = {
+  // Route to correct pixel/token. WhatsApp MUST NOT fall back to Telegram credentials.
+  const isWhatsApp = sourcePath.startsWith(WHATSAPP_PATH_PREFIX);
+  let resolvedPixelId: string;
+  let resolvedToken: string;
+
+  if (isWhatsApp) {
+    resolvedPixelId =
+      process.env.META_PIXEL_ID_WHATSAPP || DEFAULT_PIXEL_ID_WHATSAPP;
+    resolvedToken = process.env.META_CAPI_ACCESS_TOKEN_WHATSAPP ?? "";
+    if (!resolvedToken) {
+      console.error(
+        "[meta-capi] WhatsApp funnel: META_CAPI_ACCESS_TOKEN_WHATSAPP not configured. Event refused."
+      );
+      return NextResponse.json(
+        { error: "tracking_not_configured" },
+        { status: 500, headers }
+      );
+    }
+  } else {
+    resolvedPixelId =
+      process.env.META_PIXEL_ID || DEFAULT_PIXEL_ID_TELEGRAM;
+    resolvedToken = process.env.META_CAPI_ACCESS_TOKEN ?? "";
+    if (!resolvedToken) {
+      return NextResponse.json(
+        { error: "not_configured" },
+        { status: 503, headers }
+      );
+    }
+  }
+
+  const userData: Record<string, unknown> = {};
+  const rawFbc = String(body.fbc || "");
+  const rawFbp = String(body.fbp || "");
+  if (/^fb\.\d+\.\d+\.\d+$/.test(rawFbc)) userData.fbc = rawFbc;
+  if (/^fb\.\d+\.\d+\.\d+$/.test(rawFbp)) userData.fbp = rawFbp;
+  const rawIp = String(body.client_ip_address || "");
+  const rawUa = String(body.client_user_agent || "");
+  if (rawIp) userData.client_ip_address = rawIp.slice(0, 45);
+  if (rawUa) userData.client_user_agent = rawUa.slice(0, 500);
+
+  const custom_data: Record<string, unknown> = {};
+  if (body.content_name)
+    custom_data.content_name = String(body.content_name).slice(0, 200);
+  if (body.content_category)
+    custom_data.content_category = String(body.content_category).slice(0, 200);
+
+  const testCode = process.env.META_CAPI_TEST_EVENT_CODE;
+
+  const event: Record<string, unknown> = {
     event_name: eventName,
     event_time: Math.floor(Date.now() / 1000),
     event_id: eventId,
     event_source_url: safeUrl,
     action_source: "website",
     user_data: userData,
-    custom_data: custom,
   };
+  if (Object.keys(custom_data).length > 0) event.custom_data = custom_data;
 
   const payload: Record<string, unknown> = { data: [event] };
-  const testCode = process.env.META_CAPI_TEST_EVENT_CODE;
   if (testCode) payload.test_event_code = testCode;
 
-  const pixelId = process.env.META_PIXEL_ID || DEFAULT_PIXEL_ID;
-  const ver = process.env.META_GRAPH_VERSION ? "/" + process.env.META_GRAPH_VERSION : "";
-  try {
-    const r = await fetch("https://graph.facebook.com" + ver + "/" + pixelId + "/events", {
+  const ver = process.env.META_GRAPH_VERSION
+    ? "/" + process.env.META_GRAPH_VERSION
+    : "";
+
+  const r = await fetch(
+    "https://graph.facebook.com" + ver + "/" + resolvedPixelId + "/events",
+    {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + resolvedToken,
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(8000),
-    });
-    if (!r.ok) {
-      console.error("meta-capi: Meta responded", r.status, eventName);
-      return NextResponse.json({ ok: false }, { status: 502, headers });
     }
-    const j = (await r.json().catch(() => ({}))) as { events_received?: number };
-    return NextResponse.json({ ok: true, events_received: j.events_received ?? 0 }, { headers });
-  } catch {
-    console.error("meta-capi: request failed", eventName);
+  ).catch((err: unknown) => {
+    console.error("[meta-capi] fetch error", err);
+    return null;
+  });
+
+  if (!r) {
+    return NextResponse.json(
+      { error: "upstream_error" },
+      { status: 502, headers }
+    );
+  }
+
+  if (!r.ok) {
+    console.error("[meta-capi] Meta responded", r.status, eventName);
     return NextResponse.json({ ok: false }, { status: 502, headers });
   }
+
+  const j = (await r.json().catch(() => ({}))) as {
+    events_received?: number;
+  };
+  return NextResponse.json(
+    { ok: true, events_received: j.events_received ?? 0 },
+    { headers }
+  );
 }
