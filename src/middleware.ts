@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
 
 /**
- * 1. Coming Soon mode (unchanged behaviour): while COMING_SOON is not "false", every public URL renders /coming-soon.
+ * 1. Coming Soon mode: only while COMING_SOON is "true", every public URL renders /coming-soon.
  *    The admin dashboard stays reachable so the owner can prepare products, delivery fees and bank details,
  *    and a signed-in admin can preview the full store.
  * 2. Private order links: /order/<number>?t=<token> stores the token in an httpOnly cookie and redirects to the
@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  if (process.env.COMING_SOON === "false") return NextResponse.next();
+  if (process.env.COMING_SOON !== "true") return NextResponse.next();
   if (PASS.includes(pathname) || pathname.startsWith("/brand/") || pathname.startsWith("/admin") || pathname.startsWith("/api/admin/")) return NextResponse.next();
   if (await verifySession(req.cookies.get(SESSION_COOKIE)?.value)) {
     const res = NextResponse.next();
