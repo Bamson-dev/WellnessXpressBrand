@@ -42,8 +42,13 @@ export function normalisePhone(raw: string) {
 export const PAYMENT_STATUS: Record<string, string> = {
   pending_payment: "Pending Payment",
   awaiting_verification: "Awaiting Verification",
-  paid: "Paid",
+  paid: "Product Payment Confirmed",
   payment_failed: "Payment Failed",
+};
+export const DELIVERY_PAYMENT_STATUS: Record<string, string> = {
+  not_set: "Delivery Fee Pending",
+  pending: "Delivery Fee Pending",
+  paid: "Delivery Fee Paid",
 };
 export const FULFILMENT_STATUS: Record<string, string> = {
   unfulfilled: "Not started",
@@ -54,7 +59,7 @@ export const FULFILMENT_STATUS: Record<string, string> = {
 };
 
 /** One combined label for customers, matching the business order statuses. */
-export function orderStatusLabel(o: { payment_status: string; fulfilment_status: string; total: number | null }) {
+export function orderStatusLabel(o: { payment_status: string; fulfilment_status: string; total: number | null; delivery_payment_status?: unknown }) {
   if (o.fulfilment_status === "cancelled") return "Cancelled";
   if (o.fulfilment_status === "delivered") return "Delivered";
   if (o.fulfilment_status === "shipped") return "Shipped";
@@ -62,6 +67,6 @@ export function orderStatusLabel(o: { payment_status: string; fulfilment_status:
   if (o.payment_status === "paid") return "Paid";
   if (o.payment_status === "payment_failed") return "Payment Failed";
   if (o.payment_status === "awaiting_verification") return "Awaiting Verification";
-  if (o.total == null) return "Awaiting delivery fee";
-  return "Pending Payment";
+  if (o.payment_status !== "paid") return "Pending Payment";
+  return o.delivery_payment_status === "paid" ? "Delivery Fee Paid" : "Delivery Fee Pending";
 }

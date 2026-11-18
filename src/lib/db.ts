@@ -135,6 +135,25 @@ const MIGRATIONS: string[] = [
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );`,
+  `ALTER TABLE orders ADD COLUMN delivery_payment_status TEXT NOT NULL DEFAULT 'not_set';
+   ALTER TABLE orders ADD COLUMN delivery_paid_at TEXT;
+   ALTER TABLE orders ADD COLUMN delivery_payment_reference TEXT NOT NULL DEFAULT '';
+   UPDATE orders SET delivery_payment_status = CASE
+     WHEN delivery_fee IS NULL THEN 'not_set'
+     WHEN payment_status = 'paid' THEN 'paid'
+     ELSE 'pending'
+   END;
+   UPDATE orders SET delivery_paid_at = paid_at, delivery_payment_reference = payment_reference
+     WHERE delivery_payment_status = 'paid';`,
+  `UPDATE products SET ingredients = '' WHERE slug IN ('tummy-balance','appetite-suppressant');
+   UPDATE variants SET label = 'Unspecified option', size = '', duration = ''
+     WHERE sku = 'WX-TRIM-DOWN-COFFEE-SMALL';
+   UPDATE products SET review_note = 'Two prices supplied: 1 Month ₦12,500 and an additional ₦10,000 price entry. The size or duration for the ₦10,000 entry was not supplied; confirm before relabelling it.'
+     WHERE slug = 'trim-down-coffee';`,
+  `UPDATE settings SET value = json_quote('We deliver to addresses in Nigeria.\n\nYou can pay for your products when you place your order. The delivery fee is confirmed separately afterward, and must be paid as a separate amount before dispatch.\n\nWe start processing your order after we confirm your product payment and delivery payment.')
+     WHERE key = 'shippingPolicy' AND value = json_quote('We deliver to addresses in Nigeria.\n\nThe delivery fee depends on your state. If we have set a fee for your state, you see it at checkout and it is included in your total.\n\nIf we have not set a fee for your state yet, you can still place your order. We will confirm the delivery fee with you by phone or WhatsApp, and your order page will then show the final amount to pay. Do not transfer money until you see the final amount.\n\nWe start processing your order after we confirm your payment.');
+   UPDATE settings SET value = json_quote('All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Product payment and delivery payment are collected separately. Your order advances only after an admin verifies the relevant payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.')
+     WHERE key = 'termsPolicy' AND value = json_quote('All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown at checkout. Your order is confirmed only after we verify your payment in our bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nTransfer the exact amount shown on your order page. If the delivery fee for your state has not been set, wait until your order page shows the final amount before you pay.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.');`,
 ];
 
 function open(): DB {

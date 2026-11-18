@@ -45,8 +45,8 @@ export async function setDeliveryFeeAction(f: FormData) {
   const fee = money(f.get("fee"));
   const o = getOrderById(id);
   if (!o || fee == null) return back(`/admin/orders/${id}`, "Enter a valid delivery fee.");
-  if (o.payment_status === "paid") return back(`/admin/orders/${id}`, "This order is already paid. The total cannot change.");
-  db().prepare("UPDATE orders SET delivery_fee = ?, total = subtotal + ?, updated_at = datetime('now') WHERE id = ?").run(fee, fee, id);
+  if (o.delivery_payment_status === "paid") return back(`/admin/orders/${id}`, "Delivery payment is already confirmed.");
+  db().prepare("UPDATE orders SET delivery_fee = ?, total = subtotal + ?, delivery_payment_status = 'pending', updated_at = datetime('now') WHERE id = ?").run(fee, fee, id);
   logEvent(id, a.email, "delivery_fee_set", `₦${fee.toLocaleString()}`);
   revalidatePath(`/admin/orders/${id}`);
   back(`/admin/orders/${id}`, "Delivery fee saved. The customer's order page now shows the final amount.");
@@ -58,15 +58,28 @@ export async function verifyPaymentAction(f: FormData) {
   const o = getOrderById(id);
   if (!o) return back("/admin/orders");
   if (f.get("confirm") !== "yes") return back(`/admin/orders/${id}`, "Tick the box to confirm you have seen the money in the bank account.");
-  if (o.total == null) return back(`/admin/orders/${id}`, "Set the delivery fee before you confirm payment.");
   if (o.payment_status === "paid") return back(`/admin/orders/${id}`, "Payment is already confirmed.");
   db().prepare("UPDATE orders SET payment_status = 'paid', paid_at = datetime('now'), verified_by = ?, updated_at = datetime('now') WHERE id = ?").run(a.email, id);
   logEvent(id, a.email, "payment_verified", s(f, "note", 300));
   const skus = orderItems(id).map((i) => i.sku);
-  const ev = await sendStorePurchase({ number: o.number, total: o.total, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
+  const ev = await sendStorePurchase({ number: o.number, total: o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
   db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
   revalidatePath("/admin");
   back(`/admin/orders/${id}`, "Payment confirmed. The order is now Paid.");
+}
+
+export async function markDeliveryPaidAction(f: FormData) {
+  const a = await requireAdmin();
+  const id = Number(f.get("id"));
+  const o = getOrderById(id);
+  if (!o || o.delivery_fee == null) return back(`/admin/orders/${id}`, "Set the delivery fee before recording payment.");
+  if (f.get("confirm") !== "yes") return back(`/admin/orders/${id}`, "Confirm you have seen the delivery payment in the account.");
+  if (o.delivery_payment_status === "paid") return back(`/admin/orders/${id}`, "Delivery payment is already confirmed.");
+  const reference = s(f, "reference", 120);
+  db().prepare("UPDATE orders SET delivery_payment_status = 'paid', delivery_paid_at = datetime('now'), delivery_payment_reference = ?, updated_at = datetime('now') WHERE id = ?").run(reference, id);
+  logEvent(id, a.email, "delivery_payment_verified", reference || `₦${Number(o.delivery_fee).toLocaleString("en-NG")}`);
+  revalidatePath(`/admin/orders/${id}`);
+  back(`/admin/orders/${id}`, "Delivery payment recorded.");
 }
 
 export async function markPaymentFailedAction(f: FormData) {
@@ -93,7 +106,8 @@ export async function setFulfilmentAction(f: FormData) {
   const st = s(f, "status", 20);
   const o = getOrderById(id);
   if (!o || !["unfulfilled", "processing", "shipped", "delivered", "cancelled"].includes(st)) return back(`/admin/orders/${id}`);
-  if (["processing", "shipped", "delivered"].includes(st) && o.payment_status !== "paid") return back(`/admin/orders/${id}`, "Confirm payment before you process or ship this order.");
+  if (["processing", "shipped", "delivered"].includes(st) && o.payment_status !== "paid") return back(`/admin/orders/${id}`, "Confirm the product payment before you process or ship this order.");
+  if (["processing", "shipped", "delivered"].includes(st) && o.delivery_payment_status !== "paid") return back(`/admin/orders/${id}`, "Confirm the delivery payment before you process or ship this order.");
   if (st === o.fulfilment_status) return back(`/admin/orders/${id}`);
   tx((d) => {
     d.prepare("UPDATE orders SET fulfilment_status = ?, updated_at = datetime('now') WHERE id = ?").run(st, id);

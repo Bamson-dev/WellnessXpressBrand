@@ -26,10 +26,10 @@ const catalogue: P[] = [
     short: "WellnessXpress Weightloss Trim Down Coffee in a screw-top jar.",
     description: "Weightloss Trim Down Coffee from WellnessXpress, supplied in a white screw-top jar with the WellnessXpress label.",
     images: [`${IMG}/individual/trim-down-coffee.webp`], status: "published", featured: true,
-    review: "Two prices supplied: 1 Month ₦12,500 (list A) and Small ₦10,000 (list B). Confirm which options to sell and the jar size for each.",
+    review: "Two prices supplied: 1 Month ₦12,500 and an additional ₦10,000 price entry. The size or duration for the ₦10,000 entry was not supplied; confirm before relabelling it.",
     variants: [
       { label: "1 Month", duration: "1 month", price: 12500, source: A, flag: true },
-      { label: "Small", size: "Small", price: 10000, source: B, flag: true },
+      { label: "Unspecified option", price: 10000, source: "Additional individual price entry", flag: true },
     ],
   },
   {
@@ -44,9 +44,8 @@ const catalogue: P[] = [
     slug: "tummy-balance", name: "Tummy Balance", type: "single", category: "individual",
     short: "WellnessXpress Tummy Balance in a resealable pouch.",
     description: "Tummy Balance from WellnessXpress, supplied in a black resealable pouch with the WellnessXpress label.",
-    ingredients: "As printed on the pack: a blend of Fennel, Peppermint, Cumin, Dandelion, Star Anise, Turmeric, Herbal Blends.",
     images: [`${IMG}/individual/tummy-balance.webp`], status: "published", featured: true,
-    review: "Four prices supplied: 1 Month ₦25,000 and 2 Weeks ₦12,500 (list A); Small ₦12,000 and Big ₦22,000 (list B). Confirm which options to sell and the pouch size for each. Confirm ingredient text against the label.",
+    review: "Four prices supplied: 1 Month ₦25,000 and 2 Weeks ₦12,500 (list A); Small ₦12,000 and Big ₦22,000 (list B). Confirm which options to sell and the pouch size for each.",
     variants: [
       { label: "2 Weeks", duration: "2 weeks", price: 12500, source: A, flag: true },
       { label: "1 Month", duration: "1 month", price: 25000, source: A, flag: true },
@@ -58,9 +57,8 @@ const catalogue: P[] = [
     slug: "appetite-suppressant", name: "Appetite Suppressant", type: "single", category: "individual",
     short: "WellnessXpress Appetite Suppressant in a resealable pouch.",
     description: "Appetite Suppressant from WellnessXpress, supplied in a black resealable pouch with the WellnessXpress label.",
-    ingredients: "As printed on the pack: a blend of Chia, fenugreek, Cinnamon, Herbal Extracts.",
     images: [`${IMG}/individual/appetite-suppressant.webp`], status: "published", featured: true,
-    review: "Four prices supplied: 1 Month ₦20,000 and 2 Weeks ₦10,000 (list A); Small ₦12,000 and Big ₦22,000 (list B). Confirm which options to sell and the pouch size for each. Confirm ingredient text against the label.",
+    review: "Four prices supplied: 1 Month ₦20,000 and 2 Weeks ₦10,000 (list A); Small ₦12,000 and Big ₦22,000 (list B). Confirm which options to sell and the pouch size for each.",
     variants: [
       { label: "2 Weeks", duration: "2 weeks", price: 10000, source: A, flag: true },
       { label: "1 Month", duration: "1 month", price: 20000, source: A, flag: true },
@@ -180,13 +178,13 @@ export const DEFAULT_SETTINGS: Record<string, unknown> = {
   productNotice:
     "Read the product label before use.\nFor directions for use, message us on WhatsApp before you order.\nIf you are pregnant, breastfeeding, taking medication or have a medical condition, speak to a healthcare professional before using any supplement.",
   shippingPolicy:
-    "We deliver to addresses in Nigeria.\n\nThe delivery fee depends on your state. If we have set a fee for your state, you see it at checkout and it is included in your total.\n\nIf we have not set a fee for your state yet, you can still place your order. We will confirm the delivery fee with you by phone or WhatsApp, and your order page will then show the final amount to pay. Do not transfer money until you see the final amount.\n\nWe start processing your order after we confirm your payment.",
+    "We deliver to addresses in Nigeria.\n\nYou can pay for your products when you place your order. The delivery fee is confirmed separately afterward, and must be paid as a separate amount before dispatch.\n\nWe start processing your order after we confirm your product payment and delivery payment.",
   returnsPolicy:
     "If there is a problem with your order, contact us on WhatsApp or by email with your order number and a short description of the problem. We will review it and tell you the next steps.\n\nKeep your order number and payment receipt until your order has been delivered.",
   privacyPolicy:
     "We collect the details you enter at checkout: your name, phone number, WhatsApp number, email address (if you give one), delivery address and any delivery instructions. If you submit a payment confirmation, we also keep the transfer reference and the receipt you upload.\n\nWe use these details only to process, deliver and support your order. We do not sell your details.\n\nWe do not take card payments on this website and we do not store card details.\n\nTo ask about your data or to have it removed, contact us on WhatsApp or by email.",
   termsPolicy:
-    "All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown at checkout. Your order is confirmed only after we verify your payment in our bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nTransfer the exact amount shown on your order page. If the delivery fee for your state has not been set, wait until your order page shows the final amount before you pay.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.",
+    "All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Product payment and delivery payment are collected separately. Your order advances only after an admin verifies the relevant payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.",
 };
 
 export function seedSettings(db: DB) {

@@ -27,12 +27,11 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
   const bank = getBank();
   const status = orderStatusLabel(o);
   const isNew = searchParams.new === "1";
-  const waitingFee = o.total == null;
-  const canPay = !waitingFee && ["pending_payment", "payment_failed"].includes(o.payment_status) && o.fulfilment_status !== "cancelled";
+  const canPay = ["pending_payment", "payment_failed"].includes(o.payment_status) && o.fulfilment_status !== "cancelled";
   const submitted = o.payment_status === "awaiting_verification";
   const wa = (m: string) => (contact.whatsapp ? `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(m)}` : null);
   const help = wa(`Hello WellnessXpressBrand. I need help with my order ${o.number}.`);
-  const receiptWa = wa(`Hello WellnessXpressBrand. I have paid for order ${o.number}. Total: ${o.total != null ? naira(o.total) : ""}. Here is my payment receipt.`);
+  const receiptWa = wa(`Hello WellnessXpressBrand. I have paid for the products in order ${o.number}. Amount: ${naira(o.subtotal)}. Here is my payment receipt.`);
 
   return (
     <div className="container-x max-w-4xl py-8 sm:py-12">
@@ -49,14 +48,13 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="card p-4"><p className="text-sm text-neutral-500">Order number</p><p className="mt-1 flex items-center gap-2 text-lg font-bold">{o.number}<CopyButton text={o.number} label="Copy order number" small /></p></div>
         <div className="card p-4"><p className="text-sm text-neutral-500">Status</p><p className="mt-1 text-lg font-bold text-brand-700">{status}</p></div>
-        <div className="card p-4"><p className="text-sm text-neutral-500">Amount to pay</p><p className="mt-1 text-lg font-bold">{o.total != null ? naira(o.total) : "Awaiting delivery fee"}</p></div>
+        <div className="card p-4"><p className="text-sm text-neutral-500">Product payment</p><p className="mt-1 text-lg font-bold">{naira(o.subtotal)}</p></div>
       </div>
 
-      {waitingFee && o.fulfilment_status !== "cancelled" ? (
+      {o.fulfilment_status !== "cancelled" ? (
         <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
-          <h2 className="flex items-center gap-2 text-xl text-amber-950"><IconInfo className="h-6 w-6" /> Do not pay yet</h2>
-          <p className="mt-2 text-amber-950">We have not set a delivery fee for {o.state} yet. We will contact you on {o.whatsapp ? "WhatsApp" : "your phone"} to confirm it. This page will then show the final amount and our bank details.</p>
-          {help ? <a href={help} target="_blank" rel="noopener noreferrer" className="btn btn-wa mt-4"><IconWhatsApp /> Ask about your delivery fee</a> : null}
+          <h2 className="flex items-center gap-2 text-xl text-amber-950"><IconInfo className="h-6 w-6" /> Delivery is paid separately</h2>
+          <p className="mt-2 text-amber-950">Delivery fee will be confirmed separately after your order. You can pay for your products now. We will contact you with the delivery charge.</p>
         </section>
       ) : null}
 
@@ -67,14 +65,14 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
           <p className="mt-2 text-neutral-700">Please transfer the exact order amount to the account below.</p>
           {bankIsComplete(bank) ? (
             <dl className="mt-5 divide-y divide-neutral-200 rounded-xl border border-neutral-200 text-[16px]">
-              <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Amount</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(o.total!)}<CopyButton text={String(o.total)} label="Copy amount" small /></dd></div>
+              <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Product payment</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(o.subtotal)}<CopyButton text={String(o.subtotal)} label="Copy amount" small /></dd></div>
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Bank</dt><dd className="font-semibold">{bank.bank}</dd></div>
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Account name</dt><dd className="text-right font-semibold">{bank.accountName}</dd></div>
               <div className="flex flex-wrap items-center justify-between gap-3 bg-brand-50 p-4"><dt className="text-neutral-600">Account number</dt><dd className="flex items-center gap-3"><span className="text-2xl font-bold tracking-wider tabular-nums">{bank.accountNumber}</span><CopyButton text={bank.accountNumber} label="Copy account number" /></dd></div>
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Narration</dt><dd className="font-semibold">{o.number}</dd></div>
             </dl>
           ) : <p className="mt-4 rounded-lg bg-amber-50 p-3 text-amber-900">Our bank details are being updated. Message us on WhatsApp for payment details.</p>}
-          <p className="mt-4 text-neutral-700">After completing your transfer, submit your payment confirmation below. Your order will be processed after we verify your payment.</p>
+          <p className="mt-4 text-neutral-700">After completing your product payment, submit your payment confirmation below. We will confirm the delivery fee separately.</p>
           <PaymentConfirmForm number={o.number} token={token} />
           {receiptWa ? <a href={receiptWa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#178a45] hover:underline"><IconWhatsApp /> Or send your receipt on WhatsApp</a> : null}
         </section>
@@ -103,7 +101,8 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
         <dl className="mt-2 space-y-2 border-t border-neutral-200 pt-3 text-[15px]">
           <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd>{naira(o.subtotal)}</dd></div>
           <div className="flex justify-between"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee != null ? naira(o.delivery_fee) : "To be confirmed"}</dd></div>
-          <div className="flex justify-between text-lg font-bold"><dt>Total</dt><dd>{o.total != null ? naira(o.total) : "To be confirmed"}</dd></div>
+          <div className="flex justify-between"><dt className="text-neutral-600">Delivery payment status</dt><dd>{o.delivery_payment_status === "paid" ? "Paid" : "Pending"}</dd></div>
+          <div className="flex justify-between text-lg font-bold"><dt>Product payment</dt><dd>{naira(o.subtotal)}</dd></div>
         </dl>
         <div className="mt-5 rounded-xl bg-neutral-50 p-4 text-[15px]">
           <p className="font-semibold">Delivering to</p>

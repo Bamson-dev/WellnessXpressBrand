@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { bankOf, getOrderById, orderEvents, orderItems } from "@/lib/orders";
 import { getContact } from "@/lib/settings";
-import { FULFILMENT_STATUS, PAYMENT_STATUS, displayPhone, naira } from "@/lib/site";
+import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, displayPhone, naira } from "@/lib/site";
 import Flash from "@/components/admin/Flash";
-import { markPaymentFailedAction, saveNotesAction, setDeliveryFeeAction, setFulfilmentAction, unverifyPaymentAction, verifyPaymentAction } from "@/app/admin/actions";
+import { markDeliveryPaidAction, markPaymentFailedAction, saveNotesAction, setDeliveryFeeAction, setFulfilmentAction, unverifyPaymentAction, verifyPaymentAction } from "@/app/admin/actions";
 
 export const metadata = { title: "Order" };
 
@@ -20,7 +20,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
   const waNumber = o.whatsapp || o.phone;
   const waMsg = (m: string) => `https://wa.me/${waNumber}?text=${encodeURIComponent(m)}`;
   const storeName = "WellnessXpressBrand";
-  const feeMsg = o.total != null ? waMsg(`Hello ${o.customer_name}. This is ${storeName}. The delivery fee for your order ${o.number} is ${naira(o.delivery_fee || 0)}. Your total is ${naira(o.total)}. Please open your order page to see our bank details and pay. Thank you.`) : null;
+  const feeMsg = o.delivery_fee != null ? waMsg(`Hello ${o.customer_name}. This is ${storeName}. The delivery fee for your order ${o.number} is ${naira(o.delivery_fee)}. Please pay the delivery fee separately and reply with your transfer confirmation. Thank you.`) : null;
   const paidMsg = waMsg(`Hello ${o.customer_name}. This is ${storeName}. We have confirmed your payment for order ${o.number}. We will update you when it is on the way. Thank you.`);
   const row = (k: string, v: React.ReactNode) => <div className="flex justify-between gap-4 py-1.5"><dt className="text-neutral-500">{k}</dt><dd className="text-right font-medium">{v}</dd></div>;
 
@@ -37,10 +37,10 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
 
       <div className="mt-2 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-5">
-          {o.total == null && o.fulfilment_status !== "cancelled" ? (
+          {o.delivery_fee == null && o.fulfilment_status !== "cancelled" ? (
             <section className="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
               <h2 className="text-lg">Set the delivery fee</h2>
-              <p className="mt-1 text-sm text-amber-900">No fee is set for {o.state}. The customer was told not to pay until this is confirmed. Agree the fee with the customer, enter it here, then send them the WhatsApp message.</p>
+              <p className="mt-1 text-sm text-amber-900">Agree the delivery charge with the customer, record it here, then send the separate delivery payment message.</p>
               <form action={setDeliveryFeeAction} className="mt-3 flex flex-wrap gap-2">
                 <input type="hidden" name="id" value={o.id} />
                 <input name="fee" inputMode="numeric" placeholder="Delivery fee in ₦" className="admin-input w-48" required />
@@ -60,7 +60,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
             <dl className="mt-3 border-t border-neutral-200 pt-2 text-sm">
               {row("Subtotal", naira(o.subtotal))}
               {row(`Delivery (${o.state})`, o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
-              {row("Total", <span className="text-lg">{o.total != null ? naira(o.total) : "—"}</span>)}
+              {row("Total including delivery", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}
             </dl>
           </section>
 
@@ -79,13 +79,13 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
             </dl>
             {o.payment_status !== "paid" ? (
               <div className="mt-4 rounded-lg bg-neutral-50 p-4">
-                <p className="text-sm font-semibold">Check your {bank.bank} account for {o.total != null ? naira(o.total) : "the total"} before you confirm.</p>
+                <p className="text-sm font-semibold">Check your {bank.bank} account for the product payment of {naira(o.subtotal)} before you confirm.</p>
                 <p className="mt-1 text-xs text-neutral-500">A receipt or reference from the customer is not proof of payment. Confirm only when you see the money in the account.</p>
                 <form action={verifyPaymentAction} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={o.id} />
-                  <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {o.total != null ? naira(o.total) : "this payment"} arrive in the bank account for this order.</label>
+                  <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(o.subtotal)} arrive for the products in this order.</label>
                   <input name="note" placeholder="Note (optional), for example bank reference" className="admin-input" />
-                  <button className="admin-btn" disabled={o.total == null}>Confirm payment: mark as Paid</button>
+                  <button className="admin-btn">Confirm product payment</button>
                 </form>
                 {o.payment_status !== "payment_failed" ? (
                   <form action={markPaymentFailedAction} className="mt-3 flex flex-wrap gap-2 border-t border-neutral-200 pt-3">
@@ -100,6 +100,24 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
                 <input type="hidden" name="id" value={o.id} />
                 <input name="note" placeholder="Reason" className="admin-input max-w-xs" required />
                 <button className="admin-btn-danger">Undo payment confirmation</button>
+              </form>
+            ) : null}
+          </section>
+
+          <section className="rounded-xl border border-neutral-200 bg-white p-5">
+            <h2 className="text-lg">Delivery payment</h2>
+            <dl className="mt-2 text-sm">
+              {row("Delivery fee", o.delivery_fee == null ? "Not set" : naira(o.delivery_fee))}
+              {row("Status", DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)] || String(o.delivery_payment_status))}
+              {row("Reference", String(o.delivery_payment_reference || "—"))}
+              {row("Confirmed", String(o.delivery_paid_at || "Not confirmed"))}
+            </dl>
+            {o.delivery_fee != null && o.delivery_payment_status !== "paid" ? (
+              <form action={markDeliveryPaidAction} className="mt-3 space-y-2 rounded-lg bg-neutral-50 p-4">
+                <input type="hidden" name="id" value={o.id} />
+                <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(o.delivery_fee)} arrive for delivery.</label>
+                <input name="reference" placeholder="Delivery payment reference (optional)" className="admin-input" />
+                <button className="admin-btn">Confirm delivery payment</button>
               </form>
             ) : null}
           </section>
@@ -140,7 +158,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
             <p className="mt-1 text-sm">{o.address}<br />{o.city}, {o.state}</p>
             {o.instructions ? <p className="mt-2 rounded bg-neutral-50 p-2 text-sm">Instructions: {o.instructions}</p> : null}
             <div className="mt-4 grid gap-2">
-              {feeMsg && o.payment_status === "pending_payment" ? <a href={feeMsg} target="_blank" rel="noopener noreferrer" className="admin-btn bg-[#1FA855] hover:bg-[#178a45]">WhatsApp: send final total</a> : null}
+              {feeMsg && o.delivery_payment_status !== "paid" ? <a href={feeMsg} target="_blank" rel="noopener noreferrer" className="admin-btn bg-[#1FA855] hover:bg-[#178a45]">WhatsApp: request delivery fee</a> : null}
               {o.payment_status === "paid" ? <a href={paidMsg} target="_blank" rel="noopener noreferrer" className="admin-btn bg-[#1FA855] hover:bg-[#178a45]">WhatsApp: payment confirmed</a> : null}
               <a href={waMsg(`Hello ${o.customer_name}. This is ${storeName} about your order ${o.number}.`)} target="_blank" rel="noopener noreferrer" className="admin-btn-ghost">Open WhatsApp chat</a>
             </div>

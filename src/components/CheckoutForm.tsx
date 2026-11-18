@@ -14,7 +14,7 @@ type Errors = Record<string, string>;
 export default function CheckoutForm({ states }: { states: string[]; statesWithFee: string[] }) {
   const { lines, ready, clear } = useCart();
   const [state, setState] = useState("");
-  const { quote, loading } = useQuote(state);
+  const { quote } = useQuote(state);
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState("");
@@ -41,7 +41,6 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
 
   const unavailable = quote?.lines.filter((l) => !l.available) || [];
   const missing = quote ? lines.length - quote.lines.length : 0;
-  const feeKnown = !!state && quote?.deliveryFee != null;
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -167,14 +166,10 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
             </ul>
             <dl className="mt-3 space-y-2 border-t border-neutral-200 pt-4 text-[15px]">
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery</dt>
-                <dd className="text-right">{!state ? <span className="text-neutral-500">Choose your state</span> : loading ? "…" : feeKnown ? <span className="font-semibold">{naira(quote!.deliveryFee!)}</span> : <span className="font-medium text-amber-700">To be confirmed</span>}</dd>
-              </div>
-              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Total</dt><dd className="font-bold">{feeKnown && quote?.total != null ? naira(quote.total) : quote ? `${naira(quote.subtotal)} + delivery` : "…"}</dd></div>
+              <div className="flex justify-between"><dt className="text-neutral-600">Delivery</dt><dd className="text-right font-medium text-amber-700">Confirmed separately</dd></div>
+              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
             </dl>
-            {state && !loading && !feeKnown ? (
-              <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> We have not set a delivery fee for {state} yet. Place your order and we will confirm the fee with you. Do not pay until your order page shows the final amount.</p>
-            ) : null}
+            <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> Delivery fee will be confirmed separately after your order. You can pay for your products now. We will contact you with the delivery charge.</p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
             <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0} className="btn btn-primary mt-5 w-full text-base">

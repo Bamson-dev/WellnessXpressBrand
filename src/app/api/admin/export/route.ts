@@ -20,11 +20,11 @@ export async function GET() {
     byOrder.set(k, [...(byOrder.get(k) || []), `${i.qty} x ${i.name} (${i.variant_label}) @ ${i.unit_price}`]);
   }
   const head = ["Order number", "Date", "Customer", "Phone", "WhatsApp", "Email", "State", "City/LGA", "Address", "Items", "Subtotal", "Delivery fee", "Total",
-    "Payment status", "Fulfilment status", "Payment reference", "Payer name", "Paid at", "Verified by", "Admin notes"];
+    "Product payment status", "Delivery payment status", "Delivery payment reference", "Delivery paid at", "Fulfilment status", "Product payment reference", "Payer name", "Product paid at", "Verified by", "Admin notes"];
   const rows = orders.map((o) => [o.number, o.created_at, o.customer_name, o.phone, o.whatsapp, o.email, o.state, o.city, o.address,
     (byOrder.get(Number(o.id)) || []).join("; "), o.subtotal, o.delivery_fee ?? "To be confirmed", o.total ?? "",
-    PAYMENT_STATUS[String(o.payment_status)] || o.payment_status, FULFILMENT_STATUS[String(o.fulfilment_status)] || o.fulfilment_status,
-    o.payment_reference, o.payer_name, o.paid_at || "", o.verified_by, o.admin_notes]);
+    PAYMENT_STATUS[String(o.payment_status)] || o.payment_status, String(o.delivery_payment_status), o.delivery_payment_reference, o.delivery_paid_at || "",
+    FULFILMENT_STATUS[String(o.fulfilment_status)] || o.fulfilment_status, o.payment_reference, o.payer_name, o.paid_at || "", o.verified_by, o.admin_notes]);
   const csv = "﻿" + [head, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
   return new Response(csv, {
     headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="wellnessxpress-orders-${new Date().toISOString().slice(0, 10)}.csv"`, "Cache-Control": "no-store" },

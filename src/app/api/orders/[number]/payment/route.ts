@@ -20,7 +20,6 @@ export async function POST(req: Request, { params }: { params: { number: string 
   if (!form) return Response.json({ error: "Invalid request." }, { status: 400 });
   const order = getOrderForCustomer(params.number, clean(form.get("t"), 80));
   if (!order) return Response.json({ error: "Order not found." }, { status: 404 });
-  if (order.total == null) return Response.json({ error: "Your delivery fee has not been confirmed yet. Wait for the final amount before you pay." }, { status: 409 });
   if (!["pending_payment", "payment_failed", "awaiting_verification"].includes(order.payment_status) || order.fulfilment_status === "cancelled")
     return Response.json({ error: "This order is not waiting for payment." }, { status: 409 });
 

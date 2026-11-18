@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { listOrders } from "@/lib/orders";
-import { FULFILMENT_STATUS, PAYMENT_STATUS, naira } from "@/lib/site";
+import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, naira } from "@/lib/site";
 
 export const metadata = { title: "Orders" };
 const PAY_FILTERS = [["", "All"], ["awaiting_verification", "Awaiting verification"], ["pending_payment", "Pending payment"], ["awaiting_fee", "Need delivery fee"], ["paid", "Paid"], ["payment_failed", "Payment failed"]];
@@ -37,7 +37,7 @@ export default async function Orders({ searchParams }: { searchParams: { payment
       </form>
       <div className="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-neutral-500"><tr><th className="p-3">Order</th><th className="p-3">Date</th><th className="p-3">Customer</th><th className="p-3">State</th><th className="p-3">Total</th><th className="p-3">Payment</th><th className="p-3">Fulfilment</th></tr></thead>
+          <thead className="bg-neutral-50 text-left text-neutral-500"><tr><th className="p-3">Order</th><th className="p-3">Date</th><th className="p-3">Customer</th><th className="p-3">State</th><th className="p-3">Product subtotal</th><th className="p-3">Product payment</th><th className="p-3">Delivery payment</th><th className="p-3">Fulfilment</th></tr></thead>
           <tbody>
             {rows.length ? rows.map((o) => (
               <tr key={o.id} className="border-t border-neutral-100 hover:bg-neutral-50">
@@ -45,11 +45,12 @@ export default async function Orders({ searchParams }: { searchParams: { payment
                 <td className="whitespace-nowrap p-3 text-neutral-500">{o.created_at}</td>
                 <td className="p-3">{o.customer_name}<br /><span className="text-neutral-500">{o.phone}</span></td>
                 <td className="p-3">{o.state}</td>
-                <td className="whitespace-nowrap p-3">{o.total != null ? naira(o.total) : <span className="text-amber-700">Fee needed</span>}</td>
+                <td className="whitespace-nowrap p-3">{naira(o.subtotal)}</td>
                 <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${o.payment_status === "paid" ? "bg-brand-50 text-brand-900" : o.payment_status === "awaiting_verification" ? "bg-amber-100 text-amber-900" : o.payment_status === "payment_failed" ? "bg-red-50 text-red-800" : "bg-neutral-100"}`}>{PAYMENT_STATUS[o.payment_status]}</span></td>
+                <td className="p-3">{o.delivery_fee == null ? "To be confirmed" : naira(o.delivery_fee)}<br /><span className="text-xs text-neutral-500">{DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)]}</span></td>
                 <td className="p-3">{FULFILMENT_STATUS[o.fulfilment_status]}</td>
               </tr>
-            )) : <tr><td colSpan={7} className="p-6 text-neutral-500">No orders match.</td></tr>}
+            )) : <tr><td colSpan={8} className="p-6 text-neutral-500">No orders match.</td></tr>}
           </tbody>
         </table>
       </div>

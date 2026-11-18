@@ -38,6 +38,7 @@ export default async function Dashboard({ searchParams }: { searchParams: { deni
         {card("Awaiting verification", st.awaiting, "/admin/orders?payment=awaiting_verification", st.awaiting ? "text-amber-700" : "")}
         {card("Pending payment", st.pending, "/admin/orders?payment=pending_payment")}
         {card("Need delivery fee", st.awaitingFee, "/admin/orders?payment=awaiting_fee", st.awaitingFee ? "text-amber-700" : "")}
+        {card("Delivery payment pending", st.awaitingDeliveryPayment, "/admin/orders?payment=awaiting_fee", st.awaitingDeliveryPayment ? "text-amber-700" : "")}
         {card("Verified payments", st.paid, "/admin/orders?payment=paid")}
         {card("Sales (paid)", naira(st.sales))}
         {card("Customers", st.customers, "/admin/customers")}

@@ -2,7 +2,7 @@ import "server-only";
 import { randomBytes, timingSafeEqual } from "crypto";
 import { db, tx } from "@/lib/db";
 import { quoteLines } from "@/lib/catalog";
-import { deliveryFeeFor, getBank } from "@/lib/settings";
+import { getBank } from "@/lib/settings";
 import { NIGERIAN_STATES, normalisePhone } from "@/lib/site";
 import { clean, isEmail } from "@/lib/validate";
 
@@ -64,8 +64,9 @@ export function createOrder(input: CheckoutInput) {
   if (Object.keys(errors).length) return { ok: false as const, errors };
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
-  const fee = deliveryFeeFor(state);
-  const total = fee == null ? null : subtotal + fee;
+  // Product payment is collected first. Delivery is agreed and paid separately.
+  const fee = null;
+  const total = null;
   const bank = getBank();
 
   return tx((d) => {
@@ -79,8 +80,8 @@ export function createOrder(input: CheckoutInput) {
     const token = randomBytes(24).toString("base64url");
     const r = d
       .prepare(
-        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,bank_snapshot,tracking)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,bank_snapshot,tracking)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'not_set',?,?)`
       )
       .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, JSON.stringify(bank), JSON.stringify(trackingOf(input)));
     const oid = Number(r.lastInsertRowid);
@@ -90,7 +91,7 @@ export function createOrder(input: CheckoutInput) {
       d.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL").run(l.qty, l.variantId);
     }
     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
-      oid, "customer", "order_placed", fee == null ? "Delivery fee not set for " + state + ". Awaiting fee confirmation." : ""
+      oid, "customer", "order_placed", "Product payment due: ₦" + subtotal.toLocaleString("en-NG") + ". Delivery fee will be confirmed separately."
     );
     return { ok: true as const, number, token, total, subtotal, fee };
   });
@@ -139,7 +140,7 @@ export type OrderFilter = { payment?: string; fulfilment?: string; q?: string; l
 export function listOrders(f: OrderFilter = {}) {
   const w: string[] = [];
   const p: unknown[] = [];
-  if (f.payment === "awaiting_fee") w.push("total IS NULL AND payment_status = 'pending_payment' AND fulfilment_status != 'cancelled'");
+  if (f.payment === "awaiting_fee") w.push("delivery_payment_status IN ('not_set','pending') AND fulfilment_status != 'cancelled'");
   else if (f.payment) { w.push("payment_status = ?"); p.push(f.payment); }
   if (f.fulfilment) { w.push("fulfilment_status = ?"); p.push(f.fulfilment); }
   if (f.q) {
@@ -158,10 +159,11 @@ export function dashboardStats() {
   return {
     total: q("SELECT COUNT(*) c FROM orders").c,
     pending: q("SELECT COUNT(*) c FROM orders WHERE payment_status='pending_payment' AND fulfilment_status!='cancelled'").c,
-    awaitingFee: q("SELECT COUNT(*) c FROM orders WHERE total IS NULL AND payment_status='pending_payment' AND fulfilment_status!='cancelled'").c,
+    awaitingFee: q("SELECT COUNT(*) c FROM orders WHERE delivery_fee IS NULL AND fulfilment_status!='cancelled'").c,
+    awaitingDeliveryPayment: q("SELECT COUNT(*) c FROM orders WHERE delivery_payment_status='pending' AND fulfilment_status!='cancelled'").c,
     awaiting: q("SELECT COUNT(*) c FROM orders WHERE payment_status='awaiting_verification'").c,
     paid: q("SELECT COUNT(*) c FROM orders WHERE payment_status='paid'").c,
-    sales: q("SELECT COALESCE(SUM(total),0) s FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled'").s,
+    sales: q("SELECT COALESCE(SUM(subtotal),0) s FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled'").s,
     customers: q("SELECT COUNT(DISTINCT phone) c FROM orders").c,
   };
 }
