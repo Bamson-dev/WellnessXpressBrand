@@ -127,7 +127,7 @@ const catalogue: P[] = [
     short: "Tummy Balance (Big) and Detox Seed.",
     description: "The Tummy Set contains Tummy Balance (Big) and Detox Seed.",
     images: [`${IMG}/combos/tummy-set.webp`], status: "published", featured: true,
-    review: "₦25,500 from list B. No Detox Seed photograph supplied, so the set image shows Tummy Balance only. Upload a Detox Seed photo when available.",
+    review: "₦25,500 from list B. The Detox Seed artwork is an edited visual reference; confirm it matches the actual package before treating the packaging as final.",
     variants: [{ label: "Set", price: 25500, source: B }],
     items: [{ slug: "tummy-balance", name: "Tummy Balance", size: "Big" }, { slug: "detox-seed", name: "Detox Seed" }],
   },
