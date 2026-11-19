@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 
 export const metadata = { title: "Activity log" };
 
-export default async function Activity({ searchParams }: { searchParams: { q?: string } }) {
+export default async function Activity(props: { searchParams: Promise<{ q?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("activity");
   const q = (searchParams.q || "").trim().slice(0, 100);
   const like = `%${q.replace(/[\\%_]/g, (c) => "\\" + c)}%`;

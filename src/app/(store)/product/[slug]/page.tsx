@@ -16,7 +16,8 @@ import { TrackView } from "@/components/pixel";
 import { IconBank, IconChevron, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 import { naira, site } from "@/lib/site";
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const p = getProduct(params.slug);
   if (!p) return { title: "Product not found", robots: { index: false } };
   const r = priceRange(p);
@@ -30,7 +31,11 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default async function ProductPage({ params, searchParams }: { params: { slug: string }; searchParams: { preview?: string } }) {
+export default async function ProductPage(
+  props: { params: Promise<{ slug: string }>; searchParams: Promise<{ preview?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const preview = searchParams.preview === "1" && !!(await currentAdmin());
   const p = getProduct(params.slug, { includeUnpublished: preview });
   if (!p) {

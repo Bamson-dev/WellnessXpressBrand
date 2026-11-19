@@ -7,7 +7,8 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "SEO" };
 
-export default async function Seo({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function Seo(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("seo");
   const seo = getSeo();
   const issues = seoIssues();

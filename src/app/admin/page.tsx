@@ -11,7 +11,8 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function Dashboard({ searchParams }: { searchParams: { denied?: string } }) {
+export default async function Dashboard(props: { searchParams: Promise<{ denied?: string }> }) {
+  const searchParams = await props.searchParams;
   const a = await requireAdmin();
   if (!can(a, "dashboard")) {
     const first = ADMIN_NAV.find((n) => n.href !== "/admin" && can(a, n.perm));

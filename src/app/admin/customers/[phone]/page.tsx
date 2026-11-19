@@ -8,7 +8,11 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "Customer" };
 
-export default async function CustomerPage({ params, searchParams }: { params: { phone: string }; searchParams: { msg?: string } }) {
+export default async function CustomerPage(
+  props: { params: Promise<{ phone: string }>; searchParams: Promise<{ msg?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requirePerm("customers");
   const c = getCustomer(params.phone);
   if (!c) notFound();

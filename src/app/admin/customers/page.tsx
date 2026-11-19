@@ -5,7 +5,10 @@ import { displayPhone, naira } from "@/lib/site";
 
 export const metadata = { title: "Customers" };
 
-export default async function Customers({ searchParams }: { searchParams: { q?: string; sort?: string; page?: string } }) {
+export default async function Customers(
+  props: { searchParams: Promise<{ q?: string; sort?: string; page?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const a = await requirePerm("customers");
   const q = (searchParams.q || "").trim().slice(0, 80);
   const sort = ["spend", "orders", "outstanding"].includes(searchParams.sort || "") ? searchParams.sort! : "";

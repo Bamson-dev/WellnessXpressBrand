@@ -5,7 +5,8 @@ import { logAdminActivity } from "@/lib/admin-events";
 export const dynamic = "force-dynamic";
 
 /** Admin PDF download. Creates the invoice number the first time it is requested. */
-export async function GET(_: Request, { params }: { params: { orderId: string } }) {
+export async function GET(_: Request, props: { params: Promise<{ orderId: string }> }) {
+  const params = await props.params;
   const a = await currentAdmin();
   if (!can(a, "invoices")) return new Response("Not found", { status: 404 });
   const id = Number(params.orderId);

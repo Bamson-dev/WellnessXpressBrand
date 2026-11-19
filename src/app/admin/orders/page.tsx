@@ -6,7 +6,10 @@ import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, naira } fro
 export const metadata = { title: "Orders" };
 const PAY_FILTERS = [["", "All"], ["awaiting_verification", "Awaiting verification"], ["pending_payment", "Pending payment"], ["awaiting_fee", "Need delivery fee (old orders)"], ["paid", "Paid"], ["to_dispatch", "Paid, not dispatched"], ["payment_failed", "Payment failed"]];
 
-export default async function Orders({ searchParams }: { searchParams: { payment?: string; fulfilment?: string; q?: string; page?: string } }) {
+export default async function Orders(
+  props: { searchParams: Promise<{ payment?: string; fulfilment?: string; q?: string; page?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requirePerm("orders");
   const page = Math.max(1, Number(searchParams.page) || 1);
   const payment = PAY_FILTERS.some(([k]) => k === searchParams.payment) ? searchParams.payment : "";

@@ -10,8 +10,12 @@ import { IconCheck, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons
 
 export const metadata: Metadata = { title: "Your order", robots: { index: false, follow: false } };
 
-export default function OrderPage({ params, searchParams }: { params: { number: string }; searchParams: { t?: string; new?: string } }) {
-  const token = searchParams.t || cookies().get(`wx_ot_${params.number}`)?.value || "";
+export default async function OrderPage(
+  props: { params: Promise<{ number: string }>; searchParams: Promise<{ t?: string; new?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const token = searchParams.t || (await cookies()).get(`wx_ot_${params.number}`)?.value || "";
   const o = getOrderForCustomer(params.number, token);
   const contact = getContact();
   if (!o) {

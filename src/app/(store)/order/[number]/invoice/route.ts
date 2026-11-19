@@ -5,7 +5,8 @@ import { ensureInvoice, invoiceFor, invoicePdf } from "@/lib/invoices";
 export const dynamic = "force-dynamic";
 
 /** Customer PDF invoice. Needs the private order link token (query or the order cookie), like the order page. */
-export async function GET(req: Request, { params }: { params: { number: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ number: string }> }) {
+  const params = await props.params;
   const token = new URL(req.url).searchParams.get("t") || (await cookies()).get(`wx_ot_${params.number}`)?.value || "";
   const o = getOrderForCustomer(params.number, token);
   if (!o) return new Response("Not found", { status: 404 });

@@ -4,7 +4,8 @@ import { naira } from "@/lib/site";
 
 export const metadata = { title: "Sales analytics" };
 
-export default async function Analytics({ searchParams }: { searchParams: { from?: string; to?: string } }) {
+export default async function Analytics(props: { searchParams: Promise<{ from?: string; to?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("analytics");
   const range = analyticsRange(searchParams.from, searchParams.to);
   const data = salesAnalytics(range);

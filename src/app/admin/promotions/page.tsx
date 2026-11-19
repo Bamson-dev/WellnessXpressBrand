@@ -17,7 +17,8 @@ function CouponUsage({ id, code }: { id: number; code: string }) {
   return <details className="mt-2 text-sm"><summary className="cursor-pointer font-semibold">Usage history ({rows.length})</summary><ul className="mt-1 space-y-1">{rows.map((r) => <li key={String(r.id)}><a href={`/admin/orders/${r.id}`} className="text-brand-700 underline">{String(r.number)}</a> · {String(r.customer_name)} · −₦{Number(r.discount_amount).toLocaleString("en-NG")} · {String(r.created_at).slice(0, 10)} · {r.fulfilment_status === "cancelled" ? "cancelled (use released)" : r.payment_status === "paid" ? "paid" : "unpaid"}{Number(r.counted) ? "" : " · not counted"}</li>)}</ul></details>;
 }
 
-export default async function Promotions({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function Promotions(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("coupons");
   const coupons = db().prepare("SELECT c.*, (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id=c.id) uses FROM coupons c ORDER BY c.id DESC").all();
   const products = allProductsAdmin();

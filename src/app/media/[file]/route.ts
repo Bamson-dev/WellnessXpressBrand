@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 const TYPES: Record<string, string> = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" };
 
 /** Serves product images uploaded through the admin dashboard. File names are random and validated. */
-export async function GET(_req: Request, { params }: { params: { file: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ file: string }> }) {
+  const params = await props.params;
   const name = params.file;
   if (!/^[a-f0-9]{24}\.(jpg|png|webp)$/.test(name)) return new Response("Not found", { status: 404 });
   try {

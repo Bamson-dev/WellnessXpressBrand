@@ -8,7 +8,8 @@ import PrintButton from "@/components/admin/PrintButton";
 
 export const metadata = { title: "Invoice" };
 
-export default async function InvoicePage({ params }: { params: { orderId: string } }) {
+export default async function InvoicePage(props: { params: Promise<{ orderId: string }> }) {
+  const params = await props.params;
   const a = await requirePerm("invoices");
   const id = Number(params.orderId);
   if (!Number.isSafeInteger(id) || !ensureInvoice(id, a.email)) notFound();

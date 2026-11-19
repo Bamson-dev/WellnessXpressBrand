@@ -5,7 +5,8 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "Media library" };
 
-export default async function MediaPage({ searchParams }: { searchParams: { msg?: string; q?: string } }) {
+export default async function MediaPage(props: { searchParams: Promise<{ msg?: string; q?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("media");
   const q = (searchParams.q || "").slice(0, 60);
   const items = listMedia(q);

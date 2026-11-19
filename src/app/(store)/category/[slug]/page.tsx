@@ -4,7 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { getCategories, getCategoryRedirect } from "@/lib/catalog";
 import ShopGrid from "@/components/ShopGrid";
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const c = getCategories().find((x) => x.slug === params.slug);
   if (!c) {
     const target = getCategoryRedirect(params.slug);
@@ -15,7 +16,11 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
     robots: c.noindex ? { index: false, follow: true } : undefined } : {};
 }
 
-export default function Category({ params, searchParams }: { params: { slug: string }; searchParams: Record<string, string> }) {
+export default async function Category(
+  props: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const c = getCategories().find((x) => x.slug === params.slug);
   if (!c) {
     const target = getCategoryRedirect(params.slug);

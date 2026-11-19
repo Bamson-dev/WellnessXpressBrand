@@ -6,7 +6,10 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "Invoices" };
 
-export default async function Invoices({ searchParams }: { searchParams: { q?: string; status?: string; page?: string; msg?: string } }) {
+export default async function Invoices(
+  props: { searchParams: Promise<{ q?: string; status?: string; page?: string; msg?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requirePerm("invoices");
   const q = (searchParams.q || "").trim().slice(0, 80);
   const status = ["paid", "unpaid", "cancelled"].includes(searchParams.status || "") ? searchParams.status : "";

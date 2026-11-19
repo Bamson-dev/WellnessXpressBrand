@@ -7,7 +7,10 @@ import { naira } from "@/lib/site";
 
 export const metadata = { title: "Products" };
 
-export default async function Products({ searchParams }: { searchParams: { msg?: string; q?: string; status?: string; type?: string; stock?: string; sort?: string; category?: string; featured?: string; page?: string } }) {
+export default async function Products(
+  props: { searchParams: Promise<{ msg?: string; q?: string; status?: string; type?: string; stock?: string; sort?: string; category?: string; featured?: string; page?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requirePerm("products");
   const q = (searchParams.q || "").trim().toLowerCase();
   const status = searchParams.status || "all";

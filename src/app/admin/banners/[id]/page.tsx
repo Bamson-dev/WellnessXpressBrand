@@ -9,7 +9,11 @@ import UnsavedGuard from "@/components/admin/UnsavedGuard";
 
 export const metadata = { title: "Banner" };
 
-export default async function BannerEdit({ params, searchParams }: { params: { id: string }; searchParams: { msg?: string } }) {
+export default async function BannerEdit(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requirePerm("banners");
   const isNew = params.id === "new";
   const b = isNew ? null : getBanner(Number(params.id));

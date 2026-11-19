@@ -9,7 +9,11 @@ import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOr
 
 export const metadata = { title: "Edit product" };
 
-export default async function EditProduct({ params, searchParams }: { params: { id: string }; searchParams: { msg?: string } }) {
+export default async function EditProduct(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   await requirePerm("products");
   const p = getProductById(Number(params.id));
   if (!p) notFound();

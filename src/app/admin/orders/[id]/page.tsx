@@ -9,7 +9,11 @@ import { markDeliveryPaidAction, saveDispatchAction, markPaymentFailedAction, sa
 
 export const metadata = { title: "Order" };
 
-export default async function OrderDetail({ params, searchParams }: { params: { id: string }; searchParams: { msg?: string } }) {
+export default async function OrderDetail(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const a = await requirePerm("orders");
   const o = getOrderById(Number(params.id));
   if (!o) notFound();

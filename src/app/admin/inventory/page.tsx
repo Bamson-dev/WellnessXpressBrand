@@ -8,7 +8,10 @@ export const metadata = { title: "Inventory" };
 const BADGE: Record<string, string> = { out: "bg-red-50 text-red-800", low: "bg-amber-100 text-amber-900", ok: "bg-brand-50 text-brand-900", untracked: "bg-neutral-100 text-neutral-600" };
 const LABEL: Record<string, string> = { out: "Out of stock", low: "Low stock", ok: "In stock", untracked: "Not tracked" };
 
-export default async function Inventory({ searchParams }: { searchParams: { q?: string; status?: string; msg?: string; v?: string } }) {
+export default async function Inventory(
+  props: { searchParams: Promise<{ q?: string; status?: string; msg?: string; v?: string }> }
+) {
+  const searchParams = await props.searchParams;
   await requirePerm("inventory");
   const q = (searchParams.q || "").slice(0, 60);
   const status = Object.keys(LABEL).includes(searchParams.status || "") ? searchParams.status : "";

@@ -8,7 +8,8 @@ import Flash from "@/components/admin/Flash";
 export const metadata = { title: "Banners and homepage" };
 type Hero = { title: string; accent: string; text: string; primaryLabel: string; primaryUrl: string; secondaryLabel: string; secondaryUrl: string };
 
-export default async function Banners({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function Banners(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("banners");
   const banners = allBanners();
   const hero = getSetting<Hero>("homeHero");

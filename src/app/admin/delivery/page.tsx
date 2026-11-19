@@ -7,7 +7,8 @@ import UnsavedGuard from "@/components/admin/UnsavedGuard";
 
 export const metadata = { title: "Delivery" };
 
-export default async function Delivery({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function Delivery(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("delivery");
   const zones = deliveryZones();
   const covered = zones.filter((z) => z.active).length;

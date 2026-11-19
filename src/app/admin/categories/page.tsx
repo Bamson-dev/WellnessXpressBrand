@@ -5,7 +5,8 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "Categories" };
 
-export default async function CategoriesPage({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function CategoriesPage(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("categories");
   const categories = getCategories(true);
   const Label = ({ children }: { children: React.ReactNode }) => <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</span>;

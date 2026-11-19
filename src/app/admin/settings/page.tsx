@@ -5,7 +5,8 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "Settings" };
 
-export default async function Settings({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function Settings(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("settings");
   const bank = getBank();
   const c = getContact();

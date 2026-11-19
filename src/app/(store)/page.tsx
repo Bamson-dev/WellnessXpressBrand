@@ -21,7 +21,8 @@ export function generateMetadata(): Metadata {
 
 type Hero = { title: string; accent: string; text: string; primaryLabel: string; primaryUrl: string; secondaryLabel: string; secondaryUrl: string };
 
-export default async function Home({ searchParams }: { searchParams: { bannerPreview?: string } }) {
+export default async function Home(props: { searchParams: Promise<{ bannerPreview?: string }> }) {
+  const searchParams = await props.searchParams;
   const hero = getSetting<Hero>("homeHero");
   const previewId = Number(searchParams.bannerPreview);
   const preview = previewId > 0 && can(await currentAdmin(), "banners") ? getBanner(previewId) : null;

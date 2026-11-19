@@ -13,7 +13,8 @@ const MAX = 5 * 1024 * 1024;
  * Customer payment confirmation. This only moves an order to "Awaiting Verification".
  * A receipt or reference never marks an order paid; an admin must verify the money in the bank account.
  */
-export async function POST(req: Request, { params }: { params: { number: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ number: string }> }) {
+  const params = await props.params;
   if (!sameOrigin(req)) return Response.json({ error: "Invalid request." }, { status: 403 });
   if (limited("pc:" + ipOf(req), 8)) return Response.json({ error: "Too many attempts. Wait a minute and try again." }, { status: 429 });
   const form = await req.formData().catch(() => null);

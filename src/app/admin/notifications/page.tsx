@@ -6,7 +6,8 @@ import Flash from "@/components/admin/Flash";
 
 export const metadata = { title: "Notifications" };
 
-export default async function Notifications({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function Notifications(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   await requirePerm("notifications");
   const rows = db().prepare("SELECT * FROM admin_notifications ORDER BY (read_at IS NULL) DESC,id DESC LIMIT 250").all();
   const unread = rows.filter((row) => row.read_at == null).length;

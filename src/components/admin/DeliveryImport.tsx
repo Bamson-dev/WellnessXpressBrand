@@ -1,5 +1,6 @@
 "use client";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { applyDeliveryImportAction, previewDeliveryImportAction } from "@/app/admin/actions";
 
 type Preview = { error?: string; rows?: { state: string; active: boolean; eta: string; note: string; internalNote: string }[]; problems?: string[]; csv?: string } | null;
@@ -9,7 +10,7 @@ function Btn({ children, className = "admin-btn" }: { children: React.ReactNode;
 }
 
 export default function DeliveryImport() {
-  const [state, action] = useFormState<Preview, FormData>(previewDeliveryImportAction, null);
+  const [state, action] = useActionState<Preview, FormData>(previewDeliveryImportAction, null);
   return (
     <section className="mt-6 rounded-xl border border-neutral-200 bg-white p-5">
       <h2 className="text-lg">Import from CSV</h2>

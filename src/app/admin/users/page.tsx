@@ -17,7 +17,8 @@ function PermGrid({ checked, disabled }: { checked: string[]; disabled?: boolean
   );
 }
 
-export default async function Users({ searchParams }: { searchParams: { msg?: string } }) {
+export default async function Users(props: { searchParams: Promise<{ msg?: string }> }) {
+  const searchParams = await props.searchParams;
   const me = await requirePerm("staff");
   const users = db().prepare("SELECT id, email, name, role, active, permissions, created_at FROM users ORDER BY id").all();
   return (

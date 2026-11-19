@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 const TYPES: Record<string, string> = { jpg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf" };
 
 /** Payment receipts are private. Only signed-in admins can open them. */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!can(await currentAdmin(), "payments")) return new Response("Not found", { status: 404 });
   const o = getOrderById(Number(params.id));
   const name = o?.receipt_path || "";

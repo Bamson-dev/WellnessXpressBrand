@@ -46,9 +46,10 @@ const back = (url: string, msg?: string) => {
 /* ---------- auth ---------- */
 export async function loginAction(_: unknown, f: FormData) {
   const ip = ipOf({ headers: await headers() });
-  if (limited("login:" + ip, 6, 10 * 60_000)) return { error: "Too many attempts. Wait 10 minutes and try again." };
-  const ok = await login(s(f, "email", 254), String(f.get("password") || "").slice(0, 200));
-  if (!ok) return { error: "Email or password is not correct." };
+  const email = s(f, "email", 254);
+  if (limited("login:" + ip, 6, 10 * 60_000)) return { error: "Too many attempts. Wait 10 minutes and try again.", email };
+  const ok = await login(email, String(f.get("password") || "").slice(0, 200));
+  if (!ok) return { error: "Email or password is not correct.", email };
   redirect("/admin");
 }
 export async function logoutAction() {
