@@ -19,7 +19,7 @@ export default async function Dashboard({ searchParams }: { searchParams: { deni
   const persistent = storageIsPersistent();
   const checks = [
     { ok: bankIsComplete(getBank()), t: "Bank details set", href: "/admin/settings" },
-    { ok: zones > 0, t: zones ? `Delivery fees set for ${zones} state${zones === 1 ? "" : "s"}` : "No delivery fees set. Every order will wait for a fee confirmation.", href: "/admin/delivery" },
+    { ok: zones > 0, t: zones ? `Checkout open for ${zones} of 37 locations` : "No delivery fees set. Customers cannot check out until you add fees for their state.", href: "/admin/delivery" },
     { ok: flagged.length === 0, t: flagged.length ? `${flagged.length} price option${flagged.length === 1 ? "" : "s"} still need confirmation` : "All prices confirmed", href: "/admin/products" },
     { ok: persistent !== false, t: persistent ? "Order data is on a persistent volume" : persistent === null ? "Could not check the data volume" : "DATA_DIR is NOT on a persistent volume. Orders would be lost on redeploy.", href: "" },
     { ok: process.env.COMING_SOON !== "true", t: process.env.COMING_SOON !== "true" ? "Store is live" : "Store is hidden behind Coming Soon (COMING_SOON=true is set in Coolify)", href: "" },

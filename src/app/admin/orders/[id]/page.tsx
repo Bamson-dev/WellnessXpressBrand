@@ -111,7 +111,16 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
               {row("Status", DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)] || String(o.delivery_payment_status))}
               {row("Reference", String(o.delivery_payment_reference || "—"))}
               {row("Confirmed", String(o.delivery_paid_at || "Not confirmed"))}
+              {row("Fee source", o.delivery_fee_source === "state_settings" ? `Delivery settings for ${o.state} at checkout${o.delivery_eta ? ` · ${String(o.delivery_eta)}` : ""}` : o.delivery_fee_source === "admin" ? "Set by admin on this order" : "—")}
             </dl>
+            {o.delivery_fee != null && o.delivery_payment_status !== "paid" && o.fulfilment_status !== "cancelled" ? (
+              <form action={setDeliveryFeeAction} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <input type="hidden" name="id" value={o.id} />
+                <label htmlFor="newfee" className="text-neutral-600">Change fee for this order</label>
+                <input id="newfee" name="fee" inputMode="numeric" defaultValue={o.delivery_fee} className="admin-input w-32" required />
+                <button className="admin-btn-ghost">Update fee</button>
+              </form>
+            ) : null}
             {o.delivery_fee != null && o.delivery_payment_status !== "paid" ? (
               <form action={markDeliveryPaidAction} className="mt-3 space-y-2 rounded-lg bg-neutral-50 p-4">
                 <input type="hidden" name="id" value={o.id} />

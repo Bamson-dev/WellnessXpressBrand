@@ -2,7 +2,8 @@ import "server-only";
 import { randomBytes, timingSafeEqual } from "crypto";
 import { db, tx } from "@/lib/db";
 import { quoteLines } from "@/lib/catalog";
-import { getBank } from "@/lib/settings";
+import { deliveryQuote, getBank } from "@/lib/settings";
+import { recordMovement, releaseOrderStock } from "@/lib/inventory";
 import { NIGERIAN_STATES, normalisePhone } from "@/lib/site";
 import { clean, isEmail } from "@/lib/validate";
 
@@ -28,6 +29,7 @@ function orderNumber() {
 export type CheckoutInput = {
   name: unknown; phone: unknown; whatsapp: unknown; email: unknown; state: unknown; city: unknown; address: unknown; instructions: unknown;
   items: unknown;
+  clientKey?: unknown;
   tracking?: { fbp?: string; fbc?: string; ua?: string; ip?: string };
 };
 
@@ -47,6 +49,14 @@ export function createOrder(input: CheckoutInput) {
   if (waRaw && !whatsapp) errors.whatsapp = "Enter a valid WhatsApp number, or leave this empty.";
   if (email && !isEmail(email)) errors.email = "Enter a valid email address, or leave this empty.";
   if (!NIGERIAN_STATES.includes(state)) errors.state = "Choose your state.";
+  const delivery = deliveryQuote(state);
+  if (NIGERIAN_STATES.includes(state) && !delivery.available) errors.state = delivery.message;
+  const clientKey = /^[A-Za-z0-9_-]{16,64}$/.test(String(input.clientKey || "")) ? String(input.clientKey) : "";
+  if (clientKey) {
+    // Repeated submission of the same checkout (double tap, retry): return the existing order instead of creating another.
+    const existing = db().prepare("SELECT number, access_token, total, subtotal, delivery_fee FROM orders WHERE client_key = ?").get(clientKey);
+    if (existing) return { ok: true as const, duplicate: true, number: String(existing.number), token: String(existing.access_token), total: Number(existing.total), subtotal: Number(existing.subtotal), fee: existing.delivery_fee == null ? null : Number(existing.delivery_fee) };
+  }
   if (city.length < 2) errors.city = "Enter your city or local government area.";
   if (address.length < 8) errors.address = "Enter your full delivery address.";
 
@@ -64,9 +74,11 @@ export function createOrder(input: CheckoutInput) {
   if (Object.keys(errors).length) return { ok: false as const, errors };
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
-  // Product payment is collected first. Delivery is agreed and paid separately.
-  const fee = null;
-  const total = null;
+  // Product payment is collected first. The delivery fee comes from the admin's state settings (server-side only),
+  // is stored on the order as a snapshot, and is paid separately. It is never taken from the browser.
+  const fee = delivery.fee as number;
+  const total = subtotal + fee;
+  const deliveryStatus = fee > 0 ? "pending" : "paid";
   const bank = getBank();
 
   return tx((d) => {
@@ -80,20 +92,25 @@ export function createOrder(input: CheckoutInput) {
     const token = randomBytes(24).toString("base64url");
     const r = d
       .prepare(
-        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,bank_snapshot,tracking)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'not_set',?,?)`
+        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,
+           delivery_eta,delivery_fee_source,client_key,bank_snapshot,tracking)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'state_settings',?,?,?)`
       )
-      .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, JSON.stringify(bank), JSON.stringify(trackingOf(input)));
+      .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, deliveryStatus,
+        delivery.eta, clientKey, JSON.stringify(bank), JSON.stringify(trackingOf(input)));
     const oid = Number(r.lastInsertRowid);
     const insI = d.prepare("INSERT INTO order_items (order_id,product_id,variant_id,name,variant_label,sku,unit_price,qty,line_total) VALUES (?,?,?,?,?,?,?,?,?)");
     for (const l of lines) {
       insI.run(oid, l.productId, l.variantId, l.name, l.label, l.sku, l.unitPrice, l.qty, l.lineTotal);
-      d.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL").run(l.qty, l.variantId);
+      const u = d.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL AND stock >= ?").run(l.qty, l.variantId, l.qty);
+      const tracked = d.prepare("SELECT stock FROM variants WHERE id = ?").get(l.variantId)?.stock != null;
+      if (tracked && Number(u.changes) === 0) throw new Error(`stock:${l.name}`);
+      if (tracked) recordMovement(d, l.variantId, -l.qty, "order_reserved", `Order ${number}`, "customer", oid);
     }
     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
-      oid, "customer", "order_placed", "Product payment due: ₦" + subtotal.toLocaleString("en-NG") + ". Delivery fee will be confirmed separately."
+      oid, "customer", "order_placed", `Product payment due: ₦${subtotal.toLocaleString("en-NG")}. Delivery fee for ${state}: ₦${fee.toLocaleString("en-NG")} (paid separately).`
     );
-    return { ok: true as const, number, token, total, subtotal, fee };
+    return { ok: true as const, duplicate: false, number, token, total, subtotal, fee };
   });
 }
 
@@ -132,8 +149,9 @@ export function logEvent(orderId: number, actor: string, action: string, note = 
   db().prepare("UPDATE orders SET updated_at = datetime('now') WHERE id = ?").run(orderId);
 }
 
-export function restoreStock(orderId: number) {
-  for (const it of orderItems(orderId)) db().prepare("UPDATE variants SET stock = stock + ? WHERE id = ? AND stock IS NOT NULL").run(it.qty, it.variant_id);
+/** Kept for callers outside a transaction. Uses movement history so stock is never released twice. */
+export function restoreStock(orderId: number, actor = "system") {
+  tx((d) => releaseOrderStock(d, orderId, actor, "Order cancelled"));
 }
 
 export type OrderFilter = { payment?: string; fulfilment?: string; q?: string; limit?: number; offset?: number };

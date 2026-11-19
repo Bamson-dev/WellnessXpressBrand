@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { NIGERIAN_STATES } from "@/lib/site";
 import { DEFAULT_SETTINGS } from "@/lib/seed";
 
 export type Bank = { bank: string; accountName: string; accountNumber: string };
@@ -23,11 +24,32 @@ export function waLink(message: string, contact = getContact()) {
   return n ? `https://wa.me/${n}?text=${encodeURIComponent(message)}` : null;
 }
 
-export function deliveryFeeFor(state: string): number | null {
-  const r = db().prepare("SELECT fee, active FROM delivery_zones WHERE state = ?").get(state);
-  if (!r || Number(r.active) !== 1 || r.fee == null) return null;
-  return Number(r.fee);
+export type DeliveryZone = { state: string; fee: number | null; active: boolean; note: string; eta: string; updatedAt: string | null };
+
+/** All 36 states and FCT, in the official list order. Missing rows are reported as unavailable. */
+export function deliveryZones(): DeliveryZone[] {
+  const rows = new Map(db().prepare("SELECT * FROM delivery_zones").all().map((r) => [String(r.state), r]));
+  return NIGERIAN_STATES.map((st) => {
+    const r = rows.get(st);
+    return {
+      state: st, fee: r?.fee == null ? null : Number(r.fee), active: r ? Number(r.active) === 1 : false,
+      note: r ? String(r.note || "") : "", eta: r ? String(r.eta || "") : "", updatedAt: r?.updated_at ? String(r.updated_at) : null,
+    };
+  });
 }
-export function deliveryZones() {
-  return db().prepare("SELECT * FROM delivery_zones").all().map((r) => ({ state: String(r.state), fee: r.fee == null ? null : Number(r.fee), active: Number(r.active) === 1, note: String(r.note) }));
+
+export type DeliveryQuote = { state: string; available: boolean; fee: number | null; eta: string; message: string };
+
+/** Server-side delivery quote. The browser never supplies the fee. */
+export function deliveryQuote(state: string): DeliveryQuote {
+  if (!NIGERIAN_STATES.includes(state)) return { state, available: false, fee: null, eta: "", message: "Choose your state." };
+  const r = db().prepare("SELECT fee, active, eta FROM delivery_zones WHERE state = ?").get(state);
+  if (!r || r.fee == null) return { state, available: false, fee: null, eta: "", message: `Delivery to ${state} is not available yet. Message us on WhatsApp and we will help.` };
+  if (Number(r.active) !== 1) return { state, available: false, fee: null, eta: "", message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
+  return { state, available: true, fee: Number(r.fee), eta: String(r.eta || ""), message: "" };
+}
+
+export function deliveryFeeFor(state: string): number | null {
+  const q = deliveryQuote(state);
+  return q.available ? q.fee : null;
 }

@@ -13,6 +13,8 @@ const NAV = [
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/products", label: "Products", owner: true },
   { href: "/admin/categories", label: "Categories", owner: true },
+  { href: "/admin/media", label: "Media", owner: true },
+  { href: "/admin/inventory", label: "Inventory", owner: true },
   { href: "/admin/delivery", label: "Delivery fees", owner: true },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/messages", label: "Messages" },

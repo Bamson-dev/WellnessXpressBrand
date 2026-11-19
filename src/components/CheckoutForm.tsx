@@ -14,7 +14,7 @@ type Errors = Record<string, string>;
 export default function CheckoutForm({ states }: { states: string[]; statesWithFee: string[] }) {
   const { lines, ready, clear } = useCart();
   const [state, setState] = useState("");
-  const { quote } = useQuote(state);
+  const { quote, loading } = useQuote(state);
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState("");
@@ -22,6 +22,8 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
   const router = useRouter();
   const tracked = useRef(false);
   const placed = useRef(false);
+  const clientKey = useRef("");
+  if (!clientKey.current && typeof window !== "undefined") clientKey.current = (crypto.randomUUID?.() || String(Date.now()) + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9]/g, "").padEnd(16, "0").slice(0, 40);
 
   useEffect(() => {
     if (ready && lines.length && !tracked.current) {
@@ -40,6 +42,8 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
   }
 
   const unavailable = quote?.lines.filter((l) => !l.available) || [];
+  const delivery = state && quote?.delivery && quote.delivery.state === state ? quote.delivery : null;
+  const deliveryBlocked = !!state && !!delivery && !delivery.available;
   const missing = quote ? lines.length - quote.lines.length : 0;
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -50,11 +54,13 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
       name: fd.get("name"), phone: fd.get("phone"), whatsapp: diffWa ? fd.get("whatsapp") : "", email: fd.get("email"),
       state: fd.get("state"), city: fd.get("city"), address: fd.get("address"), instructions: fd.get("instructions"), company: fd.get("company"),
       items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
+      clientKey: clientKey.current,
     };
     const local: Errors = {};
     if (String(body.name || "").trim().length < 2) local.name = "Enter your full name.";
     if (!/^\d{10,13}$/.test(String(body.phone || "").replace(/\D/g, ""))) local.phone = "Enter your phone number, for example 0803 123 4567.";
     if (!body.state) local.state = "Choose your state.";
+    else if (deliveryBlocked) local.state = delivery!.message;
     if (String(body.city || "").trim().length < 2) local.city = "Enter your city or local government area.";
     if (String(body.address || "").trim().length < 8) local.address = "Enter your full delivery address.";
     if (Object.keys(local).length) { setErrors(local); focusFirst(local); return; }
@@ -117,11 +123,13 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="state" className="label">State</label>
-                <select id="state" name="state" value={state} onChange={(e) => setState(e.target.value)} className={`field ${errors.state ? "border-red-500" : ""}`} aria-invalid={!!errors.state} autoComplete="address-level1">
+                <select id="state" name="state" value={state} onChange={(e) => { setState(e.target.value); setErrors((er) => ({ ...er, state: "" })); }} className={`field ${errors.state ? "border-red-500" : ""}`} aria-invalid={!!errors.state} autoComplete="address-level1">
                   <option value="">Choose your state</option>
                   {states.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-                {errors.state ? <p className="err">{errors.state}</p> : null}
+                {errors.state ? <p className="err" role="alert">{errors.state}</p> : deliveryBlocked ? <p className="err" role="alert">{delivery!.message}</p> : delivery?.available ? (
+                  <p className="hint">Delivery to {state}: <strong className="text-ink">{naira(delivery.fee || 0)}</strong>{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
+                ) : null}
               </div>
               {field("city", "City or local government area", { autoComplete: "address-level2" })}
               <div className="sm:col-span-2">
@@ -166,13 +174,17 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
             </ul>
             <dl className="mt-3 space-y-2 border-t border-neutral-200 pt-4 text-[15px]">
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
-              <div className="flex justify-between"><dt className="text-neutral-600">Delivery</dt><dd className="text-right font-medium text-amber-700">Confirmed separately</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery{state ? ` (${state})` : ""}</dt>
+                <dd className="text-right">{!state ? <span className="text-neutral-500">Choose your state</span> : loading || !delivery ? "…" : delivery.available ? <span className="font-semibold">{naira(delivery.fee || 0)}</span> : <span className="font-medium text-red-700">Not available</span>}</dd>
+              </div>
+              {delivery?.available && delivery.eta ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery time</dt><dd className="text-right">{delivery.eta}</dd></div> : null}
+              {delivery?.available && quote ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Order total</dt><dd className="text-right font-semibold">{naira(quote.subtotal + (delivery.fee || 0))}</dd></div> : null}
               <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
             </dl>
-            <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> Delivery fee will be confirmed separately after your order. You can pay for your products now. We will contact you with the delivery charge.</p>
+            <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> {delivery?.available ? `You pay for your products now. The delivery fee of ${naira(delivery.fee || 0)} is paid separately; we send delivery payment details before dispatch.` : "You pay for your products now. The delivery fee for your state is shown here and paid separately before dispatch."}</p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
-            <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0} className="btn btn-primary mt-5 w-full text-base">
+            <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0 || deliveryBlocked} className="btn btn-primary mt-5 w-full text-base">
               {busy ? "Placing your order..." : "Place order"}
             </button>
             <p className="mt-3 flex gap-2 text-sm text-neutral-500"><IconShield className="h-4 w-4 shrink-0" /> No payment is taken on this page. You pay by bank transfer on the next page.</p>

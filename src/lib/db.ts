@@ -2,6 +2,7 @@ import "server-only";
 import path from "path";
 import fs from "fs";
 import { seedCatalogue, seedSettings } from "@/lib/seed";
+import { NIGERIAN_STATES } from "@/lib/site";
 
 /* node:sqlite is built into Node 22. We load it through the real Node require so webpack does not try to bundle it. */
 declare const __non_webpack_require__: NodeRequire;
@@ -12,9 +13,24 @@ type Stmt = {
 };
 export type DB = { exec: (sql: string) => void; prepare: (sql: string) => Stmt; close: () => void };
 
+/** Adds images already used by products/categories to the library so they get alt text and reference protection. */
+function registerExistingImages(d: DB) {
+  const urls = new Set<string>();
+  for (const r of d.prepare("SELECT images FROM products").all()) {
+    try { (JSON.parse(String(r.images)) as string[]).forEach((u) => urls.add(u)); } catch {}
+  }
+  for (const r of d.prepare("SELECT image FROM categories WHERE image != ''").all()) urls.add(String(r.image));
+  const ins = d.prepare("INSERT OR IGNORE INTO media (url, file, builtin, original_name) VALUES (?,?,?,?)");
+  for (const u of urls) {
+    const m = /^\/media\/([a-f0-9]{24}\.(?:jpg|png|webp))$/.exec(u);
+    ins.run(u, m ? "media/" + m[1] : "", m ? 0 : 1, u.split("/").pop() || "");
+  }
+}
+
 export const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "data");
 export const MEDIA_DIR = path.join(DATA_DIR, "media");
 export const RECEIPT_DIR = path.join(DATA_DIR, "receipts");
+export const PRODUCT_IMG_DIR = path.join(DATA_DIR, "product-images");
 
 const g = globalThis as unknown as { __wxdb?: DB };
 
@@ -175,12 +191,52 @@ const MIGRATIONS: string[] = [
   INSERT OR IGNORE INTO categories (slug,name,description,image,sort) VALUES
     ('individual','Individual Products','Each WellnessXpress product on its own.','/images/categories/category-individual.webp',0),
     ('combos','Combo Sets','WellnessXpress products packed together as a set.','/images/categories/category-combos.webp',1);`,
+  // v6: state delivery settings (all 36 states + FCT), order delivery snapshot, checkout idempotency.
+  // States without an admin-entered fee stay unavailable. No fee is invented.
+  `ALTER TABLE delivery_zones ADD COLUMN eta TEXT NOT NULL DEFAULT '';
+   ALTER TABLE delivery_zones ADD COLUMN updated_at TEXT;
+   UPDATE delivery_zones SET active = 0 WHERE fee IS NULL;
+   ALTER TABLE orders ADD COLUMN delivery_eta TEXT NOT NULL DEFAULT '';
+   ALTER TABLE orders ADD COLUMN delivery_fee_source TEXT NOT NULL DEFAULT '';
+   ALTER TABLE orders ADD COLUMN client_key TEXT NOT NULL DEFAULT '';
+   CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_client_key ON orders(client_key) WHERE client_key != '';
+   UPDATE orders SET delivery_fee_source = 'admin' WHERE delivery_fee IS NOT NULL AND delivery_fee_source = '';`,
+  // v7: inventory movement history and low-stock thresholds. Existing stock values are kept as they are.
+  `CREATE TABLE IF NOT EXISTS stock_movements (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     variant_id INTEGER NOT NULL,
+     order_id INTEGER,
+     delta INTEGER NOT NULL,
+     stock_after INTEGER,
+     reason TEXT NOT NULL,
+     note TEXT NOT NULL DEFAULT '',
+     actor TEXT NOT NULL DEFAULT '',
+     at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX IF NOT EXISTS idx_stock_mov_variant ON stock_movements(variant_id, id);
+   CREATE INDEX IF NOT EXISTS idx_stock_mov_order ON stock_movements(order_id);
+   ALTER TABLE variants ADD COLUMN low_stock_threshold INTEGER;`,
+  // v8: central media library. Files live in DATA_DIR/product-images (persistent volume).
+  `CREATE TABLE IF NOT EXISTS media (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     url TEXT NOT NULL UNIQUE,
+     file TEXT NOT NULL DEFAULT '',
+     original_name TEXT NOT NULL DEFAULT '',
+     mime TEXT NOT NULL DEFAULT '',
+     bytes INTEGER NOT NULL DEFAULT 0,
+     alt TEXT NOT NULL DEFAULT '',
+     caption TEXT NOT NULL DEFAULT '',
+     builtin INTEGER NOT NULL DEFAULT 0,
+     uploaded_by TEXT NOT NULL DEFAULT '',
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );`,
 ];
 
 function open(): DB {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.mkdirSync(MEDIA_DIR, { recursive: true });
   fs.mkdirSync(RECEIPT_DIR, { recursive: true });
+  fs.mkdirSync(PRODUCT_IMG_DIR, { recursive: true });
   const req = typeof __non_webpack_require__ === "function" ? __non_webpack_require__ : require;
   const { DatabaseSync } = req("node:sqlite") as { DatabaseSync: new (p: string) => DB };
   const db = new DatabaseSync(path.join(DATA_DIR, "store.db"));
@@ -196,6 +252,11 @@ function open(): DB {
       if (i === 0) {
         seedCatalogue(db);
         seedSettings(db);
+      }
+      if (i === 7) registerExistingImages(db);
+      if (i === 5) {
+        const ins = db.prepare("INSERT OR IGNORE INTO delivery_zones (state, fee, active, note, eta) VALUES (?, NULL, 0, '', '')");
+        for (const st of NIGERIAN_STATES) ins.run(st);
       }
       db.exec("COMMIT");
     } catch (e) {

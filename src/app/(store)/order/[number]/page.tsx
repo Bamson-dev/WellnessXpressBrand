@@ -54,7 +54,13 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
       {o.fulfilment_status !== "cancelled" ? (
         <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
           <h2 className="flex items-center gap-2 text-xl text-amber-950"><IconInfo className="h-6 w-6" /> Delivery is paid separately</h2>
-          <p className="mt-2 text-amber-950">Delivery fee will be confirmed separately after your order. You can pay for your products now. We will contact you with the delivery charge.</p>
+          {o.delivery_fee == null ? (
+            <p className="mt-2 text-amber-950">Your delivery fee will be confirmed separately. You can pay for your products now. We will contact you with the delivery charge.</p>
+          ) : o.delivery_payment_status === "paid" ? (
+            <p className="mt-2 text-amber-950">Delivery to {o.state}: <strong>{naira(o.delivery_fee)}</strong>. {o.delivery_fee > 0 ? "Your delivery payment is confirmed." : "No delivery fee for this order."}</p>
+          ) : (
+            <p className="mt-2 text-amber-950">Delivery to {o.state}: <strong>{naira(o.delivery_fee)}</strong>{o.delivery_eta ? ` (${String(o.delivery_eta)})` : ""}. This is a separate payment from your products. Do not add it to your product transfer. We will send you the delivery payment details before dispatch.</p>
+          )}
         </section>
       ) : null}
 
@@ -62,7 +68,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
         <section className="mt-6 rounded-2xl border-2 border-brand-700 bg-white p-5 shadow-card sm:p-6" aria-labelledby="pay-h">
           <h2 id="pay-h" className="text-xl sm:text-2xl">Pay by bank transfer</h2>
           {o.payment_status === "payment_failed" ? <p className="mt-2 rounded-lg bg-red-50 p-3 text-red-800">We could not confirm your last payment. Check the amount and account, then send a new confirmation, or message us on WhatsApp.</p> : null}
-          <p className="mt-2 text-neutral-700">Please transfer the exact order amount to the account below.</p>
+          <p className="mt-2 text-neutral-700">Please transfer the exact product amount below. Delivery is paid separately.</p>
           {bankIsComplete(bank) ? (
             <dl className="mt-5 divide-y divide-neutral-200 rounded-xl border border-neutral-200 text-[16px]">
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Product payment</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(o.subtotal)}<CopyButton text={String(o.subtotal)} label="Copy amount" small /></dd></div>
@@ -101,8 +107,9 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
         <dl className="mt-2 space-y-2 border-t border-neutral-200 pt-3 text-[15px]">
           <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd>{naira(o.subtotal)}</dd></div>
           <div className="flex justify-between"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee != null ? naira(o.delivery_fee) : "To be confirmed"}</dd></div>
-          <div className="flex justify-between"><dt className="text-neutral-600">Delivery payment status</dt><dd>{o.delivery_payment_status === "paid" ? "Paid" : "Pending"}</dd></div>
-          <div className="flex justify-between text-lg font-bold"><dt>Product payment</dt><dd>{naira(o.subtotal)}</dd></div>
+          <div className="flex justify-between"><dt className="text-neutral-600">Delivery payment</dt><dd>{o.delivery_fee == null ? "Not set yet" : o.delivery_payment_status === "paid" ? (o.delivery_fee > 0 ? "Paid" : "Not needed") : "Not paid yet (separate)"}</dd></div>
+          <div className="flex justify-between"><dt className="text-neutral-600">Product payment</dt><dd>{o.payment_status === "paid" ? "Paid" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
+          <div className="flex justify-between text-lg font-bold"><dt>Order total</dt><dd>{naira(o.subtotal + (o.delivery_fee || 0))}</dd></div>
         </dl>
         <div className="mt-5 rounded-xl bg-neutral-50 p-4 text-[15px]">
           <p className="font-semibold">Delivering to</p>

@@ -28,7 +28,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (process.env.COMING_SOON !== "true") return NextResponse.next();
-  if (PASS.includes(pathname) || pathname.startsWith("/brand/") || pathname.startsWith("/admin") || pathname.startsWith("/api/admin/")) return NextResponse.next();
+  if (PASS.includes(pathname) || pathname.startsWith("/brand/") || pathname.startsWith("/product-images/") || pathname.startsWith("/admin") || pathname.startsWith("/api/admin/")) return NextResponse.next();
   if (await verifySession(req.cookies.get(SESSION_COOKIE)?.value)) {
     const res = NextResponse.next();
     res.headers.set("X-Robots-Tag", "noindex");

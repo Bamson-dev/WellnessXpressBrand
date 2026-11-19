@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { allProductsAdmin, getCategories, getProductById } from "@/lib/catalog";
 import Flash from "@/components/admin/Flash";
-import { deleteVariantAction, imageOrderAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
+import UnsavedGuard from "@/components/admin/UnsavedGuard";
+import { listMedia } from "@/lib/media";
+import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOrderAction, replaceImageAction, saveMediaMetaAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
 
 export const metadata = { title: "Edit product" };
 
@@ -11,6 +13,8 @@ export default async function EditProduct({ params, searchParams }: { params: { 
   await requireAdmin("owner");
   const p = getProductById(Number(params.id));
   if (!p) notFound();
+  const meta = Object.fromEntries(p.images.map((u) => [u, (() => { const m = listMedia().find((x) => x.url === u); return m ? { id: m.id, alt: m.alt, caption: m.caption } : null; })()]));
+  const library = listMedia().filter((m) => !p.images.includes(m.url)).slice(0, 200);
   const categories = getCategories(true);
   const singles = allProductsAdmin().filter((x) => x.type === "single");
   const L = ({ children }: { children: React.ReactNode }) => <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</span>;
@@ -21,13 +25,14 @@ export default async function EditProduct({ params, searchParams }: { params: { 
       <Link href="/admin/products" className="text-sm font-semibold text-brand-700">← Products</Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl">{p.name}</h1>
-        {p.status === "published" ? <Link href={`/product/${p.slug}`} target="_blank" className="text-sm text-brand-700 underline">View in store</Link> : null}
+        {p.status === "published" ? <Link href={`/product/${p.slug}`} target="_blank" className="text-sm text-brand-700 underline">View in store</Link> : <Link href={`/product/${p.slug}?preview=1`} target="_blank" className="text-sm text-brand-700 underline">Preview (only you can see it)</Link>}
       </div>
       <div className="mt-4"><Flash msg={searchParams.msg} /></div>
       {p.reviewNote ? <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>Needs confirmation:</strong> {p.reviewNote}</p> : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-        <form action={saveProductAction} className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5">
+        <form action={saveProductAction} id="product-form" className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5">
+          <UnsavedGuard formId="product-form" />
           <input type="hidden" name="id" value={p.id} />
           <div className="grid gap-4 sm:grid-cols-2">
             <label><L>Name</L><input name="name" defaultValue={p.name} className="admin-input" required /></label>
@@ -45,7 +50,7 @@ export default async function EditProduct({ params, searchParams }: { params: { 
             <label className="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" name="featured" defaultChecked={p.featured} className="h-4 w-4 accent-brand-700" /> Featured on the home page</label>
           </div>
           <label className="block"><L>Short description (cards and search)</L><input name="short" defaultValue={p.shortDescription} className="admin-input" /></label>
-          <label className="block"><L>Description</L><textarea name="description" defaultValue={p.description} rows={4} className="admin-input" /></label>
+          <label className="block"><L>Description (blank line = new paragraph · **bold** · *italic* · lines starting with &quot;- &quot; become a list · &quot;## &quot; for a heading)</L><textarea name="description" defaultValue={p.description} rows={8} className="admin-input font-mono text-[13px]" /></label>
           <label className="block"><L>Ingredients (only as confirmed or printed on the label)</L><textarea name="ingredients" defaultValue={p.ingredients} rows={2} className="admin-input" /></label>
           <label className="block"><L>Directions for use (leave empty until confirmed)</L><textarea name="directions" defaultValue={p.directions} rows={3} className="admin-input" /></label>
           <label className="block"><L>Product information</L><textarea name="information" defaultValue={p.information} rows={3} className="admin-input" /></label>
@@ -58,26 +63,55 @@ export default async function EditProduct({ params, searchParams }: { params: { 
         <div className="space-y-5">
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 className="text-lg">Photos</h2>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {p.images.map((src, i) => (
-                <div key={src + i} className="rounded-lg border border-neutral-200 p-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="aspect-square w-full rounded object-contain" />
-                  <div className="mt-1 flex gap-1">
-                    {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="first" /><button className="text-xs text-brand-700 underline">Make main</button></form> : <span className="text-xs text-neutral-500">Main</span>}
-                    {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="up" /><button aria-label={`Move photo ${i + 1} up`} className="ml-2 text-xs text-neutral-600 underline">Move up</button></form> : null}
-                    {i < p.images.length - 1 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="down" /><button aria-label={`Move photo ${i + 1} down`} className="text-xs text-neutral-600 underline">Move down</button></form> : null}
-                    <form action={imageOrderAction} className="ml-auto"><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="remove" /><button className="text-xs text-red-700 underline">Remove</button></form>
+            <p className="text-xs text-neutral-500">The first photo is the main image on cards and in the cart.</p>
+            <div className="mt-3 space-y-3">
+              {p.images.map((src, i) => {
+                const m = meta[src];
+                return (
+                  <div key={src + i} className="flex gap-3 rounded-lg border border-neutral-200 p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt={m?.alt || ""} className="h-24 w-24 shrink-0 rounded bg-brand-50 object-contain" />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                        {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="first" /><button className="text-brand-700 underline">Make main</button></form> : <span className="font-semibold text-brand-700">Main photo</span>}
+                        {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="up" /><button aria-label={`Move photo ${i + 1} up`} className="text-neutral-600 underline">Move up</button></form> : null}
+                        {i < p.images.length - 1 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="down" /><button aria-label={`Move photo ${i + 1} down`} className="text-neutral-600 underline">Move down</button></form> : null}
+                        <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="remove" /><button className="text-red-700 underline">Remove from product</button></form>
+                      </div>
+                      {m ? (
+                        <form action={saveMediaMetaAction} className="flex flex-wrap gap-1">
+                          <input type="hidden" name="id" value={m.id} /><input type="hidden" name="back" value={`/admin/products/${p.id}`} />
+                          <input name="alt" defaultValue={m.alt} placeholder="Alt text" className="admin-input min-w-0 flex-1 py-1" aria-label={`Alt text for photo ${i + 1}`} />
+                          <input name="caption" defaultValue={m.caption} placeholder="Caption" className="admin-input min-w-0 flex-1 py-1" aria-label={`Caption for photo ${i + 1}`} />
+                          <button className="admin-btn-ghost px-2 py-1 text-xs">Save</button>
+                        </form>
+                      ) : null}
+                      <form action={replaceImageAction} className="flex flex-wrap items-center gap-1 text-xs">
+                        <input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} />
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/webp" className="max-w-[180px] text-xs" aria-label={`Replacement for photo ${i + 1}`} required />
+                        <button className="text-brand-700 underline">Replace</button>
+                      </form>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <form action={uploadImageAction} className="mt-3 space-y-2">
               <input type="hidden" name="productId" value={p.id} />
-              <input type="file" name="image" accept="image/jpeg,image/png,image/webp" className="block w-full text-sm" required />
-              <button className="admin-btn-ghost">Upload photo</button>
-              <p className="text-xs text-neutral-500">Use real photos of the actual packaging. Square images on a light background look best.</p>
+              <input type="file" name="image" multiple accept="image/jpeg,image/png,image/webp" className="block w-full text-sm" required aria-label="Upload photos" />
+              <button className="admin-btn-ghost">Upload photos</button>
             </form>
+            {library.length ? (
+              <form action={addFromLibraryAction} className="mt-3 flex gap-2">
+                <input type="hidden" name="productId" value={p.id} />
+                <select name="mediaId" className="admin-input" aria-label="Image from library" required defaultValue="">
+                  <option value="" disabled>Add from media library…</option>
+                  {library.map((m) => <option key={m.id} value={m.id}>{m.originalName || m.url.split("/").pop()}{m.alt ? ` — ${m.alt}` : ""}</option>)}
+                </select>
+                <button className="admin-btn-ghost">Add</button>
+              </form>
+            ) : null}
+            <p className="mt-2 text-xs text-neutral-500">Use real photos of the actual packaging. Square images on a light background look best.</p>
           </section>
         </div>
       </div>
@@ -115,6 +149,18 @@ export default async function EditProduct({ params, searchParams }: { params: { 
           </div>
         ) : null}
       </section>
+
+      {p.status === "archived" ? (
+        <details className="mt-5 rounded-xl border border-red-200 bg-red-50 p-5 text-sm">
+          <summary className="cursor-pointer font-semibold text-red-800">Delete this product permanently</summary>
+          <p className="mt-2 text-red-900">Only possible if the product was never ordered and is not part of a combo. Otherwise it stays archived for your records.</p>
+          <form action={deleteProductAction} className="mt-2 flex flex-wrap gap-2">
+            <input type="hidden" name="id" value={p.id} />
+            <input name="confirm" placeholder={`Type: ${p.name}`} className="admin-input max-w-xs" aria-label="Type the product name to confirm" />
+            <button className="admin-btn-danger">Delete permanently</button>
+          </form>
+        </details>
+      ) : null}
 
       {p.type === "combo" ? (
         <section className="mt-5 rounded-xl border border-neutral-200 bg-white p-5">

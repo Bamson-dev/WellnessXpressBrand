@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 
 export type QuoteLine = { variantId: number; slug: string; name: string; label: string; image: string | null; unitPrice: number; qty: number; lineTotal: number; available: boolean; reason?: string };
-export type Quote = { lines: QuoteLine[]; subtotal: number; deliveryFee: number | null; total: number | null; state: string | null };
+export type DeliveryInfo = { state: string; available: boolean; fee: number | null; eta: string; message: string };
+export type Quote = { lines: QuoteLine[]; subtotal: number; deliveryFee: number | null; total: number | null; state: string | null; delivery?: DeliveryInfo | null };
 
 /** Fetches server prices for the cart (and delivery fee for a state). The browser's stored prices are only a preview. */
 export function useQuote(state?: string) {
@@ -13,7 +14,7 @@ export function useQuote(state?: string) {
   const key = JSON.stringify(lines.map((l) => [l.variantId, l.qty])) + "|" + (state || "");
   useEffect(() => {
     if (!ready) return;
-    if (!lines.length) { setQuote({ lines: [], subtotal: 0, deliveryFee: null, total: null, state: null }); setLoading(false); return; }
+    if (!lines.length) { setQuote({ lines: [], subtotal: 0, deliveryFee: null, total: null, state: null, delivery: null }); setLoading(false); return; }
     const ctl = new AbortController();
     setLoading(true);
     fetch("/api/cart/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })), state }), signal: ctl.signal })

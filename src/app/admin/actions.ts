@@ -5,10 +5,12 @@ import { randomBytes } from "crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { db, tx, MEDIA_DIR } from "@/lib/db";
+import { db, tx } from "@/lib/db";
 import { hashPassword, login, logout, requireAdmin } from "@/lib/auth";
-import { getOrderById, logEvent, orderItems, restoreStock } from "@/lib/orders";
+import { getOrderById, logEvent, orderItems } from "@/lib/orders";
+import { adjustStock, recordMovement, releaseOrderStock, reserveOrderStock, type AdjustKind } from "@/lib/inventory";
 import { setSetting } from "@/lib/settings";
+import { deleteMedia, getMedia, saveImageUpload } from "@/lib/media";
 import { sendStorePurchase } from "@/lib/meta";
 import { clean, isEmail, sniffType } from "@/lib/validate";
 import { limited } from "@/lib/ratelimit";
@@ -46,8 +48,8 @@ export async function setDeliveryFeeAction(f: FormData) {
   const o = getOrderById(id);
   if (!o || fee == null) return back(`/admin/orders/${id}`, "Enter a valid delivery fee.");
   if (o.delivery_payment_status === "paid") return back(`/admin/orders/${id}`, "Delivery payment is already confirmed.");
-  db().prepare("UPDATE orders SET delivery_fee = ?, total = subtotal + ?, delivery_payment_status = 'pending', updated_at = datetime('now') WHERE id = ?").run(fee, fee, id);
-  logEvent(id, a.email, "delivery_fee_set", `₦${fee.toLocaleString()}`);
+  db().prepare("UPDATE orders SET delivery_fee = ?, total = subtotal + ?, delivery_payment_status = ?, delivery_fee_source = 'admin', updated_at = datetime('now') WHERE id = ?").run(fee, fee, fee > 0 ? "pending" : "paid", id);
+  logEvent(id, a.email, "delivery_fee_set", `₦${fee.toLocaleString()}${o.delivery_fee != null ? ` (was ₦${Number(o.delivery_fee).toLocaleString()})` : ""}`);
   revalidatePath(`/admin/orders/${id}`);
   back(`/admin/orders/${id}`, "Delivery fee saved. The customer's order page now shows the final amount.");
 }
@@ -109,13 +111,16 @@ export async function setFulfilmentAction(f: FormData) {
   if (["processing", "shipped", "delivered"].includes(st) && o.payment_status !== "paid") return back(`/admin/orders/${id}`, "Confirm the product payment before you process or ship this order.");
   if (["processing", "shipped", "delivered"].includes(st) && o.delivery_payment_status !== "paid") return back(`/admin/orders/${id}`, "Confirm the delivery payment before you process or ship this order.");
   if (st === o.fulfilment_status) return back(`/admin/orders/${id}`);
-  tx((d) => {
-    d.prepare("UPDATE orders SET fulfilment_status = ?, updated_at = datetime('now') WHERE id = ?").run(st, id);
-    if (st === "cancelled" && o.fulfilment_status !== "cancelled") restoreStock(id);
+  const err = tx((d) => {
     if (o.fulfilment_status === "cancelled" && st !== "cancelled") {
-      for (const it of orderItems(id)) d.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL").run(it.qty, it.variant_id);
+      const e = reserveOrderStock(d, id, a.email, `Order ${o.number} reopened`);
+      if (e) return e;
     }
+    d.prepare("UPDATE orders SET fulfilment_status = ?, updated_at = datetime('now') WHERE id = ?").run(st, id);
+    if (st === "cancelled" && o.fulfilment_status !== "cancelled") releaseOrderStock(d, id, a.email, `Order ${o.number} cancelled`);
+    return null;
   });
+  if (err) return back(`/admin/orders/${id}`, `Cannot reopen this order: ${err}`);
   logEvent(id, a.email, "fulfilment_" + st, s(f, "note", 300));
   back(`/admin/orders/${id}`, "Order status updated.");
 }
@@ -182,6 +187,46 @@ export async function duplicateProductAction(f: FormData) {
   redirect(`/admin/products/${newId}?msg=${encodeURIComponent("Draft copy created. Review its options and contents before publishing.")}`);
 }
 
+export async function bulkProductsAction(f: FormData) {
+  await requireAdmin("owner");
+  const ids = f.getAll("ids").map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 200);
+  const op = s(f, "op", 20);
+  if (!ids.length) return back("/admin/products", "Tick at least one product.");
+  const ph = ids.map(() => "?").join(",");
+  if (op === "publish") {
+    const ok = db().prepare(`SELECT p.id FROM products p WHERE p.id IN (${ph}) AND EXISTS (SELECT 1 FROM variants v WHERE v.product_id = p.id AND v.status = 'active')`).all(...ids).map((r) => Number(r.id));
+    if (ok.length) db().prepare(`UPDATE products SET status='published', updated_at=datetime('now') WHERE id IN (${ok.map(() => "?").join(",")})`).run(...ok);
+    revalidatePath("/", "layout");
+    return back("/admin/products", `${ok.length} published.${ok.length < ids.length ? ` ${ids.length - ok.length} skipped because they have no active price option.` : ""}`);
+  }
+  const sql: Record<string, string> = {
+    draft: "status='draft'", archive: "status='archived'", feature: "featured=1", unfeature: "featured=0",
+  };
+  if (!sql[op]) return back("/admin/products", "Choose a bulk action.");
+  db().prepare(`UPDATE products SET ${sql[op]}, updated_at=datetime('now') WHERE id IN (${ph})`).run(...ids);
+  revalidatePath("/", "layout");
+  back("/admin/products", `${ids.length} product${ids.length === 1 ? "" : "s"} updated.`);
+}
+
+/** Permanent delete is only allowed for archived products that never appeared in an order or a combo. */
+export async function deleteProductAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  const p = db().prepare("SELECT status, name FROM products WHERE id = ?").get(id);
+  if (!p) return back("/admin/products", "Product not found.");
+  if (p.status !== "archived") return back(`/admin/products/${id}`, "Archive the product first. Only archived products can be deleted.");
+  if (db().prepare("SELECT 1 FROM order_items WHERE product_id = ? LIMIT 1").get(id)) return back(`/admin/products/${id}`, "This product is in past orders, so it is kept for your records. It stays archived and hidden.");
+  if (db().prepare("SELECT 1 FROM combo_items WHERE item_product_id = ? LIMIT 1").get(id)) return back(`/admin/products/${id}`, "A combo set still includes this product. Remove it from the combo first.");
+  if (f.get("confirm") !== String(p.name)) return back(`/admin/products/${id}`, "Type the product name exactly to confirm deletion.");
+  tx((d) => {
+    d.prepare("DELETE FROM combo_items WHERE combo_id = ?").run(id);
+    d.prepare("DELETE FROM variants WHERE product_id = ?").run(id);
+    d.prepare("DELETE FROM products WHERE id = ?").run(id);
+  });
+  revalidatePath("/", "layout");
+  redirect(`/admin/products?msg=${encodeURIComponent(`${String(p.name)} deleted. Its images stay in the media library.`)}`);
+}
+
 export async function archiveProductAction(f: FormData) {
   await requireAdmin("owner");
   const id = Number(f.get("id"));
@@ -230,24 +275,18 @@ export async function saveCategoryAction(f: FormData) {
 }
 
 export async function uploadCategoryImageAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const id = Number(f.get("id"));
   const category = db().prepare("SELECT slug FROM categories WHERE id = ?").get(id);
   if (!category) return back("/admin/categories", "Category not found.");
   const file = f.get("image");
   if (!file || typeof file === "string" || !file.size) return back("/admin/categories", "Choose an image to upload.");
-  if (file.size > 6 * 1024 * 1024) return back("/admin/categories", "The image must be 6 MB or smaller.");
-  const buf = Buffer.from(await file.arrayBuffer());
-  const type = sniffType(buf);
-  if (!type || type === "pdf") return back("/admin/categories", "Upload a JPG, PNG or WebP image.");
-  const name = `${randomBytes(12).toString("hex")}.${type}`;
-  await fs.mkdir(MEDIA_DIR, { recursive: true });
-  await fs.writeFile(path.join(MEDIA_DIR, name), buf, { flag: "wx", mode: 0o644 });
-  const image = `/media/${name}`;
-  db().prepare("UPDATE categories SET image=?,updated_at=datetime('now') WHERE id=?").run(image, id);
+  const r = await saveImageUpload(file, a.email);
+  if (r.error) return back("/admin/categories", r.error);
+  db().prepare("UPDATE categories SET image=?,updated_at=datetime('now') WHERE id=?").run(r.media!.url, id);
   revalidatePath("/", "layout");
   revalidatePath(`/category/${String(category.slug)}`);
-  back("/admin/categories", "Category image uploaded and saved.");
+  back("/admin/categories", "Category image uploaded to the media library and saved.");
 }
 
 export async function saveProductAction(f: FormData) {
@@ -291,8 +330,16 @@ export async function saveVariantAction(f: FormData) {
   if (!sku) sku = `WX-${pid}-${label.toUpperCase().replace(/[^A-Z0-9]/g, "")}`;
   if (db().prepare("SELECT 1 FROM variants WHERE sku = ? AND id != ?").get(sku, vid)) return back(`/admin/products/${pid}`, `SKU ${sku} is already used.`);
   const vals = [label, s(f, "size", 60), s(f, "duration", 60), sku, price, sale, stock, status, f.get("confirmed") ? 0 : 1, Number(f.get("sort")) || 0];
-  if (vid) db().prepare("UPDATE variants SET label=?, size=?, duration=?, sku=?, price=?, sale_price=?, stock=?, status=?, needs_confirmation=?, sort=? WHERE id=? AND product_id=?").run(...vals, vid, pid);
-  else db().prepare("INSERT INTO variants (label,size,duration,sku,price,sale_price,stock,status,needs_confirmation,sort,product_id,price_source) VALUES (?,?,?,?,?,?,?,?,?,?,?, 'Added in admin')").run(...vals, pid);
+  const admin = await requireAdmin("owner");
+  tx((d) => {
+    const before = vid ? d.prepare("SELECT stock FROM variants WHERE id = ? AND product_id = ?").get(vid, pid) : undefined;
+    const prev = before?.stock == null ? null : Number(before.stock);
+    let id = vid;
+    if (vid) d.prepare("UPDATE variants SET label=?, size=?, duration=?, sku=?, price=?, sale_price=?, stock=?, status=?, needs_confirmation=?, sort=? WHERE id=? AND product_id=?").run(...vals, vid, pid);
+    else id = Number(d.prepare("INSERT INTO variants (label,size,duration,sku,price,sale_price,stock,status,needs_confirmation,sort,product_id,price_source) VALUES (?,?,?,?,?,?,?,?,?,?,?, 'Added in admin')").run(...vals, pid).lastInsertRowid);
+    // Every stock change is recorded in the inventory history.
+    if (stock !== prev) recordMovement(d, id, (stock ?? 0) - (prev ?? 0), prev == null ? "opening" : "correction", stock == null ? "Stock tracking switched off in product editor" : "Set in product editor", admin.email);
+  });
   db().prepare("UPDATE products SET updated_at = datetime('now') WHERE id = ?").run(pid);
   revalidatePath("/", "layout");
   back(`/admin/products/${pid}`, "Price option saved.");
@@ -327,23 +374,78 @@ export async function saveComboItemsAction(f: FormData) {
 }
 
 export async function uploadImageAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const pid = Number(f.get("productId"));
-  const file = f.get("image");
-  if (!file || typeof file === "string" || !file.size) return back(`/admin/products/${pid}`, "Choose an image to upload.");
-  if (file.size > 6 * 1024 * 1024) return back(`/admin/products/${pid}`, "The image must be 6 MB or smaller.");
-  const buf = Buffer.from(await file.arrayBuffer());
-  const type = sniffType(buf);
-  if (!type || type === "pdf") return back(`/admin/products/${pid}`, "Upload a JPG, PNG or WebP image.");
-  const name = `${randomBytes(12).toString("hex")}.${type}`;
-  await fs.mkdir(MEDIA_DIR, { recursive: true });
-  await fs.writeFile(path.join(MEDIA_DIR, name), buf);
+  const files = f.getAll("image").filter((x): x is File => typeof x !== "string" && x.size > 0).slice(0, 10);
+  if (!files.length) return back(`/admin/products/${pid}`, "Choose an image to upload.");
   const p = db().prepare("SELECT images FROM products WHERE id = ?").get(pid);
-  const imgs = JSON.parse(String(p?.images || "[]")) as string[];
-  imgs.push(`/media/${name}`);
+  if (!p) return back("/admin/products", "Product not found.");
+  const imgs = JSON.parse(String(p.images || "[]")) as string[];
+  const errors: string[] = [];
+  for (const file of files) {
+    const r = await saveImageUpload(file, a.email);
+    if (r.error) errors.push(r.error); else imgs.push(r.media!.url);
+  }
   db().prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
   revalidatePath("/", "layout");
-  back(`/admin/products/${pid}`, "Image uploaded.");
+  back(`/admin/products/${pid}`, errors.length ? `Some files were not added: ${errors.join(" ")}` : `${files.length} image${files.length === 1 ? "" : "s"} uploaded to the media library and added.`);
+}
+
+export async function replaceImageAction(f: FormData) {
+  const a = await requireAdmin("owner");
+  const pid = Number(f.get("productId"));
+  const idx = Number(f.get("index"));
+  const file = f.get("image");
+  if (!file || typeof file === "string" || !file.size) return back(`/admin/products/${pid}`, "Choose the new image.");
+  const p = db().prepare("SELECT images FROM products WHERE id = ?").get(pid);
+  const imgs = JSON.parse(String(p?.images || "[]")) as string[];
+  if (!(idx >= 0 && idx < imgs.length)) return back(`/admin/products/${pid}`);
+  const r = await saveImageUpload(file, a.email);
+  if (r.error) return back(`/admin/products/${pid}`, r.error);
+  const old = imgs[idx];
+  imgs[idx] = r.media!.url;
+  db().prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
+  revalidatePath("/", "layout");
+  back(`/admin/products/${pid}`, `Image replaced. The old image (${old.split("/").pop()}) stays in the media library.`);
+}
+
+export async function addFromLibraryAction(f: FormData) {
+  await requireAdmin("owner");
+  const pid = Number(f.get("productId"));
+  const m = getMedia(Number(f.get("mediaId")));
+  if (!m) return back(`/admin/products/${pid}`, "Choose an image from the library.");
+  const p = db().prepare("SELECT images FROM products WHERE id = ?").get(pid);
+  const imgs = JSON.parse(String(p?.images || "[]")) as string[];
+  if (imgs.includes(m.url)) return back(`/admin/products/${pid}`, "That image is already in this product's gallery.");
+  imgs.push(m.url);
+  db().prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
+  revalidatePath("/", "layout");
+  back(`/admin/products/${pid}`, "Image added from the media library.");
+}
+
+export async function libraryUploadAction(f: FormData) {
+  const a = await requireAdmin("owner");
+  const files = f.getAll("images").filter((x): x is File => typeof x !== "string" && x.size > 0).slice(0, 20);
+  if (!files.length) return back("/admin/media", "Choose at least one image.");
+  const errors: string[] = [];
+  let ok = 0;
+  for (const file of files) { const r = await saveImageUpload(file, a.email); if (r.error) errors.push(r.error); else ok++; }
+  back("/admin/media", `${ok} uploaded.${errors.length ? " Not uploaded: " + errors.join(" ") : ""}`);
+}
+
+export async function saveMediaMetaAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  const ret = s(f, "back", 200).startsWith("/admin/") ? s(f, "back", 200) : "/admin/media";
+  db().prepare("UPDATE media SET alt = ?, caption = ? WHERE id = ?").run(s(f, "alt", 150), s(f, "caption", 200), id);
+  revalidatePath("/", "layout");
+  back(ret, "Image text saved.");
+}
+
+export async function deleteMediaAction(f: FormData) {
+  await requireAdmin("owner");
+  const err = await deleteMedia(Number(f.get("id")));
+  back("/admin/media", err || "Image deleted.");
 }
 
 export async function imageOrderAction(f: FormData) {
@@ -363,19 +465,134 @@ export async function imageOrderAction(f: FormData) {
   back(`/admin/products/${pid}`, op === "remove" ? "Image removed from this product." : "Main image updated.");
 }
 
-/* ---------- delivery ---------- */
-export async function saveDeliveryAction(f: FormData) {
+/* ---------- inventory ---------- */
+export async function adjustStockAction(f: FormData) {
   const a = await requireAdmin("owner");
+  const vid = Number(f.get("variantId"));
+  const kind = s(f, "kind", 20) as AdjustKind;
+  const back2 = s(f, "back", 200).startsWith("/admin/") ? s(f, "back", 200) : "/admin/inventory";
+  if (!["opening", "increase", "decrease", "correction", "untrack"].includes(kind)) return back(back2, "Choose a stock action.");
+  const qty = kind === "untrack" ? 0 : Number(String(f.get("qty") ?? "").trim());
+  const err = adjustStock(vid, kind, qty, s(f, "note", 300), a.email);
+  revalidatePath("/", "layout");
+  back(back2, err || "Stock updated and recorded in the history.");
+}
+export async function setThresholdAction(f: FormData) {
+  await requireAdmin("owner");
+  const vid = Number(f.get("variantId"));
+  const raw = String(f.get("threshold") ?? "").trim();
+  const t = raw === "" ? null : Math.floor(Number(raw));
+  if (t != null && (!Number.isFinite(t) || t < 0 || t > 100000)) return back("/admin/inventory", "Enter a whole number for the low-stock level, or leave it empty.");
+  db().prepare("UPDATE variants SET low_stock_threshold = ? WHERE id = ?").run(t, vid);
+  back("/admin/inventory", "Low-stock level saved.");
+}
+
+/* ---------- delivery ---------- */
+type ZoneInput = { state: string; fee: number | null; active: boolean; eta: string; note: string };
+function writeZones(rows: ZoneInput[]) {
   tx((d) => {
-    for (const st of NIGERIAN_STATES) {
-      const raw = String(f.get(`fee_${st}`) ?? "").trim();
-      const fee = raw === "" ? null : money(raw);
-      d.prepare("INSERT INTO delivery_zones (state, fee, active, note) VALUES (?,?,?,?) ON CONFLICT(state) DO UPDATE SET fee=excluded.fee, active=excluded.active, note=excluded.note")
-        .run(st, fee, f.get(`active_${st}`) ? 1 : 0, s(f, `note_${st}`, 120));
+    for (const z of rows) {
+      d.prepare(`INSERT INTO delivery_zones (state, fee, active, eta, note, updated_at) VALUES (?,?,?,?,?, datetime('now'))
+        ON CONFLICT(state) DO UPDATE SET fee=excluded.fee, active=excluded.active, eta=excluded.eta, note=excluded.note, updated_at=datetime('now')`)
+        .run(z.state, z.fee, z.fee == null ? 0 : z.active ? 1 : 0, z.eta, z.note);
     }
   });
-  void a;
-  back("/admin/delivery", "Delivery fees saved.");
+}
+
+export async function saveDeliveryAction(f: FormData) {
+  await requireAdmin("owner");
+  const rows: ZoneInput[] = [];
+  const bad: string[] = [];
+  for (const st of NIGERIAN_STATES) {
+    const raw = String(f.get(`fee_${st}`) ?? "").trim();
+    const fee = raw === "" ? null : money(raw);
+    if (raw !== "" && fee == null) { bad.push(st); continue; }
+    rows.push({ state: st, fee, active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160) });
+  }
+  if (bad.length) return back("/admin/delivery", `Fix the fee for: ${bad.join(", ")}. Use numbers only, for example 3500.`);
+  writeZones(rows);
+  revalidatePath("/checkout");
+  const off = rows.filter((r) => r.fee == null && r.active).map((r) => r.state);
+  back("/admin/delivery", off.length ? `Saved. ${off.length} state(s) are switched on but have no fee, so they stay unavailable: ${off.join(", ")}.` : "Delivery settings saved.");
+}
+
+export async function bulkDeliveryAction(f: FormData) {
+  await requireAdmin("owner");
+  const states = f.getAll("states").map(String).filter((x) => NIGERIAN_STATES.includes(x));
+  if (!states.length) return back("/admin/delivery", "Tick at least one state for the bulk update.");
+  const op = s(f, "op", 20);
+  const current = new Map(db().prepare("SELECT * FROM delivery_zones").all().map((r) => [String(r.state), r]));
+  const feeRaw = String(f.get("bulkFee") ?? "").trim();
+  const fee = feeRaw === "" ? undefined : money(feeRaw);
+  if (op === "fee" && (fee == null)) return back("/admin/delivery", "Enter a valid fee for the selected states.");
+  const rows: ZoneInput[] = states.map((st) => {
+    const c = current.get(st);
+    const base: ZoneInput = { state: st, fee: c?.fee == null ? null : Number(c.fee), active: c ? Number(c.active) === 1 : false, eta: String(c?.eta || ""), note: String(c?.note || "") };
+    if (op === "fee") return { ...base, fee: fee as number, active: true };
+    if (op === "eta") return { ...base, eta: s(f, "bulkEta", 80) };
+    if (op === "enable") return { ...base, active: true };
+    if (op === "disable") return { ...base, active: false };
+    if (op === "clear") return { ...base, fee: null, active: false };
+    return base;
+  });
+  writeZones(rows);
+  revalidatePath("/checkout");
+  back("/admin/delivery", `Updated ${rows.length} state(s).`);
+}
+
+/** Parses a delivery CSV (State,Fee,Enabled,ETA,Note). Returns rows plus per-line problems. Nothing is saved here. */
+function parseDeliveryCsv(text: string) {
+  const lines = text.replace(/^\ufeff/, "").split(/\r?\n/).filter((l) => l.trim());
+  const rows: ZoneInput[] = [];
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  const split = (l: string) => {
+    const out: string[] = []; let cur = ""; let q = false;
+    for (let k = 0; k < l.length; k++) {
+      const ch = l[k];
+      if (q) { if (ch === '"' && l[k + 1] === '"') { cur += '"'; k++; } else if (ch === '"') q = false; else cur += ch; }
+      else if (ch === '"') q = true; else if (ch === ",") { out.push(cur); cur = ""; } else cur += ch;
+    }
+    out.push(cur); return out.map((x) => x.trim());
+  };
+  lines.forEach((l, n) => {
+    const c = split(l);
+    if (n === 0 && /^state$/i.test(c[0])) return;
+    const st = NIGERIAN_STATES.find((x) => x.toLowerCase() === (c[0] || "").toLowerCase() || (/^fct|abuja/i.test(c[0] || "") && x.startsWith("FCT")));
+    if (!st) { problems.push(`Line ${n + 1}: "${(c[0] || "").slice(0, 40)}" is not a Nigerian state.`); return; }
+    if (seen.has(st)) { problems.push(`Line ${n + 1}: ${st} appears more than once.`); return; }
+    seen.add(st);
+    const feeRaw = (c[1] || "").replace(/[₦,\s]/g, "");
+    const fee = feeRaw === "" ? null : /^\d+$/.test(feeRaw) && Number(feeRaw) <= 10_000_000 ? Number(feeRaw) : NaN;
+    if (Number.isNaN(fee)) { problems.push(`Line ${n + 1}: fee "${(c[1] || "").slice(0, 20)}" for ${st} is not a number.`); return; }
+    const en = (c[2] || "").toLowerCase();
+    if (en && !["yes", "no", "true", "false", "1", "0", "y", "n"].includes(en)) { problems.push(`Line ${n + 1}: Enabled must be yes or no.`); return; }
+    rows.push({ state: st, fee, active: ["yes", "true", "1", "y"].includes(en) || (en === "" && fee != null), eta: clean(c[3] || "", 80), note: clean(c[4] || "", 160) });
+  });
+  return { rows, problems };
+}
+
+export async function previewDeliveryImportAction(_: unknown, f: FormData) {
+  await requireAdmin("owner");
+  const file = f.get("file");
+  let text = "";
+  if (file && typeof file !== "string" && file.size) {
+    if (file.size > 200_000) return { error: "The file is too large. Use the exported CSV as a template." };
+    text = await file.text();
+  } else text = String(f.get("csv") || "");
+  if (!text.trim()) return { error: "Choose a CSV file to import." };
+  const { rows, problems } = parseDeliveryCsv(text);
+  return { rows, problems, csv: text.slice(0, 200_000) };
+}
+
+export async function applyDeliveryImportAction(f: FormData) {
+  await requireAdmin("owner");
+  const { rows, problems } = parseDeliveryCsv(String(f.get("csv") || ""));
+  if (problems.length) return back("/admin/delivery", "Import cancelled. The file has problems; preview it again and fix them first.");
+  if (!rows.length) return back("/admin/delivery", "Nothing to import.");
+  writeZones(rows);
+  revalidatePath("/checkout");
+  back("/admin/delivery", `Imported ${rows.length} state(s). States not in the file were not changed.`);
 }
 
 /* ---------- settings ---------- */

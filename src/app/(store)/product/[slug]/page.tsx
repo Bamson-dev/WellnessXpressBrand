@@ -7,6 +7,9 @@ import { getContact } from "@/lib/settings";
 import { PurchaseBox } from "@/components/AddToCart";
 import ProductCard from "@/components/ProductCard";
 import Gallery from "@/components/Gallery";
+import RichText, { plainText } from "@/components/RichText";
+import { currentAdmin } from "@/lib/auth";
+import { mediaMeta } from "@/lib/media";
 import { TrackView } from "@/components/pixel";
 import { IconBank, IconChevron, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 import { naira, site } from "@/lib/site";
@@ -22,8 +25,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const p = getProduct(params.slug);
+export default async function ProductPage({ params, searchParams }: { params: { slug: string }; searchParams: { preview?: string } }) {
+  const preview = searchParams.preview === "1" && !!(await currentAdmin());
+  const p = getProduct(params.slug, { includeUnpublished: preview });
   if (!p || !p.variants.length) notFound();
   const contact = getContact();
   const related = relatedProducts(p);
@@ -33,7 +37,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
     detail: [v.size && v.size !== v.label ? v.size : "", v.duration && v.duration.toLowerCase() !== v.label.toLowerCase() ? v.duration : ""].filter(Boolean).join(" · "),
   }));
   const ld = {
-    "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description, sku: p.variants[0]?.sku,
+    "@context": "https://schema.org", "@type": "Product", name: p.name, description: plainText(p.description), sku: p.variants[0]?.sku,
     image: p.images.map((i) => site.url + i), brand: { "@type": "Brand", name: "WellnessXpress" },
     offers: r ? {
       "@type": "AggregateOffer", priceCurrency: "NGN", lowPrice: r.min, highPrice: r.max, offerCount: p.variants.length,
@@ -52,7 +56,8 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         <div>
-          <Gallery images={p.images} name={p.name} />
+          {preview ? <p className="mb-3 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-900 lg:col-span-2">Preview: this product is {p.status.replace("_", " ")} and hidden from customers.</p> : null}
+          <Gallery images={p.images} name={p.name} meta={mediaMeta(p.images)} />
           {p.slug === "tummy-set" ? (
             <p className="mt-3 rounded-xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm font-semibold text-brand-900">
               Set contents: Tummy Balance Big + Detox Seed
@@ -100,7 +105,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
         <div className="space-y-6">
           <section className="card p-6">
             <h2 className="text-xl">Description</h2>
-            {p.description.split(/\n{2,}/).map((t, i) => <p key={i} className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{t}</p>)}
+            <RichText text={p.description} />
           </section>
           {p.ingredients ? (
             <section className="card p-6"><h2 className="text-xl">Ingredients</h2><p className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{p.ingredients}</p></section>
