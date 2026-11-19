@@ -268,6 +268,26 @@ export async function archiveProductAction(f: FormData) {
   back("/admin/products", "Product archived. Historical order records were retained.");
 }
 
+export async function bulkProductAction(f: FormData) {
+  await requireAdmin("owner");
+  const action = s(f, "action", 20);
+  const ids = [...new Set(f.getAll("productIds").map((value) => Number(value)).filter((id) => Number.isSafeInteger(id) && id > 0))];
+  if (!ids.length || ids.length > 100) return back("/admin/products", "Select between 1 and 100 products.");
+  if (!["publish", "draft", "archive", "feature", "unfeature"].includes(action)) return back("/admin/products", "Choose a valid bulk action.");
+  const placeholders = ids.map(() => "?").join(",");
+  const found = db().prepare(`SELECT id,name FROM products WHERE id IN (${placeholders})`).all(...ids);
+  if (found.length !== ids.length) return back("/admin/products", "One or more selected products could not be found. Reload and try again.");
+  if (action === "publish") {
+    const notReady = db().prepare(`SELECT p.name FROM products p WHERE p.id IN (${placeholders}) AND NOT EXISTS
+      (SELECT 1 FROM variants v WHERE v.product_id=p.id AND v.status='active' AND v.needs_confirmation=0)`).all(...ids);
+    if (notReady.length) return back("/admin/products", `Cannot publish products without a confirmed active price: ${notReady.map((p) => String(p.name)).join(", ")}.`);
+  }
+  const update = action === "publish" ? "status='published'" : action === "draft" ? "status='draft'" : action === "archive" ? "status='archived'" : action === "feature" ? "featured=1" : "featured=0";
+  tx((d) => d.prepare(`UPDATE products SET ${update},updated_at=datetime('now') WHERE id IN (${placeholders})`).run(...ids));
+  revalidatePath("/", "layout");
+  back("/admin/products", `${ids.length} products updated.`);
+}
+
 export async function createCategoryAction(f: FormData) {
   await requireAdmin("owner");
   const name = s(f, "name", 80);
@@ -283,26 +303,52 @@ export async function createCategoryAction(f: FormData) {
 export async function saveCategoryAction(f: FormData) {
   await requireAdmin("owner");
   const id = Number(f.get("id"));
+  if (!Number.isSafeInteger(id) || id < 1) return back("/admin/categories", "Choose a valid category.");
   const current = db().prepare("SELECT * FROM categories WHERE id = ?").get(id);
   if (!current) return back("/admin/categories", "Category not found.");
   const slug = s(f, "slug", 70).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/--+/g, "-").replace(/^-|-$/g, "");
   const duplicate = db().prepare("SELECT 1 FROM categories WHERE slug = ? AND id != ?").get(slug, id);
-  const used = Number(db().prepare("SELECT COUNT(*) n FROM products WHERE category = ?").get(current.slug)?.n || 0);
-  if (!slug || duplicate) return back("/admin/categories", "That slug is empty or already used.");
-  if (used && slug !== current.slug) return back("/admin/categories", "This category is assigned to products. Keep its slug to preserve existing category URLs.");
-  if (slug !== current.slug) {
-    db().prepare("UPDATE category_redirects SET new_slug = ? WHERE new_slug = ?").run(slug, current.slug);
-    db().prepare("INSERT INTO category_redirects (old_slug,new_slug) VALUES (?,?) ON CONFLICT(old_slug) DO UPDATE SET new_slug=excluded.new_slug").run(current.slug, slug);
-  }
+  const name = s(f, "name", 80);
+  if (!slug || duplicate || name.length < 2) return back("/admin/categories", "Enter a category name and a unique URL slug.");
   const status = f.get("status") === "published" ? "published" : "hidden";
   const image = s(f, "image", 300);
   if (image && !image.startsWith("/images/") && !/^\/media\/[a-f0-9]{24}\.(jpg|png|webp)$/.test(image))
     return back("/admin/categories", "Choose a project image path or an uploaded media URL.");
-  db().prepare(`UPDATE categories SET slug=?,name=?,description=?,image=?,seo_title=?,meta_description=?,status=?,sort=?,updated_at=datetime('now') WHERE id=?`)
-    .run(slug, s(f, "name", 80), text(f, "description", 1000), image, s(f, "seoTitle", 120), text(f, "metaDescription", 300), status, Number(f.get("sort")) || 0, id);
+  tx((d) => {
+    if (slug !== current.slug) {
+      d.prepare("UPDATE products SET category=?,updated_at=datetime('now') WHERE category=?").run(slug, current.slug);
+      d.prepare("UPDATE category_redirects SET new_slug=? WHERE new_slug=?").run(slug, current.slug);
+      d.prepare("INSERT INTO category_redirects (old_slug,new_slug) VALUES (?,?) ON CONFLICT(old_slug) DO UPDATE SET new_slug=excluded.new_slug").run(current.slug, slug);
+    }
+    d.prepare(`UPDATE categories SET slug=?,name=?,description=?,image=?,seo_title=?,meta_description=?,status=?,sort=?,updated_at=datetime('now') WHERE id=?`)
+      .run(slug, name, text(f, "description", 1000), image, s(f, "seoTitle", 120), text(f, "metaDescription", 300), status, Number(f.get("sort")) || 0, id);
+  });
   revalidatePath("/", "layout");
+  revalidatePath(`/category/${String(current.slug)}`);
   revalidatePath(`/category/${slug}`);
   back("/admin/categories", "Category saved.");
+}
+
+export async function deleteCategoryAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  if (!Number.isSafeInteger(id) || id < 1) return back("/admin/categories", "Choose a valid category.");
+  const category = db().prepare("SELECT id,slug,name FROM categories WHERE id=?").get(id);
+  if (!category) return back("/admin/categories", "Category not found.");
+  const used = Number(db().prepare("SELECT COUNT(*) n FROM products WHERE category=?").get(category.slug)?.n || 0);
+  const targetSlug = s(f, "targetSlug", 70);
+  const target = targetSlug ? db().prepare("SELECT slug FROM categories WHERE slug=? AND id<>? AND status='published'").get(targetSlug, id) : null;
+  if (used && !target) return back("/admin/categories", `Choose a published category to receive ${used} assigned products before deleting ${String(category.name)}.`);
+  tx((d) => {
+    if (target) d.prepare("UPDATE products SET category=?,updated_at=datetime('now') WHERE category=?").run(target.slug, category.slug);
+    d.prepare("DELETE FROM categories WHERE id=?").run(id);
+    const redirectTo = target ? String(target.slug) : "/shop";
+    d.prepare("UPDATE category_redirects SET new_slug=? WHERE new_slug=?").run(redirectTo, category.slug);
+    d.prepare("INSERT INTO category_redirects (old_slug,new_slug) VALUES (?,?) ON CONFLICT(old_slug) DO UPDATE SET new_slug=excluded.new_slug").run(category.slug, redirectTo);
+  });
+  revalidatePath("/", "layout");
+  revalidatePath(`/category/${String(category.slug)}`);
+  back("/admin/categories", used ? `Category deleted and ${used} products reassigned. Its old URL redirects to ${String(target?.slug)}.` : "Empty category deleted. Its old URL redirects to the shop.");
 }
 
 export async function uploadCategoryImageAction(f: FormData) {
@@ -517,6 +563,23 @@ export async function assignExistingImageAction(f: FormData) {
   });
   revalidatePath("/", "layout");
   back(`/admin/products/${pid}`, "Image added from the media library.");
+}
+
+export async function assignCategoryImageAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("categoryId"));
+  const src = s(f, "src", 300);
+  if (!Number.isSafeInteger(id) || id < 1) return back("/admin/media", "Choose a valid category.");
+  const category = db().prepare("SELECT slug FROM categories WHERE id=?").get(id);
+  if (!category) return back("/admin/categories", "Category not found.");
+  if (!/^\/images\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:webp|png|jpe?g)$/i.test(src) && !/^\/media\/[a-f0-9]{24}\.(?:jpg|png|webp)$/i.test(src))
+    return back("/admin/media", "Choose an image from the library.");
+  const target = src.startsWith("/media/") ? path.join(MEDIA_DIR, path.basename(src)) : path.join(process.cwd(), "public", src.slice(1));
+  try { if (!(await fs.stat(target)).isFile()) throw new Error("Not a file"); } catch { return back("/admin/media", "That image file could not be found."); }
+  db().prepare("UPDATE categories SET image=?,updated_at=datetime('now') WHERE id=?").run(src, id);
+  revalidatePath("/", "layout");
+  revalidatePath(`/category/${String(category.slug)}`);
+  back("/admin/categories", "Category image selected from the media library.");
 }
 
 export async function saveProductImageMetaAction(f: FormData) {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { allProductsAdmin, getCategories } from "@/lib/catalog";
-import { archiveProductAction, createProductAction, duplicateProductAction } from "@/app/admin/actions";
+import { archiveProductAction, bulkProductAction, createProductAction, duplicateProductAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
 import { naira } from "@/lib/site";
 
@@ -58,14 +58,20 @@ export default async function Products({ searchParams }: { searchParams: { msg?:
         <button className="admin-btn">Apply filters</button>
       </form>
       <p className="mt-3 text-sm text-neutral-500">{all.length} matching products · page {Math.min(page, pages)} of {pages}</p>
+      <form id="bulk-products" action={bulkProductAction} className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white p-3">
+        <label htmlFor="bulk-action" className="text-sm font-medium">Bulk action for selected rows</label>
+        <select id="bulk-action" name="action" className="admin-input w-auto" required defaultValue=""><option value="" disabled>Choose action</option><option value="publish">Publish</option><option value="draft">Move to draft</option><option value="archive">Archive</option><option value="feature">Feature</option><option value="unfeature">Remove featured status</option></select>
+        <button className="admin-btn-ghost">Apply</button>
+      </form>
       <div className="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-neutral-500"><tr><th className="p-3">Product</th><th className="p-3">SKU</th><th className="p-3">Category</th><th className="p-3">Type</th><th className="p-3">Status</th><th className="p-3">Price options</th><th className="p-3">Stock</th><th className="p-3">Updated</th></tr></thead>
+          <thead className="bg-neutral-50 text-left text-neutral-500"><tr><th className="p-3"><span className="sr-only">Select</span></th><th className="p-3">Product</th><th className="p-3">SKU</th><th className="p-3">Category</th><th className="p-3">Type</th><th className="p-3">Status</th><th className="p-3">Price options</th><th className="p-3">Stock</th><th className="p-3">Updated</th></tr></thead>
           <tbody>
             {products.map((p) => {
               const flags = p.variants.filter((v) => v.needsConfirmation && v.status === "active").length;
               return (
                 <tr key={p.id} className="border-t border-neutral-100 align-top">
+                  <td className="p-3"><input type="checkbox" name="productIds" value={p.id} form="bulk-products" aria-label={`Select ${p.name}`} className="h-4 w-4 accent-brand-700" /></td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       {p.images[0] ? <>

@@ -7,7 +7,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const c = getCategories().find((x) => x.slug === params.slug);
   if (!c) {
     const target = getCategoryRedirect(params.slug);
-    if (target) redirect(`/category/${target}`);
+    if (target) redirect(target.startsWith("/") ? target : `/category/${target}`);
   }
   return c ? { title: c.seoTitle || c.name, description: c.metaDescription || c.description, alternates: { canonical: `/category/${c.slug}` } } : {};
 }
@@ -16,7 +16,7 @@ export default function Category({ params, searchParams }: { params: { slug: str
   const c = getCategories().find((x) => x.slug === params.slug);
   if (!c) {
     const target = getCategoryRedirect(params.slug);
-    if (target) redirect(`/category/${target}`);
+    if (target) redirect(target.startsWith("/") ? target : `/category/${target}`);
   }
   if (!c) notFound();
   return <ShopGrid sp={searchParams} category={c.slug} basePath={`/category/${c.slug}`} title={c.name} intro={c.description} />;

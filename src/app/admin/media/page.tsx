@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import CopyMediaUrl from "@/components/admin/CopyMediaUrl";
 import Flash from "@/components/admin/Flash";
-import { assignExistingImageAction } from "@/app/admin/actions";
-import { allProductsAdmin } from "@/lib/catalog";
+import { assignCategoryImageAction, assignExistingImageAction } from "@/app/admin/actions";
+import { allProductsAdmin, getCategories } from "@/lib/catalog";
 import { requireAdmin } from "@/lib/auth";
 import { MEDIA_DIR } from "@/lib/db";
 
@@ -31,9 +31,10 @@ async function walk(dir: string, base: string): Promise<MediaEntry[]> {
   return out;
 }
 
-export default async function MediaLibrary({ searchParams }: { searchParams: { msg?: string; productId?: string } }) {
+export default async function MediaLibrary({ searchParams }: { searchParams: { msg?: string; productId?: string; categoryId?: string } }) {
   await requireAdmin("owner");
   const products = allProductsAdmin();
+  const categories = getCategories(true);
   const publicFiles = await walk(path.join(process.cwd(), "public", "images"), path.join(process.cwd(), "public", "images"));
   let mediaFiles: MediaEntry[] = [];
   try {
@@ -61,6 +62,15 @@ export default async function MediaLibrary({ searchParams }: { searchParams: { m
             </select>
           </label>
           <button className="admin-btn-ghost w-full py-1.5 text-xs">Add to gallery</button>
+        </form>
+        <form action={assignCategoryImageAction} className="mt-2 space-y-2 border-t pt-2">
+          <input type="hidden" name="src" value={file.src} />
+          <label className="block text-xs font-medium text-neutral-600">Use as category image
+            <select name="categoryId" defaultValue={categories.some((category) => String(category.id) === searchParams.categoryId) ? searchParams.categoryId : ""} className="admin-input mt-1" required>
+              <option value="" disabled>Select a category</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select>
+          </label>
+          <button className="admin-btn-ghost w-full py-1.5 text-xs">Use category image</button>
         </form>
       </article>)}
     </div> : <p className="mt-6 rounded-xl bg-white p-5 text-sm text-neutral-600">No image files were found.</p>}

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { ProductMedia } from "@/lib/catalog";
 
-const isLocal = (s: string) => s.startsWith("/images/");
+const isLocal = (s: string) => s.startsWith("/images/") || /^\/media\/[a-f0-9]{24}\.(?:jpg|png|webp)$/i.test(s);
 
 export default function Gallery({ images, name, media = [] }: { images: string[]; name: string; media?: ProductMedia[] }) {
   const [i, setI] = useState(0);

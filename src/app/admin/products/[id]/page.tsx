@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { allProductsAdmin, getCategories, getProductById } from "@/lib/catalog";
 import Flash from "@/components/admin/Flash";
+import DescriptionEditor from "@/components/admin/DescriptionEditor";
+import UnsavedChangesGuard from "@/components/admin/UnsavedChangesGuard";
 import { deleteVariantAction, imageOrderAction, saveComboItemsAction, saveProductAction, saveProductImageMetaAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
 
 export const metadata = { title: "Edit product" };
@@ -27,7 +29,8 @@ export default async function EditProduct({ params, searchParams }: { params: { 
       {p.reviewNote ? <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>Needs confirmation:</strong> {p.reviewNote}</p> : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-        <form action={saveProductAction} className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5">
+        <form action={saveProductAction} data-unsaved-guard className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5">
+          <UnsavedChangesGuard />
           <input type="hidden" name="id" value={p.id} />
           <div className="grid gap-4 sm:grid-cols-2">
             <label><L>Name</L><input name="name" defaultValue={p.name} className="admin-input" required /></label>
@@ -45,14 +48,14 @@ export default async function EditProduct({ params, searchParams }: { params: { 
             <label className="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" name="featured" defaultChecked={p.featured} className="h-4 w-4 accent-brand-700" /> Featured on the home page</label>
           </div>
           <label className="block"><L>Short description (cards and search)</L><input name="short" defaultValue={p.shortDescription} className="admin-input" /></label>
-          <label className="block"><L>Description</L><textarea name="description" defaultValue={p.description} rows={4} className="admin-input" /></label>
+          <div className="block"><L>Description</L><DescriptionEditor initialValue={p.description} /></div>
           <label className="block"><L>Ingredients (only as confirmed or printed on the label)</L><textarea name="ingredients" defaultValue={p.ingredients} rows={2} className="admin-input" /></label>
           <label className="block"><L>Directions for use (leave empty until confirmed)</L><textarea name="directions" defaultValue={p.directions} rows={3} className="admin-input" /></label>
           <label className="block"><L>Product information</L><textarea name="information" defaultValue={p.information} rows={3} className="admin-input" /></label>
           <label className="block"><L>Questions (Q: question, then A: answer, blank line between)</L><textarea name="faqs" defaultValue={p.faqs.map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")} rows={4} className="admin-input" /></label>
           <label className="block"><L>Related products (slugs, comma separated)</L><input name="related" defaultValue={p.related.join(", ")} className="admin-input" /></label>
           <label className="block"><L>Internal note: what still needs confirmation</L><textarea name="review" defaultValue={p.reviewNote} rows={2} className="admin-input" /></label>
-          <button className="admin-btn">Save product</button>
+          <div className="flex flex-wrap gap-2"><button className="admin-btn">Save product</button><Link href="/admin/products" className="admin-btn-ghost">Cancel</Link></div>
         </form>
 
         <div className="space-y-5">

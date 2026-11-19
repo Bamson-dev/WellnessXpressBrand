@@ -7,6 +7,7 @@ import { getContact } from "@/lib/settings";
 import { PurchaseBox } from "@/components/AddToCart";
 import ProductCard from "@/components/ProductCard";
 import Gallery from "@/components/Gallery";
+import RichText from "@/components/RichText";
 import { TrackView } from "@/components/pixel";
 import { IconBank, IconChevron, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 import { naira, site } from "@/lib/site";
@@ -100,7 +101,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
         <div className="space-y-6">
           <section className="card p-6">
             <h2 className="text-xl">Description</h2>
-            {p.description.split(/\n{2,}/).map((t, i) => <p key={i} className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{t}</p>)}
+            <RichText value={p.description} />
           </section>
           {p.ingredients ? (
             <section className="card p-6"><h2 className="text-xl">Ingredients</h2><p className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{p.ingredients}</p></section>
