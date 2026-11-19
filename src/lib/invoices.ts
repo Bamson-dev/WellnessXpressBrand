@@ -156,5 +156,5 @@ export async function invoicePdf(inv: Invoice): Promise<Uint8Array> {
   if (inv.freeDelivery) { text("Free delivery across Nigeria.", M, y, { color: green }); y -= 13; }
   text("A payment shows as paid only after we verify it in our bank account.", M, 60, { size: 8, color: grey });
   text(`${site.name} · ${site.url.replace(/^https?:\/\//, "")}`, W - M, 60, { size: 8, color: grey, right: true });
-  return doc.save();
+  return doc.save({ useObjectStreams: false });
 }
