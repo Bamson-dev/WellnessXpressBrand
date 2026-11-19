@@ -52,7 +52,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         <div>
-          <Gallery images={p.images} name={p.name} />
+          <Gallery images={p.images} name={p.name} media={p.media} />
           {p.slug === "tummy-set" ? (
             <p className="mt-3 rounded-xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm font-semibold text-brand-900">
               Set contents: Tummy Balance Big + Detox Seed

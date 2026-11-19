@@ -461,21 +461,81 @@ export async function saveComboItemsAction(f: FormData) {
 export async function uploadImageAction(f: FormData) {
   await requireAdmin("owner");
   const pid = Number(f.get("productId"));
-  const file = f.get("image");
-  if (!file || typeof file === "string" || !file.size) return back(`/admin/products/${pid}`, "Choose an image to upload.");
-  if (file.size > 6 * 1024 * 1024) return back(`/admin/products/${pid}`, "The image must be 6 MB or smaller.");
-  const buf = Buffer.from(await file.arrayBuffer());
-  const type = sniffType(buf);
-  if (!type || type === "pdf") return back(`/admin/products/${pid}`, "Upload a JPG, PNG or WebP image.");
-  const name = `${randomBytes(12).toString("hex")}.${type}`;
+  if (!Number.isSafeInteger(pid) || pid < 1) return back("/admin/products", "Choose a valid product.");
+  const product = db().prepare("SELECT name,images FROM products WHERE id=?").get(pid);
+  if (!product) return back("/admin/products", "Product not found.");
+  const files = f.getAll("images").filter((v): v is File => typeof v !== "string" && v.size > 0);
+  if (!files.length) return back(`/admin/products/${pid}`, "Choose one or more images to upload.");
+  if (files.length > 12) return back(`/admin/products/${pid}`, "Upload up to 12 images at a time.");
+  if (files.some((file) => file.size > 6 * 1024 * 1024)) return back(`/admin/products/${pid}`, "Each image must be 6 MB or smaller.");
+  if (files.reduce((sum, file) => sum + file.size, 0) > 7 * 1024 * 1024) return back(`/admin/products/${pid}`, "The total upload must be 7 MB or smaller.");
+  const checked: { buf: Buffer; type: string }[] = [];
+  for (const file of files) {
+    const buf = Buffer.from(await file.arrayBuffer());
+    const type = sniffType(buf);
+    if (!type || type === "pdf") return back(`/admin/products/${pid}`, "Upload JPG, PNG or WebP images only.");
+    checked.push({ buf, type });
+  }
+  const uploaded: { src: string }[] = [];
   await fs.mkdir(MEDIA_DIR, { recursive: true });
-  await fs.writeFile(path.join(MEDIA_DIR, name), buf);
-  const p = db().prepare("SELECT images FROM products WHERE id = ?").get(pid);
-  const imgs = JSON.parse(String(p?.images || "[]")) as string[];
-  imgs.push(`/media/${name}`);
-  db().prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
+  for (const { buf, type } of checked) {
+    const name = `${randomBytes(12).toString("hex")}.${type}`;
+    const target = path.join(MEDIA_DIR, name);
+    await fs.writeFile(target, buf, { flag: "wx", mode: 0o644 });
+    uploaded.push({ src: `/media/${name}` });
+  }
+  const imgs = JSON.parse(String(product.images || "[]")) as string[];
+  uploaded.forEach((item) => imgs.push(item.src));
+  tx((d) => {
+    d.prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
+    uploaded.forEach((item, i) => d.prepare("INSERT INTO product_media(product_id,src,alt_text,sort) VALUES (?,?,?,?)")
+      .run(pid, item.src, String(product.name), imgs.length - uploaded.length + i));
+  });
   revalidatePath("/", "layout");
-  back(`/admin/products/${pid}`, "Image uploaded.");
+  back(`/admin/products/${pid}`, `${uploaded.length} image${uploaded.length === 1 ? "" : "s"} uploaded.`);
+}
+
+export async function assignExistingImageAction(f: FormData) {
+  await requireAdmin("owner");
+  const pid = Number(f.get("productId"));
+  const src = s(f, "src", 300);
+  if (!Number.isSafeInteger(pid) || pid < 1) return back("/admin/media", "Choose a valid product.");
+  const product = db().prepare("SELECT name,images FROM products WHERE id=?").get(pid);
+  if (!product) return back("/admin/products", "Product not found.");
+  if (!/^\/images\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:webp|png|jpe?g)$/i.test(src) && !/^\/media\/[a-f0-9]{24}\.(?:jpg|png|webp)$/i.test(src))
+    return back("/admin/media", "Choose an image from the library.");
+  const target = src.startsWith("/media/") ? path.join(MEDIA_DIR, path.basename(src)) : path.join(process.cwd(), "public", src.slice(1));
+  try { await fs.access(target); } catch { return back("/admin/media", "That image file could not be found."); }
+  const images = JSON.parse(String(product.images || "[]")) as string[];
+  if (images.includes(src)) return back(`/admin/products/${pid}`, "That image is already assigned to this product.");
+  images.push(src);
+  tx((d) => {
+    d.prepare("UPDATE products SET images=?,updated_at=datetime('now') WHERE id=?").run(JSON.stringify(images), pid);
+    d.prepare(`INSERT INTO product_media(product_id,src,alt_text,sort) VALUES (?,?,?,?)
+      ON CONFLICT(product_id,src) DO UPDATE SET sort=excluded.sort,updated_at=datetime('now')`)
+      .run(pid, src, String(product.name), images.length - 1);
+  });
+  revalidatePath("/", "layout");
+  back(`/admin/products/${pid}`, "Image added from the media library.");
+}
+
+export async function saveProductImageMetaAction(f: FormData) {
+  await requireAdmin("owner");
+  const pid = Number(f.get("productId"));
+  const src = s(f, "src", 300);
+  const alt = s(f, "alt", 160);
+  const caption = s(f, "caption", 160);
+  if (!Number.isSafeInteger(pid) || pid < 1) return back("/admin/products", "Choose a valid product.");
+  const product = db().prepare("SELECT name,images FROM products WHERE id=?").get(pid);
+  if (!product) return back("/admin/products", "Product not found.");
+  const images = JSON.parse(String(product.images || "[]")) as string[];
+  const index = images.indexOf(src);
+  if (index < 0) return back(`/admin/products/${pid}`, "That image is no longer assigned to this product. Reload the editor and try again.");
+  db().prepare(`INSERT INTO product_media(product_id,src,alt_text,caption,sort) VALUES (?,?,?,?,?)
+    ON CONFLICT(product_id,src) DO UPDATE SET alt_text=excluded.alt_text,caption=excluded.caption,sort=excluded.sort,updated_at=datetime('now')`)
+    .run(pid, src, alt || String(product.name), caption, index);
+  revalidatePath("/", "layout");
+  back(`/admin/products/${pid}`, "Image alt text and caption saved.");
 }
 
 export async function imageOrderAction(f: FormData) {
@@ -483,14 +543,20 @@ export async function imageOrderAction(f: FormData) {
   const pid = Number(f.get("productId"));
   const idx = Number(f.get("index"));
   const op = s(f, "op", 10);
-  const p = db().prepare("SELECT images FROM products WHERE id = ?").get(pid);
+  if (!Number.isSafeInteger(pid) || pid < 1 || !Number.isSafeInteger(idx) || !["remove", "first", "up", "down"].includes(op)) return back("/admin/products", "Choose a valid image action.");
+  const p = db().prepare("SELECT images,name FROM products WHERE id = ?").get(pid);
   const imgs = JSON.parse(String(p?.images || "[]")) as string[];
   if (!(idx >= 0 && idx < imgs.length)) return back(`/admin/products/${pid}`);
   if (op === "remove") imgs.splice(idx, 1);
   if (op === "first") imgs.unshift(...imgs.splice(idx, 1));
   if (op === "up" && idx > 0) [imgs[idx - 1], imgs[idx]] = [imgs[idx], imgs[idx - 1]];
   if (op === "down" && idx < imgs.length - 1) [imgs[idx + 1], imgs[idx]] = [imgs[idx], imgs[idx + 1]];
-  db().prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
+  tx((d) => {
+    d.prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
+    if (op === "remove") d.prepare("DELETE FROM product_media WHERE product_id=? AND src=?").run(pid, String(JSON.parse(String(p?.images || "[]"))[idx]));
+    imgs.forEach((src, sort) => d.prepare(`INSERT INTO product_media(product_id,src,alt_text,sort) VALUES (?,?,?,?)
+      ON CONFLICT(product_id,src) DO UPDATE SET sort=excluded.sort`).run(pid, src, String(p?.name || "Product image"), sort));
+  });
   revalidatePath("/", "layout");
   back(`/admin/products/${pid}`, op === "remove" ? "Image removed from this product." : "Main image updated.");
 }

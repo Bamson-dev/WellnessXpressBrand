@@ -212,6 +212,16 @@ const MIGRATIONS: string[] = [
      created_at TEXT NOT NULL DEFAULT (datetime('now'))
    );
    CREATE INDEX IF NOT EXISTS idx_delivery_zone_history_created ON delivery_zone_history(id DESC);`,
+  `CREATE TABLE IF NOT EXISTS product_media (
+     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+     src TEXT NOT NULL,
+     alt_text TEXT NOT NULL DEFAULT '',
+     caption TEXT NOT NULL DEFAULT '',
+     sort INTEGER NOT NULL DEFAULT 0,
+     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+     PRIMARY KEY(product_id,src)
+   );
+   CREATE INDEX IF NOT EXISTS idx_product_media_product_sort ON product_media(product_id,sort);`,
 ];
 
 function open(): DB {

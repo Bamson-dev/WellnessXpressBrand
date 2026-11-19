@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { allProductsAdmin, getCategories, getProductById } from "@/lib/catalog";
 import Flash from "@/components/admin/Flash";
-import { deleteVariantAction, imageOrderAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
+import { deleteVariantAction, imageOrderAction, saveComboItemsAction, saveProductAction, saveProductImageMetaAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
 
 export const metadata = { title: "Edit product" };
 
@@ -57,26 +57,32 @@ export default async function EditProduct({ params, searchParams }: { params: { 
 
         <div className="space-y-5">
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
-            <h2 className="text-lg">Photos</h2>
+            <div className="flex items-center justify-between gap-2"><h2 className="text-lg">Photos</h2><Link href={`/admin/media?productId=${p.id}`} className="text-sm text-brand-700 underline">Choose from media library</Link></div>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {p.images.map((src, i) => (
                 <div key={src + i} className="rounded-lg border border-neutral-200 p-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="aspect-square w-full rounded object-contain" />
+                  <img src={src} alt={p.media.find((m) => m.src === src)?.alt || p.name} className="aspect-square w-full rounded object-contain" />
                   <div className="mt-1 flex gap-1">
                     {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="first" /><button className="text-xs text-brand-700 underline">Make main</button></form> : <span className="text-xs text-neutral-500">Main</span>}
                     {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="up" /><button aria-label={`Move photo ${i + 1} up`} className="ml-2 text-xs text-neutral-600 underline">Move up</button></form> : null}
                     {i < p.images.length - 1 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="down" /><button aria-label={`Move photo ${i + 1} down`} className="text-xs text-neutral-600 underline">Move down</button></form> : null}
                     <form action={imageOrderAction} className="ml-auto"><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="remove" /><button className="text-xs text-red-700 underline">Remove</button></form>
                   </div>
+                  <form action={saveProductImageMetaAction} className="mt-2 space-y-2 border-t border-neutral-100 pt-2">
+                    <input type="hidden" name="productId" value={p.id} /><input type="hidden" name="src" value={src} />
+                    <label className="block text-xs text-neutral-600">Alt text<input name="alt" defaultValue={p.media.find((m) => m.src === src)?.alt || p.name} maxLength={160} className="admin-input mt-1" /></label>
+                    <label className="block text-xs text-neutral-600">Caption (optional)<input name="caption" defaultValue={p.media.find((m) => m.src === src)?.caption || ""} maxLength={160} className="admin-input mt-1" /></label>
+                    <button className="admin-btn-ghost py-1 text-xs">Save image text</button>
+                  </form>
                 </div>
               ))}
             </div>
             <form action={uploadImageAction} className="mt-3 space-y-2">
               <input type="hidden" name="productId" value={p.id} />
-              <input type="file" name="image" accept="image/jpeg,image/png,image/webp" className="block w-full text-sm" required />
-              <button className="admin-btn-ghost">Upload photo</button>
-              <p className="text-xs text-neutral-500">Use real photos of the actual packaging. Square images on a light background look best.</p>
+              <input type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple className="block w-full text-sm" required />
+              <button className="admin-btn-ghost">Upload photos</button>
+              <p className="text-xs text-neutral-500">JPG, PNG or WebP · up to 12 files, 6 MB each. Uploads use persistent application storage.</p>
             </form>
           </section>
         </div>

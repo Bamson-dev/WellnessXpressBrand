@@ -1,20 +1,22 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
+import type { ProductMedia } from "@/lib/catalog";
 
 const isLocal = (s: string) => s.startsWith("/images/");
 
-export default function Gallery({ images, name }: { images: string[]; name: string }) {
+export default function Gallery({ images, name, media = [] }: { images: string[]; name: string; media?: ProductMedia[] }) {
   const [i, setI] = useState(0);
   const cur = images[i];
+  const current = media.find((x) => x.src === cur);
   return (
     <div>
       <div className="relative aspect-square overflow-hidden rounded-3xl border border-neutral-100 bg-gradient-to-b from-white to-brand-50">
         {cur ? (
           isLocal(cur)
-            ? <Image src={cur} alt={`${name} by WellnessXpress`} fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain" />
+            ? <Image src={cur} alt={current?.alt || name} fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain" />
             // eslint-disable-next-line @next/next/no-img-element
-            : <img src={cur} alt={`${name} by WellnessXpress`} className="absolute inset-0 h-full w-full object-contain" />
+            : <img src={cur} alt={current?.alt || name} className="absolute inset-0 h-full w-full object-contain" />
         ) : <div className="grid h-full place-items-center text-neutral-400">No photo yet</div>}
       </div>
       {images.length > 1 ? (
@@ -30,6 +32,7 @@ export default function Gallery({ images, name }: { images: string[]; name: stri
           ))}
         </div>
       ) : null}
+      {current?.caption ? <p className="mt-2 text-center text-sm text-neutral-600">{current.caption}</p> : null}
     </div>
   );
 }

@@ -8,11 +8,12 @@ export type Variant = {
 };
 export type ComboItem = { id: number; itemProductId: number | null; itemName: string; sizeNote: string; quantityNote: string; itemSlug: string | null; itemImage: string | null };
 export type Faq = { q: string; a: string };
+export type ProductMedia = { src: string; alt: string; caption: string };
 export type Product = {
   id: number; slug: string; name: string; type: "single" | "combo"; category: string; shortDescription: string;
   description: string; information: string; ingredients: string; directions: string; faqs: Faq[]; images: string[];
   related: string[]; status: string; featured: boolean; sort: number; reviewNote: string; createdAt: string; updatedAt: string;
-  variants: Variant[]; items: ComboItem[];
+  variants: Variant[]; items: ComboItem[]; media: ProductMedia[];
 };
 
 export type Category = { id: number; slug: string; name: string; description: string; image: string; seoTitle: string; metaDescription: string; status: "published" | "hidden"; sort: number; productCount: number };
@@ -47,6 +48,9 @@ function mapVariant(r: Record<string, unknown>): Variant {
 
 function mapProduct(r: Record<string, unknown>, opts: { allVariants?: boolean } = {}): Product {
   const id = Number(r.id);
+  const images = parse<string[]>(r.images, []);
+  const metaRows = db().prepare("SELECT src,alt_text,caption FROM product_media WHERE product_id=? ORDER BY sort,src").all(id);
+  const mediaBySrc = new Map(metaRows.map((m) => [String(m.src), { alt: String(m.alt_text || ""), caption: String(m.caption || "") }]));
   const vq = opts.allVariants
     ? "SELECT * FROM variants WHERE product_id = ? ORDER BY sort, id"
     : "SELECT * FROM variants WHERE product_id = ? AND status = 'active' ORDER BY sort, id";
@@ -66,9 +70,10 @@ function mapProduct(r: Record<string, unknown>, opts: { allVariants?: boolean } 
   return {
     id, slug: String(r.slug), name: String(r.name), type: r.type as "single" | "combo", category: String(r.category),
     shortDescription: String(r.short_description), description: String(r.description), information: String(r.information),
-    ingredients: String(r.ingredients), directions: String(r.directions), faqs: parse<Faq[]>(r.faqs, []), images: parse<string[]>(r.images, []),
+    ingredients: String(r.ingredients), directions: String(r.directions), faqs: parse<Faq[]>(r.faqs, []), images,
     related: parse<string[]>(r.related, []), status: String(r.status), featured: Number(r.featured) === 1, sort: Number(r.sort),
     reviewNote: String(r.review_note), createdAt: String(r.created_at), updatedAt: String(r.updated_at), variants, items,
+    media: images.map((src) => ({ src, alt: mediaBySrc.get(src)?.alt || String(r.name), caption: mediaBySrc.get(src)?.caption || "" })),
   };
 }
 
