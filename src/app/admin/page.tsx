@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { can, requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { ADMIN_NAV } from "@/lib/admin-nav";
 import { dashboardStats, listOrders } from "@/lib/orders";
 import { allProductsAdmin } from "@/lib/catalog";
 import { bankIsComplete, deliveryZones, getBank } from "@/lib/settings";
@@ -11,6 +13,11 @@ export const metadata = { title: "Dashboard" };
 
 export default async function Dashboard({ searchParams }: { searchParams: { denied?: string } }) {
   const a = await requireAdmin();
+  if (!can(a, "dashboard")) {
+    const first = ADMIN_NAV.find((n) => n.href !== "/admin" && can(a, n.perm));
+    if (!first) return <p className="rounded-xl border border-neutral-200 bg-white p-6 text-neutral-700">Your account has no permissions yet. Ask the store owner to give you access.</p>;
+    redirect(searchParams.denied ? `${first.href}?msg=${encodeURIComponent("You do not have permission to open that page.")}` : first.href);
+  }
   const st = dashboardStats();
   const recent = listOrders({ limit: 8 }).rows;
   const products = allProductsAdmin();
@@ -30,7 +37,7 @@ export default async function Dashboard({ searchParams }: { searchParams: { deni
   };
   return (
     <div>
-      <Flash msg={searchParams.denied ? "Only the owner can open that page." : undefined} />
+      <Flash msg={searchParams.denied ? "You do not have permission to open that page." : undefined} />
       <h1 className="text-2xl">Dashboard</h1>
       <p className="text-sm text-neutral-500">Signed in as {a.email}</p>
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">

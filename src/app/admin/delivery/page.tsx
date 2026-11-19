@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { deliveryZones } from "@/lib/settings";
 import { bulkDeliveryAction, saveDeliveryAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
@@ -8,7 +8,7 @@ import UnsavedGuard from "@/components/admin/UnsavedGuard";
 export const metadata = { title: "Delivery" };
 
 export default async function Delivery({ searchParams }: { searchParams: { msg?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("delivery");
   const zones = deliveryZones();
   const covered = zones.filter((z) => z.active).length;
   return (

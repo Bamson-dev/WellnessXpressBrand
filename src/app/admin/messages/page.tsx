@@ -1,12 +1,12 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { DATA_DIR } from "@/lib/db";
 
 export const metadata = { title: "Messages" };
 
 export default async function Messages() {
-  await requireAdmin();
+  await requirePerm("messages");
   let rows: { at: string; name: string; email: string; phone: string; message: string }[] = [];
   try {
     const raw = await fs.readFile(path.join(DATA_DIR, "contact.jsonl"), "utf8");

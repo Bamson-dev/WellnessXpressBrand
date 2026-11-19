@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { can, requirePerm } from "@/lib/auth";
 import { bankOf, getOrderById, orderEvents, orderItems } from "@/lib/orders";
 import { getContact } from "@/lib/settings";
 import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, displayPhone, naira } from "@/lib/site";
@@ -10,7 +10,7 @@ import { markDeliveryPaidAction, saveDispatchAction, markPaymentFailedAction, sa
 export const metadata = { title: "Order" };
 
 export default async function OrderDetail({ params, searchParams }: { params: { id: string }; searchParams: { msg?: string } }) {
-  const a = await requireAdmin();
+  const a = await requirePerm("orders");
   const o = getOrderById(Number(params.id));
   if (!o) notFound();
   const items = orderItems(o.id);
@@ -32,6 +32,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
         <h1 className="text-2xl">{o.number}</h1>
         <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-semibold">{PAYMENT_STATUS[o.payment_status]}</span>
         <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-semibold">{FULFILMENT_STATUS[o.fulfilment_status]}</span>
+        {can(a, "invoices") ? <span className="ml-auto flex gap-2"><Link href={`/admin/invoices/${o.id}`} className="admin-btn-ghost">Invoice</Link><a href={`/api/admin/invoices/${o.id}`} className="admin-btn-ghost">PDF</a></span> : null}
       </div>
       <p className="text-sm text-neutral-500">Placed {o.created_at} (UTC)</p>
       <div className="mt-4"><Flash msg={searchParams.msg} /></div>
@@ -80,7 +81,9 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
               {row("Verified", o.paid_at ? `${o.paid_at} by ${o.verified_by}` : "Not verified")}
               {o.purchase_event_status ? row("Meta Purchase event", String(o.purchase_event_status)) : null}
             </dl>
-            {o.payment_status !== "paid" ? (
+            {!can(a, "payments") ? (
+              <p className="mt-3 text-xs text-neutral-500">You can view this order. Payment verification needs the Payment verification permission.</p>
+            ) : o.payment_status !== "paid" ? (
               <div className="mt-4 rounded-lg bg-neutral-50 p-4">
                 <p className="text-sm font-semibold">Check your {bank.bank} account for the product payment of {naira(o.subtotal)} before you confirm.</p>
                 <p className="mt-1 text-xs text-neutral-500">A receipt or reference from the customer is not proof of payment. Confirm only when you see the money in the account.</p>

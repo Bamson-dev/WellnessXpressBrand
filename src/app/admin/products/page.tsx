@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { allProductsAdmin, getCategories } from "@/lib/catalog";
 import { archiveProductAction, bulkProductsAction, createProductAction, duplicateProductAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
@@ -8,7 +8,7 @@ import { naira } from "@/lib/site";
 export const metadata = { title: "Products" };
 
 export default async function Products({ searchParams }: { searchParams: { msg?: string; q?: string; status?: string; type?: string; stock?: string; sort?: string; category?: string; featured?: string; page?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("products");
   const q = (searchParams.q || "").trim().toLowerCase();
   const status = searchParams.status || "all";
   const type = searchParams.type || "all";

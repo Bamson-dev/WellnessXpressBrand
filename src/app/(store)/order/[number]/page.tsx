@@ -144,6 +144,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         {help ? <a href={help} target="_blank" rel="noopener noreferrer" className="btn btn-wa"><IconWhatsApp /> WhatsApp support</a> : null}
+        <a href={`/order/${o.number}/invoice${searchParams.t ? `?t=${encodeURIComponent(searchParams.t)}` : ""}`} className="btn btn-outline">Download invoice (PDF)</a>
         <Link href="/shop" className="btn btn-outline">Continue shopping</Link>
       </div>
     </div>

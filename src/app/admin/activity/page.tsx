@@ -1,10 +1,10 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 export const metadata = { title: "Activity log" };
 
 export default async function Activity({ searchParams }: { searchParams: { q?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("activity");
   const q = (searchParams.q || "").trim().slice(0, 100);
   const like = `%${q.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
   const rows = q

@@ -1,11 +1,11 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { analyticsRange, salesAnalytics } from "@/lib/analytics";
 import { naira } from "@/lib/site";
 
 export const metadata = { title: "Sales analytics" };
 
 export default async function Analytics({ searchParams }: { searchParams: { from?: string; to?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("analytics");
   const range = analyticsRange(searchParams.from, searchParams.to);
   const data = salesAnalytics(range);
   const card = (label: string, value: string | number) => <div className="rounded-xl border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></div>;

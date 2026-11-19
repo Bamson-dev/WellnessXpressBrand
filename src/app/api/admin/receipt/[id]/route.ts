@@ -1,7 +1,7 @@
 import path from "path";
 import { promises as fs } from "fs";
 import { RECEIPT_DIR } from "@/lib/db";
-import { currentAdmin } from "@/lib/auth";
+import { can, currentAdmin } from "@/lib/auth";
 import { getOrderById } from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ const TYPES: Record<string, string> = { jpg: "image/jpeg", png: "image/png", web
 
 /** Payment receipts are private. Only signed-in admins can open them. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  if (!(await currentAdmin())) return new Response("Not found", { status: 404 });
+  if (!can(await currentAdmin(), "payments")) return new Response("Not found", { status: 404 });
   const o = getOrderById(Number(params.id));
   const name = o?.receipt_path || "";
   if (!/^[A-Z0-9-]+-[a-f0-9]{12}\.(jpg|png|webp|pdf)$/.test(name)) return new Response("Not found", { status: 404 });

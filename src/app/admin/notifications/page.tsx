@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { markNotificationReadAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
@@ -7,7 +7,7 @@ import Flash from "@/components/admin/Flash";
 export const metadata = { title: "Notifications" };
 
 export default async function Notifications({ searchParams }: { searchParams: { msg?: string } }) {
-  await requireAdmin();
+  await requirePerm("notifications");
   const rows = db().prepare("SELECT * FROM admin_notifications ORDER BY (read_at IS NULL) DESC,id DESC LIMIT 250").all();
   const unread = rows.filter((row) => row.read_at == null).length;
   return <div>

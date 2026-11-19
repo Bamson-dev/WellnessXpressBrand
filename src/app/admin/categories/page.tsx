@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { getCategories } from "@/lib/catalog";
 import { createCategoryAction, saveCategoryAction, uploadCategoryImageAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
@@ -6,7 +6,7 @@ import Flash from "@/components/admin/Flash";
 export const metadata = { title: "Categories" };
 
 export default async function CategoriesPage({ searchParams }: { searchParams: { msg?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("categories");
   const categories = getCategories(true);
   const Label = ({ children }: { children: React.ReactNode }) => <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</span>;
   return <div>

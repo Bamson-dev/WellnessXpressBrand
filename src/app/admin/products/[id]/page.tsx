@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { allProductsAdmin, getCategories, getProductById } from "@/lib/catalog";
 import Flash from "@/components/admin/Flash";
 import UnsavedGuard from "@/components/admin/UnsavedGuard";
@@ -10,7 +10,7 @@ import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOr
 export const metadata = { title: "Edit product" };
 
 export default async function EditProduct({ params, searchParams }: { params: { id: string }; searchParams: { msg?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("products");
   const p = getProductById(Number(params.id));
   if (!p) notFound();
   const meta = Object.fromEntries(p.images.map((u) => [u, (() => { const m = listMedia().find((x) => x.url === u); return m ? { id: m.id, alt: m.alt, caption: m.caption } : null; })()]));

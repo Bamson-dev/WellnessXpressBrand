@@ -316,6 +316,56 @@ const MIGRATIONS: string[] = [
    INSERT OR IGNORE INTO settings (key, value) VALUES ('deliveryPolicy', '"free_nigeria"');
    UPDATE settings SET value = json_quote('Delivery is free to all 36 states and the FCT (Abuja). There is no delivery charge and no minimum order.\n\nYou pay only for your products, by bank transfer. We start processing your order after we confirm your product payment.\n\nOrders placed before free delivery started keep the delivery fee shown on their order page.') WHERE key = 'shippingPolicy' AND value = json_quote('We deliver to addresses in Nigeria.\n\nYou can pay for your products when you place your order. The delivery fee is confirmed separately afterward, and must be paid as a separate amount before dispatch.\n\nWe start processing your order after we confirm your product payment and delivery payment.');
    UPDATE settings SET value = json_quote('All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Delivery within Nigeria is free. Your order advances only after an admin verifies your product payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.') WHERE key = 'termsPolicy' AND value = json_quote('All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Product payment and delivery payment are collected separately. Your order advances only after an admin verifies the relevant payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.');`,
+  // v13: invoices, customer notes, granular staff permissions, homepage banners, SEO fields and redirects.
+  `ALTER TABLE users ADD COLUMN permissions TEXT;
+   CREATE TABLE IF NOT EXISTS invoices (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     number TEXT NOT NULL UNIQUE,
+     order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id),
+     created_by TEXT NOT NULL DEFAULT '',
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE TABLE IF NOT EXISTS customer_notes (
+     customer_key TEXT PRIMARY KEY,
+     note TEXT NOT NULL DEFAULT '',
+     updated_by TEXT NOT NULL DEFAULT '',
+     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE TABLE IF NOT EXISTS banners (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     heading TEXT NOT NULL DEFAULT '',
+     description TEXT NOT NULL DEFAULT '',
+     button_text TEXT NOT NULL DEFAULT '',
+     button_url TEXT NOT NULL DEFAULT '',
+     desktop_image TEXT NOT NULL DEFAULT '',
+     mobile_image TEXT NOT NULL DEFAULT '',
+     image_alt TEXT NOT NULL DEFAULT '',
+     placement TEXT NOT NULL DEFAULT 'promo',
+     sort INTEGER NOT NULL DEFAULT 0,
+     active INTEGER NOT NULL DEFAULT 0,
+     starts_at TEXT NOT NULL DEFAULT '',
+     ends_at TEXT NOT NULL DEFAULT '',
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX IF NOT EXISTS idx_banners_live ON banners(placement, active, sort);
+   ALTER TABLE products ADD COLUMN seo_title TEXT NOT NULL DEFAULT '';
+   ALTER TABLE products ADD COLUMN meta_description TEXT NOT NULL DEFAULT '';
+   ALTER TABLE products ADD COLUMN og_image TEXT NOT NULL DEFAULT '';
+   ALTER TABLE products ADD COLUMN noindex INTEGER NOT NULL DEFAULT 0;
+   ALTER TABLE categories ADD COLUMN noindex INTEGER NOT NULL DEFAULT 0;
+   CREATE TABLE IF NOT EXISTS redirects (
+     from_path TEXT PRIMARY KEY,
+     to_path TEXT NOT NULL,
+     hits INTEGER NOT NULL DEFAULT 0,
+     created_by TEXT NOT NULL DEFAULT '',
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE TABLE IF NOT EXISTS product_redirects (
+     old_slug TEXT PRIMARY KEY,
+     new_slug TEXT NOT NULL,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );`,
 ];
 
 function open(): DB {

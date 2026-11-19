@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { listOrders } from "@/lib/orders";
 import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, naira } from "@/lib/site";
 
@@ -7,7 +7,7 @@ export const metadata = { title: "Orders" };
 const PAY_FILTERS = [["", "All"], ["awaiting_verification", "Awaiting verification"], ["pending_payment", "Pending payment"], ["awaiting_fee", "Need delivery fee"], ["paid", "Paid"], ["payment_failed", "Payment failed"]];
 
 export default async function Orders({ searchParams }: { searchParams: { payment?: string; fulfilment?: string; q?: string; page?: string } }) {
-  await requireAdmin();
+  await requirePerm("orders");
   const page = Math.max(1, Number(searchParams.page) || 1);
   const payment = PAY_FILTERS.some(([k]) => k === searchParams.payment) ? searchParams.payment : "";
   const fulfilment = Object.keys(FULFILMENT_STATUS).includes(searchParams.fulfilment || "") ? searchParams.fulfilment : "";

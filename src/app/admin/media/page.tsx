@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { listMedia, mediaReferences } from "@/lib/media";
 import { deleteMediaAction, libraryUploadAction, saveMediaMetaAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
@@ -6,7 +6,7 @@ import Flash from "@/components/admin/Flash";
 export const metadata = { title: "Media library" };
 
 export default async function MediaPage({ searchParams }: { searchParams: { msg?: string; q?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("media");
   const q = (searchParams.q || "").slice(0, 60);
   const items = listMedia(q);
   return (

@@ -6,7 +6,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db, tx } from "@/lib/db";
-import { hashPassword, login, logout, requireAdmin } from "@/lib/auth";
+import { hashPassword, login, logout, requirePerm } from "@/lib/auth";
+import { isPermission } from "@/lib/permissions";
 import { getOrderById, logEvent, orderItems } from "@/lib/orders";
 import { adjustStock, recordMovement, releaseOrderStock, reserveOrderStock, type AdjustKind } from "@/lib/inventory";
 import { setSetting } from "@/lib/settings";
@@ -16,6 +17,7 @@ import { clean, isEmail, sniffType } from "@/lib/validate";
 import { ipOf, limited } from "@/lib/ratelimit";
 import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
 import { logAdminActivity } from "@/lib/admin-events";
+import { ensureInvoice } from "@/lib/invoices";
 
 const s = (f: FormData, k: string, max = 500) => clean(f.get(k), max);
 const text = (f: FormData, k: string, max = 8000) => {
@@ -51,7 +53,7 @@ export async function logoutAction() {
 
 /* ---------- orders ---------- */
 export async function setDeliveryFeeAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("payments");
   const id = Number(f.get("id"));
   const fee = money(f.get("fee"));
   const o = getOrderById(id);
@@ -65,7 +67,7 @@ export async function setDeliveryFeeAction(f: FormData) {
 }
 
 export async function verifyPaymentAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("payments");
   const id = Number(f.get("id"));
   const o = getOrderById(id);
   if (!o) return back("/admin/orders");
@@ -73,6 +75,7 @@ export async function verifyPaymentAction(f: FormData) {
   if (o.payment_status === "paid") return back(`/admin/orders/${id}`, "Payment is already confirmed.");
   db().prepare("UPDATE orders SET payment_status = 'paid', paid_at = datetime('now'), verified_by = ?, updated_at = datetime('now') WHERE id = ?").run(a.email, id);
   logEvent(id, a.email, "payment_verified", s(f, "note", 300));
+  ensureInvoice(id, a.email);
   const skus = orderItems(id).map((i) => i.sku);
   const ev = await sendStorePurchase({ number: o.number, total: o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
   db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
@@ -81,7 +84,7 @@ export async function verifyPaymentAction(f: FormData) {
 }
 
 export async function markDeliveryPaidAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("payments");
   const id = Number(f.get("id"));
   const o = getOrderById(id);
   if (!o || o.delivery_fee == null) return back(`/admin/orders/${id}`, "Set the delivery fee before recording payment.");
@@ -96,7 +99,7 @@ export async function markDeliveryPaidAction(f: FormData) {
 }
 
 export async function markPaymentFailedAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("payments");
   const id = Number(f.get("id"));
   const o = getOrderById(id);
   if (!o || o.payment_status === "paid") return back(`/admin/orders/${id}`, "Paid orders cannot be marked as failed.");
@@ -106,7 +109,8 @@ export async function markPaymentFailedAction(f: FormData) {
 }
 
 export async function unverifyPaymentAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("payments");
+  if (a.role !== "owner") return back(`/admin/orders/${Number(f.get("id"))}`, "Only the owner can undo a payment confirmation.");
   const id = Number(f.get("id"));
   db().prepare("UPDATE orders SET payment_status = 'awaiting_verification', paid_at = NULL, updated_at = datetime('now') WHERE id = ? AND payment_status = 'paid'").run(id);
   logEvent(id, a.email, "payment_unverified", s(f, "note", 300));
@@ -114,7 +118,7 @@ export async function unverifyPaymentAction(f: FormData) {
 }
 
 export async function setFulfilmentAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("orders");
   const id = Number(f.get("id"));
   const st = s(f, "status", 20);
   const o = getOrderById(id);
@@ -147,7 +151,7 @@ export async function setFulfilmentAction(f: FormData) {
 }
 
 export async function saveDispatchAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("orders");
   const id = Number(f.get("id"));
   const o = getOrderById(id);
   if (!o) return back("/admin/orders", "Order not found.");
@@ -159,8 +163,19 @@ export async function saveDispatchAction(f: FormData) {
   back(`/admin/orders/${id}`, "Dispatch details saved.");
 }
 
+export async function saveCustomerNoteAction(f: FormData) {
+  const a = await requirePerm("customers");
+  const phone = s(f, "phone", 20);
+  if (!/^\d{8,15}$/.test(phone) || !db().prepare("SELECT 1 FROM orders WHERE phone = ? LIMIT 1").get(phone)) return back("/admin/customers", "Customer not found.");
+  const note = text(f, "note", 4000);
+  db().prepare(`INSERT INTO customer_notes (customer_key, note, updated_by, updated_at) VALUES (?,?,?, datetime('now'))
+    ON CONFLICT(customer_key) DO UPDATE SET note = excluded.note, updated_by = excluded.updated_by, updated_at = datetime('now')`).run(`phone:${phone}`, note, a.email);
+  logAdminActivity(a.email, "customer_note_saved", "customer", phone);
+  back(`/admin/customers/${phone}`, "Notes saved.");
+}
+
 export async function saveNotesAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("orders");
   const id = Number(f.get("id"));
   db().prepare("UPDATE orders SET admin_notes = ?, updated_at = datetime('now') WHERE id = ?").run(text(f, "notes", 4000), id);
   logEvent(id, a.email, "notes_updated");
@@ -171,7 +186,7 @@ export async function saveNotesAction(f: FormData) {
 const STATUSES = ["published", "draft", "pending_confirmation", "archived"];
 
 export async function createProductAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const name = s(f, "name", 120);
   const type = f.get("type") === "combo" ? "combo" : "single";
   if (name.length < 2) return back("/admin/products", "Enter a product name.");
@@ -184,7 +199,7 @@ export async function createProductAction(f: FormData) {
 
 /** Clone catalog configuration only. Orders, customers, and sales history are never copied. */
 export async function duplicateProductAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const id = Number(f.get("id"));
   const source = db().prepare("SELECT * FROM products WHERE id = ?").get(id);
   if (!source) return back("/admin/products", "Product not found.");
@@ -224,7 +239,7 @@ export async function duplicateProductAction(f: FormData) {
 }
 
 export async function bulkProductsAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const ids = f.getAll("ids").map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 200);
   const op = s(f, "op", 20);
   if (!ids.length) return back("/admin/products", "Tick at least one product.");
@@ -248,7 +263,7 @@ export async function bulkProductsAction(f: FormData) {
 
 /** Permanent delete is only allowed for archived products that never appeared in an order or a combo. */
 export async function deleteProductAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const id = Number(f.get("id"));
   const p = db().prepare("SELECT status, name FROM products WHERE id = ?").get(id);
   if (!p) return back("/admin/products", "Product not found.");
@@ -267,7 +282,7 @@ export async function deleteProductAction(f: FormData) {
 }
 
 export async function archiveProductAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const id = Number(f.get("id"));
   const exists = db().prepare("SELECT id FROM products WHERE id = ?").get(id);
   if (!exists) return back("/admin/products", "Product not found.");
@@ -278,7 +293,7 @@ export async function archiveProductAction(f: FormData) {
 }
 
 export async function createCategoryAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("categories");
   const name = s(f, "name", 80);
   if (name.length < 2) return back("/admin/categories", "Enter a category name.");
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70);
@@ -291,7 +306,7 @@ export async function createCategoryAction(f: FormData) {
 }
 
 export async function saveCategoryAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("categories");
   const id = Number(f.get("id"));
   const current = db().prepare("SELECT * FROM categories WHERE id = ?").get(id);
   if (!current) return back("/admin/categories", "Category not found.");
@@ -317,7 +332,7 @@ export async function saveCategoryAction(f: FormData) {
 }
 
 export async function uploadCategoryImageAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("categories");
   const id = Number(f.get("id"));
   const category = db().prepare("SELECT slug FROM categories WHERE id = ?").get(id);
   if (!category) return back("/admin/categories", "Category not found.");
@@ -333,7 +348,7 @@ export async function uploadCategoryImageAction(f: FormData) {
 }
 
 export async function saveProductAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const id = Number(f.get("id"));
   const p = db().prepare("SELECT * FROM products WHERE id = ?").get(id);
   if (!p) return back("/admin/products");
@@ -358,7 +373,7 @@ export async function saveProductAction(f: FormData) {
 }
 
 export async function saveVariantAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const pid = Number(f.get("productId"));
   const vid = Number(f.get("variantId")) || 0;
   const label = s(f, "label", 60);
@@ -374,7 +389,7 @@ export async function saveVariantAction(f: FormData) {
   if (!sku) sku = `WX-${pid}-${label.toUpperCase().replace(/[^A-Z0-9]/g, "")}`;
   if (db().prepare("SELECT 1 FROM variants WHERE sku = ? AND id != ?").get(sku, vid)) return back(`/admin/products/${pid}`, `SKU ${sku} is already used.`);
   const vals = [label, s(f, "size", 60), s(f, "duration", 60), sku, price, sale, stock, status, f.get("confirmed") ? 0 : 1, Number(f.get("sort")) || 0];
-  const admin = await requireAdmin("owner");
+  const admin = await requirePerm("products");
   tx((d) => {
     const before = vid ? d.prepare("SELECT stock FROM variants WHERE id = ? AND product_id = ?").get(vid, pid) : undefined;
     const prev = before?.stock == null ? null : Number(before.stock);
@@ -391,7 +406,7 @@ export async function saveVariantAction(f: FormData) {
 }
 
 export async function deleteVariantAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const pid = Number(f.get("productId"));
   const vid = Number(f.get("variantId"));
   const used = db().prepare("SELECT 1 FROM order_items WHERE variant_id = ?").get(vid);
@@ -402,7 +417,7 @@ export async function deleteVariantAction(f: FormData) {
 }
 
 export async function saveComboItemsAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const pid = Number(f.get("productId"));
   const rows: { pid: number | null; name: string; size: string; qty: string }[] = [];
   for (let i = 0; i < 12; i++) {
@@ -421,7 +436,7 @@ export async function saveComboItemsAction(f: FormData) {
 }
 
 export async function uploadImageAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const pid = Number(f.get("productId"));
   const files = f.getAll("image").filter((x): x is File => typeof x !== "string" && x.size > 0).slice(0, 10);
   if (!files.length) return back(`/admin/products/${pid}`, "Choose an image to upload.");
@@ -440,7 +455,7 @@ export async function uploadImageAction(f: FormData) {
 }
 
 export async function replaceImageAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const pid = Number(f.get("productId"));
   const idx = Number(f.get("index"));
   const file = f.get("image");
@@ -459,7 +474,7 @@ export async function replaceImageAction(f: FormData) {
 }
 
 export async function addFromLibraryAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const pid = Number(f.get("productId"));
   const m = getMedia(Number(f.get("mediaId")));
   if (!m) return back(`/admin/products/${pid}`, "Choose an image from the library.");
@@ -474,7 +489,7 @@ export async function addFromLibraryAction(f: FormData) {
 }
 
 export async function libraryUploadAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("media");
   const files = f.getAll("images").filter((x): x is File => typeof x !== "string" && x.size > 0).slice(0, 20);
   if (!files.length) return back("/admin/media", "Choose at least one image.");
   const errors: string[] = [];
@@ -485,7 +500,7 @@ export async function libraryUploadAction(f: FormData) {
 }
 
 export async function saveMediaMetaAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("media", "products");
   const id = Number(f.get("id"));
   const ret = s(f, "back", 200).startsWith("/admin/") ? s(f, "back", 200) : "/admin/media";
   db().prepare("UPDATE media SET alt = ?, caption = ? WHERE id = ?").run(s(f, "alt", 150), s(f, "caption", 200), id);
@@ -495,14 +510,14 @@ export async function saveMediaMetaAction(f: FormData) {
 }
 
 export async function deleteMediaAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("media");
   const err = await deleteMedia(Number(f.get("id")));
   if (!err) audit(a, "deleteMediaAction", f, "");
   back("/admin/media", err || "Image deleted.");
 }
 
 export async function imageOrderAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("products");
   const pid = Number(f.get("productId"));
   const idx = Number(f.get("index"));
   const op = s(f, "op", 10);
@@ -521,7 +536,7 @@ export async function imageOrderAction(f: FormData) {
 
 /* ---------- inventory ---------- */
 export async function adjustStockAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("inventory");
   const vid = Number(f.get("variantId"));
   const kind = s(f, "kind", 20) as AdjustKind;
   const back2 = s(f, "back", 200).startsWith("/admin/") ? s(f, "back", 200) : "/admin/inventory";
@@ -533,7 +548,7 @@ export async function adjustStockAction(f: FormData) {
   back(back2, err || "Stock updated and recorded in the history.");
 }
 export async function setThresholdAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("inventory");
   const vid = Number(f.get("variantId"));
   const raw = String(f.get("threshold") ?? "").trim();
   const t = raw === "" ? null : Math.floor(Number(raw));
@@ -557,7 +572,7 @@ function writeZones(rows: ZoneInput[]) {
 }
 
 export async function saveDeliveryAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("delivery");
   const rows: ZoneInput[] = NIGERIAN_STATES.map((st) => ({
     state: st, active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160), internalNote: s(f, `internal_${st}`, 300),
   }));
@@ -569,7 +584,7 @@ export async function saveDeliveryAction(f: FormData) {
 }
 
 export async function bulkDeliveryAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("delivery");
   const states = f.getAll("states").map(String).filter((x) => NIGERIAN_STATES.includes(x));
   if (!states.length) return back("/admin/delivery", "Tick at least one state for the bulk update.");
   const op = s(f, "op", 20);
@@ -623,7 +638,7 @@ function parseDeliveryCsv(text: string) {
 }
 
 export async function previewDeliveryImportAction(_: unknown, f: FormData) {
-  await requireAdmin("owner");
+  await requirePerm("delivery");
   const file = f.get("file");
   let text = "";
   if (file && typeof file !== "string" && file.size) {
@@ -636,7 +651,7 @@ export async function previewDeliveryImportAction(_: unknown, f: FormData) {
 }
 
 export async function applyDeliveryImportAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("delivery");
   const { rows, problems } = parseDeliveryCsv(String(f.get("csv") || ""));
   if (problems.length) return back("/admin/delivery", "Import cancelled. The file has problems; preview it again and fix them first.");
   if (!rows.length) return back("/admin/delivery", "Nothing to import.");
@@ -648,7 +663,7 @@ export async function applyDeliveryImportAction(f: FormData) {
 
 /* ---------- settings ---------- */
 export async function saveBankAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("settings");
   const bank = s(f, "bank", 80);
   const accountName = s(f, "accountName", 120);
   const accountNumber = s(f, "accountNumber", 20).replace(/\D/g, "");
@@ -659,7 +674,7 @@ export async function saveBankAction(f: FormData) {
   back("/admin/settings", "Bank details saved. New orders show these details.");
 }
 export async function saveContactAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("settings");
   const whatsapp = normalisePhone(s(f, "whatsapp", 30));
   const email = s(f, "email", 254).toLowerCase();
   if (!whatsapp) return back("/admin/settings", "Enter a valid Nigerian WhatsApp number.");
@@ -671,7 +686,7 @@ export async function saveContactAction(f: FormData) {
   back("/admin/settings", "Contact details saved.");
 }
 export async function saveContentAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("settings");
   for (const k of ["announcement", "about", "productNotice", "shippingPolicy", "returnsPolicy", "privacyPolicy", "termsPolicy"]) {
     if (f.has(k)) setSetting(k, text(f, k, k === "announcement" ? 200 : 8000));
   }
@@ -681,37 +696,80 @@ export async function saveContentAction(f: FormData) {
 }
 
 /* ---------- users ---------- */
+/** Non-owners with Staff management can manage staff accounts only, and can grant only permissions they hold themselves. */
+function staffGuard(a: { role: string; perms: string[] }, targetId: number | null, wantRole: string, wantPerms: string[]) {
+  if (a.role === "owner") return null;
+  if (wantRole === "owner") return "Only an owner can create or change owner accounts.";
+  if (targetId != null) {
+    const t = db().prepare("SELECT role FROM users WHERE id = ?").get(targetId);
+    if (!t) return "User not found.";
+    if (t.role === "owner") return "Only an owner can change an owner account.";
+  }
+  const extra = wantPerms.filter((p) => !a.perms.includes(p));
+  if (extra.length) return `You cannot grant permissions you do not have: ${extra.join(", ")}.`;
+  return null;
+}
+const permsFrom = (f: FormData) => [...new Set(f.getAll("perms").map(String).filter(isPermission))];
+
 export async function addUserAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("staff");
   const email = s(f, "email", 254).toLowerCase();
   const name = s(f, "name", 80);
   const pw = String(f.get("password") || "");
   const role = f.get("role") === "owner" ? "owner" : "staff";
+  const perms = permsFrom(f);
   if (!isEmail(email) || name.length < 2) return back("/admin/users", "Enter a name and a valid email.");
   if (pw.length < 10) return back("/admin/users", "The password must be at least 10 characters.");
-  if (db().prepare("SELECT 1 FROM users WHERE email = ?").get(email)) return back("/admin/users", "A user with that email already exists.");
-  db().prepare("INSERT INTO users (email,name,role,password_hash) VALUES (?,?,?,?)").run(email, name, role, hashPassword(pw));
-  logAdminActivity(a.email, "add_user", "user", email, role);
+  if (db().prepare("SELECT 1 FROM users WHERE email = ?").get(email) || email === (process.env.ADMIN_EMAIL || "").trim().toLowerCase()) return back("/admin/users", "A user with that email already exists.");
+  const err = staffGuard(a, null, role, perms);
+  if (err) return back("/admin/users", err);
+  db().prepare("INSERT INTO users (email,name,role,password_hash,permissions) VALUES (?,?,?,?,?)").run(email, name, role, hashPassword(pw), JSON.stringify(perms));
+  logAdminActivity(a.email, "add_user", "user", email, role === "owner" ? "owner (all permissions)" : `staff: ${perms.join(", ") || "no permissions"}`);
   back("/admin/users", "User added.");
 }
+export async function setUserPermissionsAction(f: FormData) {
+  const a = await requirePerm("staff");
+  const id = Number(f.get("id"));
+  const role = f.get("role") === "owner" ? "owner" : "staff";
+  const perms = permsFrom(f);
+  const u = db().prepare("SELECT email, role, permissions FROM users WHERE id = ?").get(id);
+  if (!u) return back("/admin/users", "User not found.");
+  if (String(a.uid) === String(id)) return back("/admin/users", "You cannot change your own permissions.");
+  const err = staffGuard(a, id, role, perms);
+  if (err) return back("/admin/users", err);
+  db().prepare("UPDATE users SET role = ?, permissions = ? WHERE id = ?").run(role, JSON.stringify(perms), id);
+  logAdminActivity(a.email, "set_permissions", "user", String(u.email), `${String(u.role)} → ${role}; ${role === "owner" ? "all permissions" : perms.join(", ") || "no permissions"}`);
+  back("/admin/users", `Permissions saved for ${String(u.email)}.`);
+}
 export async function toggleUserAction(f: FormData) {
-  const a = await requireAdmin("owner");
-  db().prepare("UPDATE users SET active = 1 - active WHERE id = ?").run(Number(f.get("id")));
-  audit(a, "toggleUserAction", f, "");
+  const a = await requirePerm("staff");
+  const id = Number(f.get("id"));
+  const u = db().prepare("SELECT email, active FROM users WHERE id = ?").get(id);
+  if (!u) return back("/admin/users", "User not found.");
+  if (String(a.uid) === String(id)) return back("/admin/users", "You cannot disable your own account.");
+  const err = staffGuard(a, id, "staff", []);
+  if (err) return back("/admin/users", err);
+  db().prepare("UPDATE users SET active = 1 - active WHERE id = ?").run(id);
+  logAdminActivity(a.email, Number(u.active) ? "disable_user" : "enable_user", "user", String(u.email));
   back("/admin/users", "User updated.");
 }
 export async function resetUserPasswordAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("staff");
+  const id = Number(f.get("id"));
   const pw = String(f.get("password") || "");
   if (pw.length < 10) return back("/admin/users", "The password must be at least 10 characters.");
-  db().prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(pw), Number(f.get("id")));
-  audit(a, "resetUserPasswordAction", f, "");
+  const u = db().prepare("SELECT email FROM users WHERE id = ?").get(id);
+  if (!u) return back("/admin/users", "User not found.");
+  const err = staffGuard(a, id, "staff", []);
+  if (err) return back("/admin/users", err);
+  db().prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(pw), id);
+  logAdminActivity(a.email, "reset_password", "user", String(u.email));
   back("/admin/users", "Password changed.");
 }
 
 /* ---------- notifications, reviews, testimonials, coupons (ported from the Codex checkpoint) ---------- */
 export async function markNotificationReadAction(f: FormData) {
-  await requireAdmin();
+  await requirePerm("notifications");
   const id = Number(f.get("id"));
   if (f.get("all") === "yes") db().prepare("UPDATE admin_notifications SET read_at=COALESCE(read_at,datetime('now'))").run();
   else if (Number.isSafeInteger(id) && id > 0) db().prepare("UPDATE admin_notifications SET read_at=COALESCE(read_at,datetime('now')) WHERE id=?").run(id);
@@ -721,7 +779,7 @@ export async function markNotificationReadAction(f: FormData) {
 }
 
 export async function moderateReviewAction(f: FormData) {
-  const a = await requireAdmin();
+  const a = await requirePerm("reviews");
   const id = Number(f.get("id"));
   const status = String(f.get("status") || "");
   if (!Number.isSafeInteger(id) || id < 1 || !["approved", "rejected"].includes(status)) return back("/admin/reviews", "Choose a valid review action.");
@@ -734,7 +792,7 @@ export async function moderateReviewAction(f: FormData) {
 }
 
 export async function saveTestimonialAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("reviews");
   const id = Number(f.get("id")) || 0;
   const name = s(f, "customerName", 80);
   const quote = text(f, "quote", 1000);
@@ -748,7 +806,7 @@ export async function saveTestimonialAction(f: FormData) {
 }
 
 export async function toggleTestimonialAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("reviews");
   const id = Number(f.get("id"));
   if (!Number.isSafeInteger(id) || id < 1) return back("/admin/reviews", "Choose a valid testimonial.");
   const r = db().prepare("UPDATE testimonials SET approved=1-approved,updated_at=datetime('now') WHERE id=?").run(id);
@@ -759,7 +817,7 @@ export async function toggleTestimonialAction(f: FormData) {
 }
 
 export async function saveCouponAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("coupons");
   const id = Number(f.get("id")) || 0;
   const code = s(f, "code", 40).toUpperCase().replace(/\s+/g, "");
   const type = f.get("discountType") === "percent" ? "percent" : "fixed";
@@ -797,7 +855,7 @@ export async function saveCouponAction(f: FormData) {
 }
 
 export async function deleteCouponAction(f: FormData) {
-  const a = await requireAdmin("owner");
+  const a = await requirePerm("coupons");
   const id = Number(f.get("id"));
   if (!Number.isSafeInteger(id) || id < 1) return back("/admin/promotions", "Choose a valid coupon.");
   const coupon = db().prepare("SELECT code FROM coupons WHERE id=?").get(id);

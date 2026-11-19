@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { currentAdmin } from "@/lib/auth";
+import { can, currentAdmin } from "@/lib/auth";
 import { FULFILMENT_STATUS, PAYMENT_STATUS } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ const cell = (v: unknown) => {
 export async function GET() {
   const admin = await currentAdmin();
   if (!admin) return new Response("Not found", { status: 404 });
-  if (admin.role !== "owner") return new Response("Forbidden", { status: 403 });
+  if (!can(admin, "reports")) return new Response("Forbidden", { status: 403 });
   const orders = db().prepare("SELECT * FROM orders ORDER BY id DESC").all();
   const items = db().prepare("SELECT order_id, name, variant_label, qty, unit_price FROM order_items ORDER BY id").all();
   const byOrder = new Map<number, string[]>();

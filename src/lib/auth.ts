@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { scryptSync, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { db } from "@/lib/db";
 import { SESSION_COOKIE, signSession, verifySession, adminConfigured, type Session } from "@/lib/session";
+import { ALL_PERMISSIONS, parsePermissions, type Permission } from "@/lib/permissions";
 
 export function hashPassword(pw: string) {
   const salt = randomBytes(16);
@@ -44,19 +45,31 @@ export function logout() {
   cookies().set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
 }
 
-export async function currentAdmin(): Promise<Session | null> {
+export type Admin = Session & { perms: Permission[] };
+
+/** The signed-in admin. Role and permissions are read from the database on every request, so revoking takes effect at once. */
+export async function currentAdmin(): Promise<Admin | null> {
   const s = await verifySession(cookies().get(SESSION_COOKIE)?.value);
   if (!s) return null;
-  if (s.uid !== "owner") {
-    const u = db().prepare("SELECT active, role FROM users WHERE id = ?").get(Number(s.uid));
-    if (!u || Number(u.active) !== 1) return null;
-    s.role = u.role as "owner" | "staff";
-  }
-  return s;
+  if (s.uid === "owner") return { ...s, role: "owner", perms: [...ALL_PERMISSIONS] };
+  const u = db().prepare("SELECT active, role, permissions FROM users WHERE id = ?").get(Number(s.uid));
+  if (!u || Number(u.active) !== 1) return null;
+  const role = u.role === "owner" ? "owner" : "staff";
+  return { ...s, role, perms: role === "owner" ? [...ALL_PERMISSIONS] : parsePermissions(u.permissions) };
+}
+
+export const can = (a: { role: string; perms?: string[] } | null | undefined, p: Permission) => !!a && (a.role === "owner" || !!a.perms?.includes(p));
+
+/** Server-side permission check for pages and server actions. Redirects when the admin lacks the permission. */
+export async function requirePerm(...any: Permission[]): Promise<Admin> {
+  const a = await currentAdmin();
+  if (!a) redirect("/admin/login");
+  if (!any.some((p) => can(a, p))) redirect("/admin?denied=1");
+  return a;
 }
 
 /** Use at the top of every admin page and server action. Redirects to login when there is no valid session. */
-export async function requireAdmin(role: "owner" | "staff" = "staff"): Promise<Session> {
+export async function requireAdmin(role: "owner" | "staff" = "staff"): Promise<Admin> {
   const s = await currentAdmin();
   if (!s) redirect("/admin/login");
   if (role === "owner" && s.role !== "owner") redirect("/admin?denied=1");

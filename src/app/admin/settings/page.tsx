@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { getBank, getContact, getSetting } from "@/lib/settings";
 import { saveBankAction, saveContactAction, saveContentAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
@@ -6,7 +6,7 @@ import Flash from "@/components/admin/Flash";
 export const metadata = { title: "Settings" };
 
 export default async function Settings({ searchParams }: { searchParams: { msg?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("settings");
   const bank = getBank();
   const c = getContact();
   const L = ({ children }: { children: React.ReactNode }) => <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</span>;

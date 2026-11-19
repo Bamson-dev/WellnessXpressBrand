@@ -1,4 +1,4 @@
-import { currentAdmin } from "@/lib/auth";
+import { can, currentAdmin } from "@/lib/auth";
 import { analyticsRange, salesAnalytics } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ const csv = (value: unknown) => {
 };
 export async function GET(req: Request) {
   const admin = await currentAdmin();
-  if (!admin || admin.role !== "owner") return new Response("Forbidden", { status: 403 });
+  if (!can(admin, "reports")) return new Response("Forbidden", { status: 403 });
   const url = new URL(req.url);
   const range = analyticsRange(url.searchParams.get("from") || undefined, url.searchParams.get("to") || undefined);
   const data = salesAnalytics(range);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requirePerm } from "@/lib/auth";
 import { inventoryRows, movements, REASONS } from "@/lib/inventory";
 import { adjustStockAction, setThresholdAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
@@ -9,7 +9,7 @@ const BADGE: Record<string, string> = { out: "bg-red-50 text-red-800", low: "bg-
 const LABEL: Record<string, string> = { out: "Out of stock", low: "Low stock", ok: "In stock", untracked: "Not tracked" };
 
 export default async function Inventory({ searchParams }: { searchParams: { q?: string; status?: string; msg?: string; v?: string } }) {
-  await requireAdmin("owner");
+  await requirePerm("inventory");
   const q = (searchParams.q || "").slice(0, 60);
   const status = Object.keys(LABEL).includes(searchParams.status || "") ? searchParams.status : "";
   const rows = inventoryRows({ q, status });

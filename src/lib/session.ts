@@ -4,7 +4,7 @@
  * or is derived from ADMIN_PASSWORD when no separate secret is set. Nothing secret is sent to the browser.
  */
 export const SESSION_COOKIE = "wx_admin";
-export type Session = { uid: string; email: string; name: string; role: "owner" | "staff"; exp: number };
+export type Session = { uid: string; email: string; name: string; role: "owner" | "staff"; exp: number; perms?: string[] };
 
 const enc = new TextEncoder();
 const b64u = (buf: ArrayBuffer | Uint8Array) => {
