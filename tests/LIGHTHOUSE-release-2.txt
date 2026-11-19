@@ -1,0 +1,12 @@
+d_.json                          100 / 100 / 100 / 100 | LCP 0.6 s TBT 0 ms CLS 0
+d_cart.json                      100 / 100 / 100 / 66 | LCP 0.5 s TBT 0 ms CLS 0
+d_category_combos.json           100 / 100 / 100 / 100 | LCP 0.6 s TBT 0 ms CLS 0
+d_checkout.json                  100 / 100 / 100 / 66 | LCP 0.6 s TBT 0 ms CLS 0.026
+d_product_trim-down-coffee.json  100 / 100 / 100 / 100 | LCP 0.6 s TBT 0 ms CLS 0
+d_shop.json                      100 / 100 / 100 / 100 | LCP 0.7 s TBT 0 ms CLS 0
+m_.json                          95 / 100 / 100 / 100 | LCP 2.9 s TBT 40 ms CLS 0
+m_cart.json                      97 / 100 / 100 / 66 | LCP 2.4 s TBT 110 ms CLS 0
+m_category_combos.json           96 / 100 / 100 / 100 | LCP 2.7 s TBT 40 ms CLS 0
+m_checkout.json                  98 / 100 / 100 / 66 | LCP 2.3 s TBT 70 ms CLS 0.008
+m_product_trim-down-coffee.json  95 / 100 / 100 / 100 | LCP 2.7 s TBT 100 ms CLS 0
+m_shop.json                      96 / 100 / 100 / 100 | LCP 2.6 s TBT 70 ms CLS 0

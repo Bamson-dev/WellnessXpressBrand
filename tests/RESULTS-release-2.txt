@@ -1,0 +1,233 @@
+PASS  signed-out /api/admin/export is hidden (404)
+PASS  signed-out /api/admin/delivery-export is hidden (404)
+PASS  signed-out /api/admin/receipt/1 is hidden (404)
+PASS  signed-out /admin/inventory redirects to login
+PASS  signed-out /admin/media redirects to login
+PASS  signed-out /admin/delivery redirects to login
+PASS  signed-out /admin/products redirects to login
+PASS  path traversal on /product-images rejected
+PASS  non-generated image names rejected
+PASS  cross-site order POST rejected
+PASS  hidden product preview not available to the public
+PASS  wrong password rejected
+PASS  owner can sign in
+PASS  delivery page lists all 37 locations and asks for no fees
+PASS  all 37 locations covered by default
+PASS  no delivery fee stored
+PASS  switching a state off is confirmed
+PASS  delivery time and internal note saved, no fee
+PASS  bulk update sets delivery time
+PASS  delivery CSV export has header + 37 rows
+PASS  import preview reports invalid rows
+PASS  invalid import saves nothing
+PASS  old-format import applied, fee column ignored
+PASS  states missing from the import are unchanged
+PASS  opening stock set to 3
+PASS  stock increase recorded (5)
+PASS  cannot remove more stock than exists
+PASS  low-stock threshold saved
+PASS  stock changes written to movement history
+PASS  inventory status filter works
+PASS  image accepted, fake image rejected by content check
+PASS  upload stored under DATA_DIR/product-images
+PASS  uploaded image served publicly
+PASS  alt text saved
+PASS  image added to gallery from library
+PASS  image in use cannot be deleted
+PASS  gallery image replaced
+PASS  unused image deleted from library and disk
+PASS  gallery reorder: make main
+PASS  gallery reorder: move down
+PASS  new product created as draft
+PASS  product description saved
+PASS  price option added
+PASS  admin can preview a draft product
+PASS  formatted description renders bold and lists safely
+PASS  bulk publish
+PASS  published product visible to customers
+PASS  duplicate created as draft
+PASS  bulk archive
+PASS  archived, never-ordered product deleted
+PASS  cart quantity change updates subtotal (2 × ₦15,000)
+PASS  cart shows delivery as FREE
+PASS  checkout lists the 36 covered locations (Kano switched off)
+PASS  Lagos: delivery FREE, ₦0 charge, delivery time shown
+PASS  total to pay equals the product subtotal
+PASS  Ogun: free delivery, checkout open
+PASS  Oyo: free delivery, checkout open
+PASS  Rivers: free delivery, checkout open
+PASS  FCT (Abuja): free delivery, checkout open
+PASS  Zamfara: free delivery, checkout open
+PASS  validation error shown beside field; other answers kept
+PASS  bank transfer instructions show the amount to pay
+PASS  order confirmation shows free delivery and ₦30,000 total
+PASS  no separate delivery payment mentioned on a free-delivery order
+PASS  order stores a ₦0 free-delivery snapshot
+PASS  product payment pending; delivery payment not required
+PASS  stock reserved by order (5 → 3)
+PASS  reservation recorded in stock history
+PASS  receipt submission → Awaiting Verification, not Paid
+PASS  no browser errors during checkout ()
+PASS  browser-supplied prices and delivery fees ignored; ₦0 delivery stored
+PASS  all 36 covered locations quote ₦0 delivery on the server
+PASS  switched-off state (Kano) is not available
+PASS  Ogun: order created with free delivery
+PASS  Oyo: order created with free delivery
+PASS  Rivers: order created with free delivery
+PASS  FCT (Abuja): order created with free delivery
+PASS  API rejects a switched-off state
+PASS  API rejects a location outside Nigeria
+PASS  repeated submission creates one order
+PASS  admin order shows free delivery and no delivery payment step
+PASS  admin confirms product payment
+PASS  paid free-delivery order can be processed straight away
+PASS  dispatch details saved
+PASS  customer order page shows the tracking reference
+PASS  cancel releases reserved stock (3 → 5)
+PASS  reopening re-reserves stock
+PASS  second cancel never adds stock twice
+PASS  order appears in CSV export
+PASS  pre-policy order still shows its ₦4,000 delivery fee and ₦24,000 total
+PASS  pre-policy order keeps its delivery payment step
+PASS  pre-policy order still needs its delivery payment before processing
+PASS  historical totals unchanged
+PASS  owner creates a percentage coupon (code upper-cased)
+PASS  category picker saves the chosen category
+PASS  product picker saves the chosen product
+PASS  percentage above 100 rejected
+PASS  duplicate coupon code rejected
+PASS  coupons stored; invalid one not stored
+PASS  SAVE10 gives 10% of ₦25,000 = ₦2,500
+PASS  minimum order enforced
+PASS  expired coupon rejected
+PASS  inactive coupon rejected
+PASS  unknown coupon rejected
+PASS  category-restricted coupon rejected for non-combo cart
+PASS  product-restricted coupon rejected for other products
+PASS  product-restricted coupon applies to the chosen product
+PASS  order: ₦25,000 − ₦2,500 = ₦22,500 total; delivery free; manipulated fields ignored
+PASS  discount allocated to order lines
+PASS  redemption recorded
+PASS  per-customer limit enforced on the same phone
+PASS  total usage limit enforced
+PASS  checkout shows coupon discount and reduced product payment
+PASS  used coupon deactivated, history kept
+PASS  unused coupon deleted
+PASS  review rejected while the order is unpaid
+PASS  admin confirms product payment for the coupon order
+PASS  Purchase event path runs only on confirmation (no Meta credentials in tests)
+PASS  review rejected with a phone that does not match the order
+PASS  review rejected for a product not in the order
+PASS  verified buyer review accepted
+PASS  second review for the same order and product rejected
+PASS  pending review not public
+PASS  approved review shown on product page
+PASS  rejected review hidden again
+PASS  no seeded reviews or testimonials
+PASS  draft testimonial hidden from homepage
+PASS  published testimonial shown on homepage
+PASS  one new-order notification per order (duplicate submission did not add another)
+PASS  payment confirmation notification created
+PASS  low-stock notification raised once for the episode (2 then 1 left)
+PASS  out-of-stock notification raised at 0
+PASS  unread badge matches database count
+PASS  mark one notification read
+PASS  mark all read
+PASS  activity log records actor and actions (29 kinds)
+PASS  activity search filters
+PASS  activity log has no edit or delete controls
+PASS  confirmed revenue counts only paid, non-cancelled orders (₦22,500)
+PASS  delivery collections shown separately (₦0)
+PASS  discounts reported
+PASS  state and product reports list paid sales
+PASS  analytics CSV export
+PASS  analytics export blocked when signed out
+PASS  date filter excludes orders outside the range
+PASS  cancelling frees the coupon use and keeps the discount on record
+PASS  reopening counts the coupon use again
+PASS  forwarded-for handling accepts proxy chain
+PASS  new staff gets only the ticked permissions (dashboard, orders)
+PASS  staff blocked from 20 pages without permission
+PASS  staff blocked from 6 admin downloads
+PASS  staff sees only permitted menu items
+PASS  staff with Orders can view an order but sees no payment verification
+PASS  forged payment verification by staff is refused on the server (HTTP 303)
+PASS  owner grants permissions
+PASS  granted permission works on the next page load
+PASS  staff now sees payment verification
+PASS  staff with Invoices can download a PDF
+PASS  revoked permission is removed immediately
+PASS  permission changes are logged
+PASS  staff manager cannot grant permissions they lack
+PASS  staff manager is not offered the owner role
+PASS  disabled staff account is signed out
+PASS  user creation logged
+PASS  order page without the private link shows no customer data
+PASS  wrong order token reveals nothing
+PASS  invoice PDF needs the private order link
+PASS  invoice created automatically when payment was verified
+PASS  invoice amounts match the order (₦25,000 − ₦2,500, free delivery, ₦22,500 paid)
+PASS  unpaid order's invoice is not marked paid
+PASS  pre-policy invoice uses its historical ₦4,000 delivery fee (part paid)
+PASS  PDF download works (2508 bytes)
+PASS  invoice numbers are unique (4)
+PASS  invoice search finds the order
+PASS  invoice status filter
+PASS  customer can download their invoice with the private link
+PASS  print view hides the admin menu
+PASS  customer search by name
+PASS  customer search by phone
+PASS  profile figures match verified payments (₦22,500 confirmed, ₦0 outstanding)
+PASS  profile shows order history, activity and addresses
+PASS  customer note saved
+PASS  customer CSV export
+PASS  unknown customer returns not found
+PASS  unsafe banner link rejected
+PASS  banner created switched off, image uploaded to persistent storage
+PASS  switched-off banner not shown to customers
+PASS  admin preview shows the banner before publishing
+PASS  preview link does nothing for customers
+PASS  live banner shows on the homepage; free delivery message still shown
+PASS  duplicate creates a switched-off copy
+PASS  banner scheduled in the future is hidden
+PASS  end date before start date rejected
+PASS  media library marks the banner image as in use
+PASS  banner deleted after confirmation
+PASS  homepage hero text editable
+PASS  SEO dashboard loads with checks
+PASS  product title, description, canonical and structured data on the page
+PASS  hidden product gets noindex and leaves the sitemap
+PASS  redirect from an admin path refused
+PASS  saved redirect answers with a permanent redirect (308)
+PASS  redirect loop refused
+PASS  unknown address still returns 404
+PASS  old product address redirects to the new one
+PASS  homepage title from SEO settings
+PASS  whole-site noindex switches robots.txt to disallow
+PASS  robots.txt restored with sitemap
+PASS  SEO changes logged
+PASS  Pixel event names unchanged (PageView, AddToCart, InitiateCheckout)
+PASS  CAPI Purchase still sent only from payment confirmation
+PASS  no requests to Meta during the tests (0)
+PASS  no console errors or hydration errors on 25 store pages
+PASS  no failed requests
+PASS  no broken images
+PASS  all 27 internal links resolve
+PASS  all 16 admin pages load
+PASS  320px: store tap targets at least 36px tall
+PASS  320px: no horizontal page overflow on 25 pages
+PASS  360px: store tap targets at least 36px tall
+PASS  360px: no horizontal page overflow on 25 pages
+PASS  375px: store tap targets at least 36px tall
+PASS  375px: no horizontal page overflow on 25 pages
+PASS  390px: store tap targets at least 36px tall
+PASS  390px: no horizontal page overflow on 25 pages
+PASS  430px: store tap targets at least 36px tall
+PASS  430px: no horizontal page overflow on 25 pages
+PASS  768px: no horizontal page overflow on 25 pages
+PASS  1024px: no horizontal page overflow on 25 pages
+PASS  1280px: no horizontal page overflow on 25 pages
+PASS  1440px: no horizontal page overflow on 25 pages
+PASS  1920px: no horizontal page overflow on 25 pages
+
+231 passed, 0 failed
