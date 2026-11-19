@@ -1,0 +1,1306 @@
+diff --git a/src/app/(store)/order/[number]/page.tsx b/src/app/(store)/order/[number]/page.tsx
+index bc90b52..9d7f2c4 100644
+--- a/src/app/(store)/order/[number]/page.tsx
++++ b/src/app/(store)/order/[number]/page.tsx
+@@ -24,6 +24,8 @@ export default function OrderPage({ params, searchParams }: { params: { number:
+     );
+   }
+   const items = orderItems(o.id);
++  const itemsSubtotal = items.reduce((sum, item) => sum + item.line_total, 0);
++  const discountAmount = Number(o.discount_amount || 0);
+   const bank = getBank();
+   const status = orderStatusLabel(o);
+   const isNew = searchParams.new === "1";
+@@ -99,7 +101,9 @@ export default function OrderPage({ params, searchParams }: { params: { number:
+           ))}
+         </ul>
+         <dl className="mt-2 space-y-2 border-t border-neutral-200 pt-3 text-[15px]">
+-          <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd>{naira(o.subtotal)}</dd></div>
++          <div className="flex justify-between"><dt className="text-neutral-600">Product subtotal</dt><dd>{naira(itemsSubtotal)}</dd></div>
++          {discountAmount ? <div className="flex justify-between"><dt className="text-neutral-600">Coupon{ o.coupon_code ? ` (${String(o.coupon_code)})` : ""}</dt><dd>−{naira(discountAmount)}</dd></div> : null}
++          {discountAmount ? <div className="flex justify-between"><dt className="text-neutral-600">Product payment after discount</dt><dd>{naira(o.subtotal)}</dd></div> : null}
+           <div className="flex justify-between"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee != null ? naira(o.delivery_fee) : "To be confirmed"}</dd></div>
+           {o.delivery_estimate ? <div className="flex justify-between"><dt className="text-neutral-600">Estimated delivery</dt><dd>{String(o.delivery_estimate)}</dd></div> : null}
+           {o.delivery_fee != null ? <div className="flex justify-between"><dt className="text-neutral-600">Total including delivery</dt><dd>{naira(o.subtotal + o.delivery_fee)}</dd></div> : null}
+diff --git a/src/app/(store)/page.tsx b/src/app/(store)/page.tsx
+index 3463652..517478c 100644
+--- a/src/app/(store)/page.tsx
++++ b/src/app/(store)/page.tsx
+@@ -6,6 +6,7 @@ import { getContact, getSetting } from "@/lib/settings";
+ import ProductCard from "@/components/ProductCard";
+ import { IconBank, IconChevron, IconInfo, IconShield, IconTruck, IconUser, IconWhatsApp } from "@/components/icons";
+ import { site } from "@/lib/site";
++import { db } from "@/lib/db";
+ 
+ export const metadata: Metadata = {
+   title: { absolute: `${site.name} | Your Weightloss Journey Starts Here.` },
+@@ -18,6 +19,7 @@ export default function Home() {
+   const combos = listProducts({ category: "combos", perPage: 12 }).items;
+   const categories = getCategories();
+   const contact = getContact();
++  const testimonials = db().prepare("SELECT customer_name,quote FROM testimonials WHERE approved=1 ORDER BY id DESC LIMIT 6").all();
+   const notice = getSetting<string>("productNotice");
+   const hero = {
+     eyebrow: getSetting<string>("homeHeroEyebrow"), title: getSetting<string>("homeHeroTitle"), accent: getSetting<string>("homeHeroAccent"),
+@@ -120,6 +122,8 @@ export default function Home() {
+         </div>
+       </section>
+ 
++      {testimonials.length ? <section className="container-x py-12" aria-labelledby="testimonials-heading"><p className="eyebrow">Customer testimonials</p><h2 id="testimonials-heading" className="mt-2 text-2xl sm:text-3xl">What customers have shared</h2><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{testimonials.map((t, i) => <figure key={i} className="card p-5"><blockquote className="whitespace-pre-line text-neutral-700">“{String(t.quote)}”</blockquote><figcaption className="mt-4 font-semibold">{String(t.customer_name)}</figcaption></figure>)}</div></section> : null}
++
+       {/* Why us — only what the store actually does */}
+       <section className="border-y border-neutral-100 bg-white py-14 sm:py-16" aria-labelledby="why-h">
+         <div className="container-x">
+diff --git a/src/app/(store)/product/[slug]/page.tsx b/src/app/(store)/product/[slug]/page.tsx
+index c9d166b..9c824cd 100644
+--- a/src/app/(store)/product/[slug]/page.tsx
++++ b/src/app/(store)/product/[slug]/page.tsx
+@@ -7,10 +7,12 @@ import { getContact } from "@/lib/settings";
+ import { PurchaseBox } from "@/components/AddToCart";
+ import ProductCard from "@/components/ProductCard";
+ import Gallery from "@/components/Gallery";
++import ReviewForm from "@/components/ReviewForm";
+ import RichText from "@/components/RichText";
+ import { TrackView } from "@/components/pixel";
+ import { IconBank, IconChevron, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
+ import { naira, site } from "@/lib/site";
++import { db } from "@/lib/db";
+ 
+ export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+   const p = getProduct(params.slug);
+@@ -28,6 +30,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
+   if (!p || !p.variants.length) notFound();
+   const contact = getContact();
+   const related = relatedProducts(p);
++  const reviews = db().prepare("SELECT customer_name,rating,review_text,created_at FROM product_reviews WHERE product_id=? AND status='approved' AND verified_purchase=1 ORDER BY created_at DESC LIMIT 20").all(p.id);
+   const r = priceRange(p);
+   const variants = p.variants.map((v) => ({
+     id: v.id, label: v.label, price: effective(v), compareAt: v.salePrice != null && v.salePrice < v.price ? v.price : null, inStock: inStock(v),
+@@ -103,6 +106,11 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
+             <h2 className="text-xl">Description</h2>
+             <RichText value={p.description} />
+           </section>
++          <section className="card p-6" aria-labelledby="reviews-heading">
++            <h2 id="reviews-heading" className="text-xl">Verified customer reviews</h2>
++            {reviews.length ? <ul className="mt-4 space-y-4">{reviews.map((review, i) => <li key={i} className="border-t border-neutral-100 pt-4"><p aria-label={`${Number(review.rating)} out of 5 stars`} className="font-semibold text-amber-600">{"★".repeat(Number(review.rating))}{"☆".repeat(5 - Number(review.rating))}</p><p className="mt-2 whitespace-pre-line text-neutral-700">{String(review.review_text)}</p><p className="mt-2 text-sm text-neutral-500">Verified purchase · {String(review.customer_name)}</p></li>)}</ul> : <p className="mt-2 text-sm text-neutral-600">No approved reviews yet.</p>}
++            <details className="mt-5 border-t border-neutral-100 pt-4"><summary className="cursor-pointer font-semibold">Write a review</summary><ReviewForm product={p.slug} /></details>
++          </section>
+           {p.ingredients ? (
+             <section className="card p-6"><h2 className="text-xl">Ingredients</h2><p className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{p.ingredients}</p></section>
+           ) : null}
+diff --git a/src/app/admin/actions.ts b/src/app/admin/actions.ts
+index 9876a9d..042875b 100644
+--- a/src/app/admin/actions.ts
++++ b/src/app/admin/actions.ts
+@@ -14,6 +14,7 @@ import { clean, isEmail, sniffType } from "@/lib/validate";
+ import { limited } from "@/lib/ratelimit";
+ import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
+ import { parseDeliveryCsv } from "@/lib/delivery-csv";
++import { logAdminActivity, notifyAdmin } from "@/lib/admin-events";
+ 
+ const s = (f: FormData, k: string, max = 500) => clean(f.get(k), max);
+ const text = (f: FormData, k: string, max = 8000) => {
+@@ -39,6 +40,105 @@ export async function logoutAction() {
+   redirect("/admin/login");
+ }
+ 
++export async function markNotificationReadAction(f: FormData) {
++  await requireAdmin();
++  const id = Number(f.get("id"));
++  if (f.get("all") === "yes") db().prepare("UPDATE admin_notifications SET read_at=COALESCE(read_at,datetime('now'))").run();
++  else if (Number.isSafeInteger(id) && id > 0) db().prepare("UPDATE admin_notifications SET read_at=COALESCE(read_at,datetime('now')) WHERE id=?").run(id);
++  revalidatePath("/admin/notifications");
++  revalidatePath("/admin");
++  back("/admin/notifications", "Notification status updated.");
++}
++
++export async function moderateReviewAction(f: FormData) {
++  const a = await requireAdmin();
++  const id = Number(f.get("id"));
++  const status = String(f.get("status") || "");
++  if (!Number.isSafeInteger(id) || id < 1 || !["approved", "rejected"].includes(status)) return back("/admin/reviews", "Choose a valid review action.");
++  const review = db().prepare("SELECT r.product_id,p.slug FROM product_reviews r JOIN products p ON p.id=r.product_id WHERE r.id=?").get(id);
++  if (!review) return back("/admin/reviews", "Review not found.");
++  db().prepare("UPDATE product_reviews SET status=?,updated_at=datetime('now') WHERE id=?").run(status,id);
++  logAdminActivity(a.email, status === "approved" ? "review_approved" : "review_rejected", "review", id);
++  revalidatePath(`/product/${String(review.slug)}`);
++  back("/admin/reviews", `Review ${status}.`);
++}
++
++export async function saveTestimonialAction(f: FormData) {
++  const a = await requireAdmin("owner");
++  const id = Number(f.get("id")) || 0;
++  const name = s(f, "customerName", 80);
++  const quote = text(f, "quote", 1000);
++  if (name.length < 2 || quote.length < 10) return back("/admin/reviews", "Enter the customer's name and their actual statement (at least 10 characters).");
++  const approved = f.get("approved") === "on" ? 1 : 0;
++  if (id) db().prepare("UPDATE testimonials SET customer_name=?,quote=?,approved=?,updated_at=datetime('now') WHERE id=?").run(name,quote,approved,id);
++  else db().prepare("INSERT INTO testimonials (customer_name,quote,approved) VALUES (?,?,?)").run(name,quote,approved);
++  logAdminActivity(a.email, id ? "testimonial_updated" : "testimonial_added", "testimonial", id || "new");
++  revalidatePath("/");
++  back("/admin/reviews", "Testimonial saved.");
++}
++
++export async function toggleTestimonialAction(f: FormData) {
++  const a = await requireAdmin("owner");
++  const id = Number(f.get("id"));
++  if (!Number.isSafeInteger(id) || id < 1) return back("/admin/reviews", "Choose a valid testimonial.");
++  const r = db().prepare("UPDATE testimonials SET approved=1-approved,updated_at=datetime('now') WHERE id=?").run(id);
++  if (!r.changes) return back("/admin/reviews", "Testimonial not found.");
++  logAdminActivity(a.email, "testimonial_visibility_toggled", "testimonial", id);
++  revalidatePath("/");
++  back("/admin/reviews", "Testimonial visibility updated.");
++}
++
++export async function saveCouponAction(f: FormData) {
++  const a = await requireAdmin("owner");
++  const id = Number(f.get("id")) || 0;
++  const code = s(f, "code", 40).toUpperCase().replace(/\s+/g, "");
++  const type = f.get("discountType") === "percent" ? "percent" : "fixed";
++  const value = Number(f.get("discountValue"));
++  const minRaw = String(f.get("minimumOrder") ?? "0").trim();
++  const minimum = money(minRaw);
++  const usageRaw = String(f.get("usageLimit") ?? "").trim();
++  const usage = usageRaw ? Number(usageRaw) : null;
++  const customerLimit = Number(f.get("customerLimit") || 1);
++  const startsAt = s(f, "startsAt", 10);
++  const expiresAt = s(f, "expiresAt", 10);
++  const dateOk = (x: string) => !x || /^\d{4}-\d{2}-\d{2}$/.test(x) && !Number.isNaN(Date.parse(`${x}T00:00:00Z`)) && new Date(`${x}T00:00:00Z`).toISOString().slice(0, 10) === x;
++  const productIds = [...new Set(s(f, "productIds", 500).split(",").map((x) => Number(x.trim())).filter((x) => Number.isSafeInteger(x) && x > 0))];
++  const categorySlugs = [...new Set(s(f, "categorySlugs", 500).split(",").map((x) => x.trim().toLowerCase()).filter((x) => /^[a-z0-9-]{1,70}$/.test(x)))];
++  if (!/^[A-Z0-9_-]{3,40}$/.test(code)) return back("/admin/promotions", "Coupon code must be 3–40 letters, numbers, hyphens or underscores.");
++  if (!Number.isSafeInteger(value) || value < 1 || type === "percent" && value > 100) return back("/admin/promotions", type === "percent" ? "Enter a percentage from 1 to 100." : "Enter a fixed discount of at least ₦1.");
++  if (minimum == null || !/^\d+$/.test(minRaw) || usage != null && (!Number.isSafeInteger(usage) || usage < 1) || !Number.isSafeInteger(customerLimit) || customerLimit < 1 || customerLimit > 1000)
++    return back("/admin/promotions", "Check the minimum order, usage limit, and per-customer limit.");
++  if (!dateOk(startsAt) || !dateOk(expiresAt) || startsAt && expiresAt && startsAt > expiresAt) return back("/admin/promotions", "Enter valid dates and make sure expiry is after the start date.");
++  if (productIds.length && db().prepare(`SELECT COUNT(*) n FROM products WHERE id IN (${productIds.map(() => "?").join(",")})`).get(...productIds)?.n !== productIds.length)
++    return back("/admin/promotions", "One or more restricted products could not be found.");
++  if (categorySlugs.length && db().prepare(`SELECT COUNT(*) n FROM categories WHERE slug IN (${categorySlugs.map(() => "?").join(",")})`).get(...categorySlugs)?.n !== categorySlugs.length)
++    return back("/admin/promotions", "One or more restricted categories could not be found.");
++  const fields = [code,type,value,startsAt,expiresAt,usage,customerLimit,minimum,JSON.stringify(productIds),JSON.stringify(categorySlugs),f.get("active") === "on" ? 1 : 0];
++  try {
++    if (id) db().prepare(`UPDATE coupons SET code=?,discount_type=?,discount_value=?,starts_at=?,expires_at=?,usage_limit=?,customer_limit=?,minimum_order=?,product_ids=?,category_slugs=?,active=?,updated_at=datetime('now') WHERE id=?`).run(...fields,id);
++    else db().prepare(`INSERT INTO coupons (code,discount_type,discount_value,starts_at,expires_at,usage_limit,customer_limit,minimum_order,product_ids,category_slugs,active) VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(...fields);
++  } catch (error) {
++    if (String(error).includes("UNIQUE")) return back("/admin/promotions", "That coupon code is already in use.");
++    throw error;
++  }
++  logAdminActivity(a.email, id ? "coupon_updated" : "coupon_created", "coupon", id || code, `${code} · ${type} ${value}`);
++  revalidatePath("/checkout");
++  back("/admin/promotions", "Coupon saved.");
++}
++
++export async function deleteCouponAction(f: FormData) {
++  const a = await requireAdmin("owner");
++  const id = Number(f.get("id"));
++  if (!Number.isSafeInteger(id) || id < 1) return back("/admin/promotions", "Choose a valid coupon.");
++  const coupon = db().prepare("SELECT code FROM coupons WHERE id=?").get(id);
++  if (!coupon) return back("/admin/promotions", "Coupon not found.");
++  const uses = Number(db().prepare("SELECT COUNT(*) n FROM coupon_redemptions WHERE coupon_id=?").get(id)?.n || 0);
++  if (uses) db().prepare("UPDATE coupons SET active=0,updated_at=datetime('now') WHERE id=?").run(id);
++  else db().prepare("DELETE FROM coupons WHERE id=?").run(id);
++  logAdminActivity(a.email, uses ? "coupon_deactivated_preserving_history" : "coupon_deleted", "coupon", id, `${String(coupon.code)} · ${uses} redemptions`);
++  back("/admin/promotions", uses ? "Coupon deactivated. Its redemption history was kept." : "Coupon deleted.");
++}
++
+ /* ---------- orders ---------- */
+ export async function setDeliveryFeeAction(f: FormData) {
+   const a = await requireAdmin();
+@@ -208,19 +308,20 @@ export async function saveNotesAction(f: FormData) {
+ const STATUSES = ["published", "draft", "pending_confirmation", "archived"];
+ 
+ export async function createProductAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const name = s(f, "name", 120);
+   const type = f.get("type") === "combo" ? "combo" : "single";
+   if (name.length < 2) return back("/admin/products", "Enter a product name.");
+   let slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "product";
+   while (db().prepare("SELECT 1 FROM products WHERE slug = ?").get(slug)) slug += "-2";
+   const r = db().prepare("INSERT INTO products (slug,name,type,category,status,sort) VALUES (?,?,?,?, 'draft', 999)").run(slug, name, type, type === "combo" ? "combos" : "individual");
++  logAdminActivity(a.email, "product_created", "product", Number(r.lastInsertRowid), `${name} (${type})`);
+   redirect(`/admin/products/${r.lastInsertRowid}?msg=${encodeURIComponent("Product created as a draft. Add a price option and a photo, then publish it.")}`);
+ }
+ 
+ /** Clone catalog configuration only. Orders, customers, and sales history are never copied. */
+ export async function duplicateProductAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const id = Number(f.get("id"));
+   const source = db().prepare("SELECT * FROM products WHERE id = ?").get(id);
+   if (!source) return back("/admin/products", "Product not found.");
+@@ -255,21 +356,23 @@ export async function duplicateProductAction(f: FormData) {
+         VALUES (?,?,?,?,?,?)`).run(newId, item.item_product_id, item.item_name, item.size_note, item.quantity_note, item.sort);
+     }
+   });
++  logAdminActivity(a.email, "product_duplicated", "product", newId, `Copied product ${id} as draft`);
+   redirect(`/admin/products/${newId}?msg=${encodeURIComponent("Draft copy created. Review its options and contents before publishing.")}`);
+ }
+ 
+ export async function archiveProductAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const id = Number(f.get("id"));
+   const exists = db().prepare("SELECT id FROM products WHERE id = ?").get(id);
+   if (!exists) return back("/admin/products", "Product not found.");
+   db().prepare("UPDATE products SET status='archived', updated_at=datetime('now') WHERE id=?").run(id);
++  logAdminActivity(a.email, "product_archived", "product", id);
+   revalidatePath("/", "layout");
+   back("/admin/products", "Product archived. Historical order records were retained.");
+ }
+ 
+ export async function bulkProductAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const action = s(f, "action", 20);
+   const ids = [...new Set(f.getAll("productIds").map((value) => Number(value)).filter((id) => Number.isSafeInteger(id) && id > 0))];
+   if (!ids.length || ids.length > 100) return back("/admin/products", "Select between 1 and 100 products.");
+@@ -284,24 +387,26 @@ export async function bulkProductAction(f: FormData) {
+   }
+   const update = action === "publish" ? "status='published'" : action === "draft" ? "status='draft'" : action === "archive" ? "status='archived'" : action === "feature" ? "featured=1" : "featured=0";
+   tx((d) => d.prepare(`UPDATE products SET ${update},updated_at=datetime('now') WHERE id IN (${placeholders})`).run(...ids));
++  logAdminActivity(a.email, `products_bulk_${action}`, "product", ids.join(","), `${ids.length} product records updated`);
+   revalidatePath("/", "layout");
+   back("/admin/products", `${ids.length} products updated.`);
+ }
+ 
+ export async function createCategoryAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const name = s(f, "name", 80);
+   if (name.length < 2) return back("/admin/categories", "Enter a category name.");
+   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70);
+   if (!slug) return back("/admin/categories", "Use a category name containing letters or numbers.");
+   if (db().prepare("SELECT 1 FROM categories WHERE slug = ?").get(slug)) return back("/admin/categories", "A category already uses that web address.");
+-  db().prepare("INSERT INTO categories (slug,name,description,image,sort,status) VALUES (?,?,?,'',?,'hidden')")
++  const r = db().prepare("INSERT INTO categories (slug,name,description,image,sort,status) VALUES (?,?,?,'',?,'hidden')")
+     .run(slug, name, text(f, "description", 1000), Number(f.get("sort")) || 0);
++  logAdminActivity(a.email, "category_created", "category", Number(r.lastInsertRowid), name);
+   back("/admin/categories", "Category created hidden. Review its details and publish it when ready.");
+ }
+ 
+ export async function saveCategoryAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const id = Number(f.get("id"));
+   if (!Number.isSafeInteger(id) || id < 1) return back("/admin/categories", "Choose a valid category.");
+   const current = db().prepare("SELECT * FROM categories WHERE id = ?").get(id);
+@@ -323,6 +428,7 @@ export async function saveCategoryAction(f: FormData) {
+     d.prepare(`UPDATE categories SET slug=?,name=?,description=?,image=?,seo_title=?,meta_description=?,status=?,sort=?,updated_at=datetime('now') WHERE id=?`)
+       .run(slug, name, text(f, "description", 1000), image, s(f, "seoTitle", 120), text(f, "metaDescription", 300), status, Number(f.get("sort")) || 0, id);
+   });
++  logAdminActivity(a.email, "category_updated", "category", id, `${String(current.slug)} → ${slug}; ${status}`);
+   revalidatePath("/", "layout");
+   revalidatePath(`/category/${String(current.slug)}`);
+   revalidatePath(`/category/${slug}`);
+@@ -330,7 +436,7 @@ export async function saveCategoryAction(f: FormData) {
+ }
+ 
+ export async function deleteCategoryAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const id = Number(f.get("id"));
+   if (!Number.isSafeInteger(id) || id < 1) return back("/admin/categories", "Choose a valid category.");
+   const category = db().prepare("SELECT id,slug,name FROM categories WHERE id=?").get(id);
+@@ -346,6 +452,7 @@ export async function deleteCategoryAction(f: FormData) {
+     d.prepare("UPDATE category_redirects SET new_slug=? WHERE new_slug=?").run(redirectTo, category.slug);
+     d.prepare("INSERT INTO category_redirects (old_slug,new_slug) VALUES (?,?) ON CONFLICT(old_slug) DO UPDATE SET new_slug=excluded.new_slug").run(category.slug, redirectTo);
+   });
++  logAdminActivity(a.email, "category_deleted", "category", id, `${String(category.name)}; reassigned ${used} products`);
+   revalidatePath("/", "layout");
+   revalidatePath(`/category/${String(category.slug)}`);
+   back("/admin/categories", used ? `Category deleted and ${used} products reassigned. Its old URL redirects to ${String(target?.slug)}.` : "Empty category deleted. Its old URL redirects to the shop.");
+@@ -373,7 +480,7 @@ export async function uploadCategoryImageAction(f: FormData) {
+ }
+ 
+ export async function saveProductAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const id = Number(f.get("id"));
+   const p = db().prepare("SELECT * FROM products WHERE id = ?").get(id);
+   if (!p) return back("/admin/products");
+@@ -393,6 +500,7 @@ export async function saveProductAction(f: FormData) {
+     text(f, "ingredients", 2000), text(f, "directions", 4000), JSON.stringify(faqs), JSON.stringify(related), status, f.get("featured") ? 1 : 0,
+     Number(f.get("sort")) || 0, text(f, "review", 2000), id);
+   revalidatePath("/", "layout");
++  logAdminActivity(a.email, "product_updated", "product", id, `${String(p.name)} · ${slug} · ${status}`);
+   back(`/admin/products/${id}`, "Product saved.");
+ }
+ 
+@@ -440,6 +548,7 @@ export async function saveVariantAction(f: FormData) {
+     }
+   });
+   db().prepare("UPDATE products SET updated_at = datetime('now') WHERE id = ?").run(pid);
++  logAdminActivity(a.email, "variant_saved", "product", pid, `${label} · ${sku}`);
+   revalidatePath("/", "layout");
+   back(`/admin/products/${pid}`, "Price option saved.");
+ }
+@@ -472,22 +581,29 @@ export async function saveStockAction(f: FormData) {
+     if (!row) return null;
+     const previous = row.stock == null ? 0 : Number(row.stock);
+     d.prepare("UPDATE variants SET stock=?,low_stock_threshold=? WHERE id=?").run(qty, threshold, variantId);
++    let movementId: number | null = null;
+     if (previous !== qty) {
+-      d.prepare(`INSERT INTO inventory_movements
++      movementId = Number(d.prepare(`INSERT INTO inventory_movements
+         (product_id,variant_id,product_name,variant_label,sku,previous_qty,new_qty,qty_change,reason,actor)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`).run(row.product_id,row.id,row.product_name,row.label,row.sku,previous,qty,qty-previous,
+-          row.stock == null ? `Opening stock: ${reason}` : reason,a.email);
++          row.stock == null ? `Opening stock: ${reason}` : reason,a.email).lastInsertRowid);
+     }
+-    return Number(row.product_id);
++    return { productId: Number(row.product_id), productName: String(row.product_name), label: String(row.label), qty, threshold, movementId };
+   });
+   if (result == null) return back("/admin/inventory", "Stock option not found.");
++  if (result.movementId != null) {
++    logAdminActivity(a.email, "stock_adjusted", "variant", variantId, `${result.productName} · ${result.label}: ${qty} (${reason})`);
++    if (threshold > 0 && qty <= threshold) {
++      notifyAdmin(`stock:${result.movementId}:low`, "low_stock", qty === 0 ? "Product out of stock" : "Product stock is low", `${result.productName} · ${result.label}: ${qty} remaining`, "/admin/inventory");
++    }
++  }
+   revalidatePath("/admin/products");
+-  revalidatePath(`/admin/products/${result}`);
++  revalidatePath(`/admin/products/${result.productId}`);
+   back("/admin/inventory", "Stock saved and movement recorded.");
+ }
+ 
+ export async function saveComboItemsAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const pid = Number(f.get("productId"));
+   const rows: { pid: number | null; name: string; size: string; qty: string }[] = [];
+   for (let i = 0; i < 12; i++) {
+@@ -501,6 +617,7 @@ export async function saveComboItemsAction(f: FormData) {
+     d.prepare("DELETE FROM combo_items WHERE combo_id = ?").run(pid);
+     rows.forEach((r, i) => d.prepare("INSERT INTO combo_items (combo_id,item_product_id,item_name,size_note,quantity_note,sort) VALUES (?,?,?,?,?,?)").run(pid, r.pid, r.name, r.size, r.qty, i));
+   });
++  logAdminActivity(a.email, "combo_contents_updated", "product", pid, `${rows.length} set items`);
+   back(`/admin/products/${pid}`, "Set contents saved.");
+ }
+ 
+@@ -645,6 +762,7 @@ export async function saveDeliveryAction(f: FormData) {
+         .run(x.state, x.fee, x.active, x.note, x.estimate);
+     }
+   });
++  logAdminActivity(a.email, "delivery_settings_updated", "delivery", "all-states", `${updates.filter((x) => x.fee != null).length} configured fees`);
+   revalidatePath("/checkout");
+   back("/admin/delivery", "Delivery fees saved.");
+ }
+@@ -668,6 +786,7 @@ export async function importDeliveryCsvAction(f: FormData) {
+         .run(x.state,x.fee,active,x.note,x.estimatedDelivery);
+     }
+   });
++  logAdminActivity(a.email, "delivery_csv_imported", "delivery", "selected-states", `${parsed.rows.length} rows`);
+   revalidatePath("/checkout");
+   back("/admin/delivery", `Imported ${parsed.rows.length} state delivery setting${parsed.rows.length === 1 ? "" : "s"}.`);
+ }
+@@ -692,6 +811,7 @@ export async function saveBulkDeliveryAction(f: FormData) {
+         .run(state, fee, nextConfig.active, nextConfig.note, nextConfig.estimated_delivery);
+     }
+   });
++  logAdminActivity(a.email, "delivery_fees_bulk_updated", "delivery", "selected-states", `${states.length} states · ₦${fee.toLocaleString("en-NG")}`);
+   revalidatePath("/checkout");
+   back("/admin/delivery", `Updated the delivery fee for ${states.length} selected state${states.length === 1 ? "" : "s"}.`);
+ }
+@@ -704,30 +824,32 @@ export async function saveBankAction(f: FormData) {
+   const accountNumber = s(f, "accountNumber", 20).replace(/\D/g, "");
+   if (!bank || !accountName || !/^\d{10}$/.test(accountNumber)) return back("/admin/settings", "Enter the bank name, account name and a 10-digit account number.");
+   setSetting("bank", { bank, accountName, accountNumber });
+-  console.info(`[admin] bank details updated by ${a.email}`);
++  logAdminActivity(a.email, "bank_details_updated", "settings", "bank", "Bank transfer destination updated");
+   back("/admin/settings", "Bank details saved. New orders show these details.");
+ }
+ export async function saveContactAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const whatsapp = normalisePhone(s(f, "whatsapp", 30));
+   const email = s(f, "email", 254).toLowerCase();
+   if (!whatsapp) return back("/admin/settings", "Enter a valid Nigerian WhatsApp number.");
+   if (email && !isEmail(email)) return back("/admin/settings", "Enter a valid email address.");
+   const url = (k: string) => { const v = s(f, k, 200); return /^https:\/\/[^\s]+$/.test(v) ? v : ""; };
+   setSetting("contact", { whatsapp, email, instagram: url("instagram"), facebook: url("facebook"), tiktok: url("tiktok") });
++  logAdminActivity(a.email, "contact_settings_updated", "settings", "contact");
+   revalidatePath("/", "layout");
+   back("/admin/settings", "Contact details saved.");
+ }
+ export async function saveContentAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   for (const k of ["announcement", "about", "productNotice", "shippingPolicy", "returnsPolicy", "privacyPolicy", "termsPolicy"]) {
+     if (f.has(k)) setSetting(k, text(f, k, k === "announcement" ? 200 : 8000));
+   }
+   revalidatePath("/", "layout");
++  logAdminActivity(a.email, "store_content_updated", "settings", "content");
+   back("/admin/settings", "Content saved.");
+ }
+ export async function saveHomeContentAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const href = (key: string) => {
+     const value = s(f, key, 200);
+     return /^\/(?!\/)[^\\\s]*$/.test(value) ? value : null;
+@@ -763,13 +885,14 @@ export async function saveHomeContentAction(f: FormData) {
+     return back("/admin/settings", "An enabled banner needs a title. A button label is optional.");
+   for (const [key, value] of Object.entries(hero)) setSetting(key, value);
+   for (const [key, value] of Object.entries(banner)) setSetting(key, value);
++  logAdminActivity(a.email, "homepage_content_updated", "settings", "homepage");
+   revalidatePath("/");
+   back("/admin/settings", "Homepage content saved.");
+ }
+ 
+ /* ---------- users ---------- */
+ export async function addUserAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const email = s(f, "email", 254).toLowerCase();
+   const name = s(f, "name", 80);
+   const pw = String(f.get("password") || "");
+@@ -777,18 +900,27 @@ export async function addUserAction(f: FormData) {
+   if (!isEmail(email) || name.length < 2) return back("/admin/users", "Enter a name and a valid email.");
+   if (pw.length < 10) return back("/admin/users", "The password must be at least 10 characters.");
+   if (db().prepare("SELECT 1 FROM users WHERE email = ?").get(email)) return back("/admin/users", "A user with that email already exists.");
+-  db().prepare("INSERT INTO users (email,name,role,password_hash) VALUES (?,?,?,?)").run(email, name, role, hashPassword(pw));
++  const result = db().prepare("INSERT INTO users (email,name,role,password_hash) VALUES (?,?,?,?)").run(email, name, role, hashPassword(pw));
++  logAdminActivity(a.email, "admin_user_created", "user", Number(result.lastInsertRowid), `${email} · ${role}`);
+   back("/admin/users", "User added.");
+ }
+ export async function toggleUserAction(f: FormData) {
+-  await requireAdmin("owner");
+-  db().prepare("UPDATE users SET active = 1 - active WHERE id = ?").run(Number(f.get("id")));
++  const a = await requireAdmin("owner");
++  const id = Number(f.get("id"));
++  const user = db().prepare("SELECT email,active FROM users WHERE id=?").get(id);
++  if (!user) return back("/admin/users", "User not found.");
++  db().prepare("UPDATE users SET active = 1 - active WHERE id = ?").run(id);
++  logAdminActivity(a.email, Number(user.active) ? "admin_user_deactivated" : "admin_user_activated", "user", id, String(user.email));
+   back("/admin/users", "User updated.");
+ }
+ export async function resetUserPasswordAction(f: FormData) {
+-  await requireAdmin("owner");
++  const a = await requireAdmin("owner");
+   const pw = String(f.get("password") || "");
+   if (pw.length < 10) return back("/admin/users", "The password must be at least 10 characters.");
+-  db().prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(pw), Number(f.get("id")));
++  const id = Number(f.get("id"));
++  const user = db().prepare("SELECT email FROM users WHERE id=?").get(id);
++  if (!user) return back("/admin/users", "User not found.");
++  db().prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(pw), id);
++  logAdminActivity(a.email, "admin_password_reset", "user", id, String(user.email));
+   back("/admin/users", "Password changed.");
+ }
+diff --git a/src/app/admin/layout.tsx b/src/app/admin/layout.tsx
+index 00c073b..e499804 100644
+--- a/src/app/admin/layout.tsx
++++ b/src/app/admin/layout.tsx
+@@ -3,6 +3,7 @@ import Link from "next/link";
+ import localFont from "next/font/local";
+ import { currentAdmin } from "@/lib/auth";
+ import { logoutAction } from "@/app/admin/actions";
++import { db } from "@/lib/db";
+ 
+ export const dynamic = "force-dynamic";
+ export const metadata: Metadata = { title: { default: "Admin", template: "%s | Admin" }, robots: { index: false, follow: false } };
+@@ -11,19 +12,25 @@ const outfit = localFont({ src: "../fonts/Outfit-latin.woff2", variable: "--font
+ const NAV = [
+   { href: "/admin", label: "Dashboard" },
+   { href: "/admin/orders", label: "Orders" },
++  { href: "/admin/notifications", label: "Notifications" },
++  { href: "/admin/reviews", label: "Reviews" },
+   { href: "/admin/products", label: "Products", owner: true },
++  { href: "/admin/promotions", label: "Promotions", owner: true },
+   { href: "/admin/media", label: "Media library", owner: true },
+   { href: "/admin/inventory", label: "Inventory", owner: true },
+   { href: "/admin/categories", label: "Categories", owner: true },
+   { href: "/admin/delivery", label: "Delivery and Shipping", owner: true },
+   { href: "/admin/customers", label: "Customers" },
++  { href: "/admin/analytics", label: "Analytics", owner: true },
+   { href: "/admin/messages", label: "Messages" },
+   { href: "/admin/settings", label: "Settings", owner: true },
+   { href: "/admin/users", label: "Users", owner: true },
++  { href: "/admin/activity", label: "Activity log", owner: true },
+ ];
+ 
+ export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+   const a = await currentAdmin();
++  const unread = a ? Number(db().prepare("SELECT COUNT(*) n FROM admin_notifications WHERE read_at IS NULL").get()?.n || 0) : 0;
+   return (
+     <div className={`${outfit.variable} min-h-screen bg-neutral-50 font-sans`}>
+       {a ? (
+@@ -38,7 +45,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
+           </div>
+           <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Admin">
+             {NAV.filter((n) => !n.owner || a.role === "owner").map((n) => (
+-              <Link key={n.href} href={n.href} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-brand-50 hover:text-brand-900">{n.label}</Link>
++              <Link key={n.href} href={n.href} className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-brand-50 hover:text-brand-900">{n.label}{n.href === "/admin/notifications" && unread ? <span className="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-xs text-red-800">{unread}</span> : null}</Link>
+             ))}
+           </nav>
+         </header>
+diff --git a/src/app/admin/orders/[id]/page.tsx b/src/app/admin/orders/[id]/page.tsx
+index 8c628b9..1774ef8 100644
+--- a/src/app/admin/orders/[id]/page.tsx
++++ b/src/app/admin/orders/[id]/page.tsx
+@@ -58,7 +58,9 @@ export default async function OrderDetail({ params, searchParams }: { params: {
+               ))}</tbody>
+             </table>
+             <dl className="mt-3 border-t border-neutral-200 pt-2 text-sm">
+-              {row("Subtotal", naira(o.subtotal))}
++              {row("Product subtotal", naira(items.reduce((sum, item) => sum + item.line_total, 0)))}
++              {Number(o.discount_amount || 0) ? row(`Coupon (${String(o.coupon_code || "")})`, `−${naira(Number(o.discount_amount))}`) : null}
++              {Number(o.discount_amount || 0) ? row("Product payment after discount", naira(o.subtotal)) : null}
+               {row(`Delivery (${o.state})`, o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
+               {o.delivery_estimate ? row("Estimated delivery", String(o.delivery_estimate)) : null}
+               {row("Total including delivery", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}
+diff --git a/src/app/api/admin/export/route.ts b/src/app/api/admin/export/route.ts
+index ad51ba1..a99e7f3 100644
+--- a/src/app/api/admin/export/route.ts
++++ b/src/app/api/admin/export/route.ts
+@@ -11,7 +11,9 @@ const cell = (v: unknown) => {
+ };
+ 
+ export async function GET() {
+-  if (!(await currentAdmin())) return new Response("Not found", { status: 404 });
++  const admin = await currentAdmin();
++  if (!admin) return new Response("Not found", { status: 404 });
++  if (admin.role !== "owner") return new Response("Forbidden", { status: 403 });
+   const orders = db().prepare("SELECT * FROM orders ORDER BY id DESC").all();
+   const items = db().prepare("SELECT order_id, name, variant_label, qty, unit_price FROM order_items ORDER BY id").all();
+   const byOrder = new Map<number, string[]>();
+@@ -19,10 +21,10 @@ export async function GET() {
+     const k = Number(i.order_id);
+     byOrder.set(k, [...(byOrder.get(k) || []), `${i.qty} x ${i.name} (${i.variant_label}) @ ${i.unit_price}`]);
+   }
+-  const head = ["Order number", "Date", "Customer", "Phone", "WhatsApp", "Email", "State", "City/LGA", "Address", "Items", "Subtotal", "Delivery fee", "Total",
++  const head = ["Order number", "Date", "Customer", "Phone", "WhatsApp", "Email", "State", "City/LGA", "Address", "Items", "Product payment", "Coupon code", "Discount", "Delivery fee", "Total",
+     "Product payment status", "Delivery payment status", "Delivery payment reference", "Delivery paid at", "Fulfilment status", "Product payment reference", "Payer name", "Product paid at", "Verified by", "Admin notes"];
+   const rows = orders.map((o) => [o.number, o.created_at, o.customer_name, o.phone, o.whatsapp, o.email, o.state, o.city, o.address,
+-    (byOrder.get(Number(o.id)) || []).join("; "), o.subtotal, o.delivery_fee ?? "To be confirmed", o.total ?? "",
++    (byOrder.get(Number(o.id)) || []).join("; "), o.subtotal, o.coupon_code, o.discount_amount, o.delivery_fee ?? "To be confirmed", o.total ?? "",
+     PAYMENT_STATUS[String(o.payment_status)] || o.payment_status, String(o.delivery_payment_status), o.delivery_payment_reference, o.delivery_paid_at || "",
+     FULFILMENT_STATUS[String(o.fulfilment_status)] || o.fulfilment_status, o.payment_reference, o.payer_name, o.paid_at || "", o.verified_by, o.admin_notes]);
+   const csv = "﻿" + [head, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+diff --git a/src/app/api/orders/route.ts b/src/app/api/orders/route.ts
+index a985001..4c274bf 100644
+--- a/src/app/api/orders/route.ts
++++ b/src/app/api/orders/route.ts
+@@ -21,12 +21,13 @@ export async function POST(req: Request) {
+       tracking: { fbp: c.get("_fbp")?.value, fbc: c.get("_fbc")?.value, ua: req.headers.get("user-agent") || "", ip: ipOf(req) },
+     });
+     if (!r.ok) return Response.json({ errors: r.errors }, { status: 400 });
+-    return Response.json({ ok: true, number: r.number, token: r.token, total: r.total, subtotal: r.subtotal, deliveryFee: r.fee });
++    return Response.json({ ok: true, number: r.number, token: r.token, total: r.total, subtotal: r.subtotal, itemsSubtotal: r.itemsSubtotal, discountAmount: r.discountAmount, couponCode: r.couponCode, deliveryFee: r.fee });
+   } catch (e) {
+     const m = (e as Error).message || "";
+     if (m.startsWith("stock:")) return Response.json({ errors: { items: `${m.slice(6)} just went out of stock. Update your cart.` } }, { status: 409 });
+     if (m === "delivery:disabled") return Response.json({ errors: { state: "Delivery is not currently available in the selected state. Contact us for help." } }, { status: 400 });
+     if (m === "delivery:unconfigured") return Response.json({ errors: { state: "Delivery pricing is not available for the selected state yet. Please choose another state or contact us." } }, { status: 400 });
++    if (m.startsWith("coupon:")) return Response.json({ errors: { coupon: m.slice(7) } }, { status: 400 });
+     console.error("order create failed", m);
+     return Response.json({ error: "We could not place your order. Try again, or message us on WhatsApp." }, { status: 500 });
+   }
+diff --git a/src/components/CheckoutForm.tsx b/src/components/CheckoutForm.tsx
+index 1faaa2c..5be460b 100644
+--- a/src/components/CheckoutForm.tsx
++++ b/src/components/CheckoutForm.tsx
+@@ -12,6 +12,7 @@ import { naira } from "@/lib/site";
+ type Errors = Record<string, string>;
+ 
+ type DeliveryQuote = { fee: number | null; active: boolean; estimatedDelivery: string };
++type AppliedCoupon = { code: string; discountAmount: number; eligibleSubtotal: number };
+ 
+ export default function CheckoutForm({ states, deliveryQuotes }: { states: string[]; deliveryQuotes: Record<string, DeliveryQuote> }) {
+   const { lines, ready, clear } = useCart();
+@@ -21,10 +22,22 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
+   const [busy, setBusy] = useState(false);
+   const [fail, setFail] = useState("");
+   const [diffWa, setDiffWa] = useState(false);
++  const [couponInput, setCouponInput] = useState("");
++  const [couponPreview, setCouponPreview] = useState<AppliedCoupon | null>(null);
++  const [couponMessage, setCouponMessage] = useState("");
++  const [couponBusy, setCouponBusy] = useState(false);
++  const [couponCartKey, setCouponCartKey] = useState("");
+   const router = useRouter();
+   const tracked = useRef(false);
+   const placed = useRef(false);
+ 
++  const cartKey = JSON.stringify(lines.map((line) => [line.variantId, line.qty]));
++  useEffect(() => {
++    setCouponPreview(null);
++    setCouponCartKey("");
++    setCouponMessage("");
++  }, [cartKey]);
++
+   useEffect(() => {
+     if (ready && lines.length && !tracked.current) {
+       tracked.current = true;
+@@ -43,8 +56,23 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
+ 
+   const unavailable = quote?.lines.filter((l) => !l.available) || [];
+   const missing = quote ? lines.length - quote.lines.length : 0;
++  const activeCoupon = couponCartKey === cartKey ? couponPreview : null;
++  const discount = activeCoupon?.discountAmount || 0;
+   const deliveryQuote = state ? deliveryQuotes[state] : undefined;
+ 
++  async function applyCoupon() {
++    setCouponMessage(""); setCouponPreview(null); setCouponBusy(true);
++    const form = document.querySelector<HTMLFormElement>("form[data-checkout-form]");
++    const fd = form ? new FormData(form) : new FormData();
++    try {
++      const r = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: couponInput, phone: fd.get("phone"), items: lines.map((line) => ({ variantId: line.variantId, qty: line.qty })) }) });
++      const result = await r.json().catch(() => ({}));
++      if (r.ok && result.code) { setCouponPreview(result); setCouponCartKey(cartKey); setCouponInput(result.code); setCouponMessage(`Coupon applied. You save ${naira(result.discountAmount)} on eligible products.`); }
++      else setCouponMessage(result.error || "We could not validate that coupon.");
++    } catch { setCouponMessage("We could not check the coupon. Check your connection and try again."); }
++    setCouponBusy(false);
++  }
++
+   async function submit(e: React.FormEvent<HTMLFormElement>) {
+     e.preventDefault();
+     setFail(""); setErrors({});
+@@ -52,6 +80,7 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
+     const body = {
+       name: fd.get("name"), phone: fd.get("phone"), whatsapp: diffWa ? fd.get("whatsapp") : "", email: fd.get("email"),
+       state: fd.get("state"), city: fd.get("city"), address: fd.get("address"), instructions: fd.get("instructions"), company: fd.get("company"),
++      couponCode: activeCoupon?.code || "",
+       items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
+     };
+     const local: Errors = {};
+@@ -71,7 +100,7 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
+         window.location.assign(`/order/${j.number}?t=${encodeURIComponent(j.token)}&new=1`);
+         return;
+       }
+-      if (j.errors) { setErrors(j.errors); focusFirst(j.errors); }
++      if (j.errors) { setErrors(j.errors); if (j.errors.coupon) { setCouponMessage(j.errors.coupon); setCouponPreview(null); } focusFirst(j.errors); }
+       setFail(j.error || (j.errors?.items ? j.errors.items : "Check the highlighted fields."));
+     } catch {
+       setFail("We could not reach the server. Check your connection and try again.");
+@@ -97,7 +126,7 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
+       <ol className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-neutral-500" aria-label="Checkout steps">
+         <li className="text-brand-700">1. Your details</li><li>2. Bank transfer</li><li>3. Confirm payment</li>
+       </ol>
+-      <form onSubmit={submit} noValidate className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
++      <form data-checkout-form onSubmit={submit} noValidate className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
+         <div className="space-y-8">
+           <section className="card p-5 sm:p-6" aria-labelledby="c-h">
+             <h2 id="c-h" className="text-xl">Contact details</h2>
+@@ -159,6 +188,8 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
+         <aside className="h-fit space-y-4 lg:sticky lg:top-28">
+           <section className="card p-5 sm:p-6" aria-labelledby="s-h">
+             <h2 id="s-h" className="text-xl">Your order</h2>
++            <div className="mt-4 flex flex-wrap gap-2"><label htmlFor="couponCode" className="sr-only">Coupon code</label><input id="couponCode" value={couponInput} onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponPreview(null); setCouponMessage(""); }} placeholder="Coupon code" className="field min-w-0 flex-1 uppercase" maxLength={40} /><button type="button" onClick={applyCoupon} disabled={couponBusy || !couponInput.trim()} className="btn btn-outline min-h-11">{couponBusy ? "Checking…" : activeCoupon ? "Recheck code" : "Apply coupon"}</button></div>
++            {couponMessage ? <p className={`mt-2 text-sm ${activeCoupon ? "text-brand-800" : "text-red-700"}`} role="status">{couponMessage}</p> : null}
+             <ul className="mt-4 divide-y divide-neutral-100">
+               {lines.map((l) => {
+                 const s = quote?.lines.find((x) => x.variantId === l.variantId);
+@@ -173,9 +204,10 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
+             </ul>
+             <dl className="mt-3 space-y-2 border-t border-neutral-200 pt-4 text-[15px]">
+               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
++              {activeCoupon ? <><div className="flex justify-between"><dt className="text-neutral-600">Coupon ({activeCoupon.code})</dt><dd className="font-semibold text-brand-800">−{naira(discount)}</dd></div><div className="flex justify-between"><dt className="text-neutral-600">Product payment after discount</dt><dd className="font-semibold">{quote ? naira(Math.max(0, quote.subtotal - discount)) : "…"}</dd></div></> : null}
+               <div className="flex justify-between"><dt className="text-neutral-600">Delivery (paid separately)</dt><dd className="text-right font-medium">{deliveryQuote?.active && deliveryQuote.fee != null ? naira(deliveryQuote.fee) : "Select an available state"}</dd></div>
+-              {deliveryQuote?.active && deliveryQuote.fee != null ? <div className="flex justify-between border-t border-neutral-100 pt-2"><dt className="text-neutral-600">Total including delivery</dt><dd className="font-semibold">{quote ? naira(quote.subtotal + deliveryQuote.fee) : "…"}</dd></div> : null}
+-              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
++              {deliveryQuote?.active && deliveryQuote.fee != null ? <div className="flex justify-between border-t border-neutral-100 pt-2"><dt className="text-neutral-600">Total including delivery</dt><dd className="font-semibold">{quote ? naira(quote.subtotal - discount + deliveryQuote.fee) : "…"}</dd></div> : null}
++              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal - discount) : "…"}</dd></div>
+             </dl>
+             <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> {deliveryQuote?.active && deliveryQuote.fee != null ? "Pay for products now. The displayed delivery fee is paid separately before dispatch." : "Choose a state with an active configured delivery fee to continue."}</p>
+             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
+diff --git a/src/lib/db.ts b/src/lib/db.ts
+index ad3a058..933aae8 100644
+--- a/src/lib/db.ts
++++ b/src/lib/db.ts
+@@ -222,6 +222,80 @@ const MIGRATIONS: string[] = [
+      PRIMARY KEY(product_id,src)
+    );
+    CREATE INDEX IF NOT EXISTS idx_product_media_product_sort ON product_media(product_id,sort);`,
++  `CREATE TABLE IF NOT EXISTS admin_notifications (
++     id INTEGER PRIMARY KEY AUTOINCREMENT,
++     event_key TEXT NOT NULL UNIQUE,
++     type TEXT NOT NULL,
++     title TEXT NOT NULL,
++     body TEXT NOT NULL DEFAULT '',
++     href TEXT NOT NULL DEFAULT '/admin',
++     read_at TEXT,
++     created_at TEXT NOT NULL DEFAULT (datetime('now'))
++   );
++   CREATE INDEX IF NOT EXISTS idx_admin_notifications_unread ON admin_notifications(read_at, id DESC);
++   CREATE TABLE IF NOT EXISTS admin_activity (
++     id INTEGER PRIMARY KEY AUTOINCREMENT,
++     actor TEXT NOT NULL,
++     action TEXT NOT NULL,
++     entity_type TEXT NOT NULL,
++     entity_id TEXT NOT NULL DEFAULT '',
++     details TEXT NOT NULL DEFAULT '',
++     created_at TEXT NOT NULL DEFAULT (datetime('now'))
++   );
++   CREATE INDEX IF NOT EXISTS idx_admin_activity_created ON admin_activity(id DESC);
++   CREATE INDEX IF NOT EXISTS idx_admin_activity_actor ON admin_activity(actor, id DESC);`,
++  `ALTER TABLE orders ADD COLUMN discount_amount INTEGER NOT NULL DEFAULT 0;
++   ALTER TABLE orders ADD COLUMN coupon_code TEXT NOT NULL DEFAULT '';
++   ALTER TABLE order_items ADD COLUMN discount_amount INTEGER NOT NULL DEFAULT 0;
++   CREATE TABLE IF NOT EXISTS coupons (
++     id INTEGER PRIMARY KEY AUTOINCREMENT,
++     code TEXT NOT NULL UNIQUE,
++     discount_type TEXT NOT NULL CHECK (discount_type IN ('fixed','percent')),
++     discount_value INTEGER NOT NULL,
++     starts_at TEXT NOT NULL DEFAULT '',
++     expires_at TEXT NOT NULL DEFAULT '',
++     usage_limit INTEGER,
++     customer_limit INTEGER NOT NULL DEFAULT 1,
++     minimum_order INTEGER NOT NULL DEFAULT 0,
++     product_ids TEXT NOT NULL DEFAULT '[]',
++     category_slugs TEXT NOT NULL DEFAULT '[]',
++     active INTEGER NOT NULL DEFAULT 0,
++     created_at TEXT NOT NULL DEFAULT (datetime('now')),
++     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
++   );
++   CREATE TABLE IF NOT EXISTS coupon_redemptions (
++     id INTEGER PRIMARY KEY AUTOINCREMENT,
++     coupon_id INTEGER NOT NULL REFERENCES coupons(id),
++     order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id),
++     customer_key TEXT NOT NULL,
++     discount_amount INTEGER NOT NULL,
++     created_at TEXT NOT NULL DEFAULT (datetime('now')),
++     UNIQUE(coupon_id,customer_key,order_id)
++   );
++   CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_coupon ON coupon_redemptions(coupon_id,created_at);`,
++  `CREATE TABLE IF NOT EXISTS product_reviews (
++     id INTEGER PRIMARY KEY AUTOINCREMENT,
++     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
++     order_id INTEGER NOT NULL REFERENCES orders(id),
++     customer_name TEXT NOT NULL,
++     rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
++     review_text TEXT NOT NULL,
++     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
++     verified_purchase INTEGER NOT NULL DEFAULT 1,
++     created_at TEXT NOT NULL DEFAULT (datetime('now')),
++     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
++     UNIQUE(product_id,order_id)
++   );
++   CREATE INDEX IF NOT EXISTS idx_product_reviews_public ON product_reviews(product_id,status,created_at DESC);
++   CREATE TABLE IF NOT EXISTS testimonials (
++     id INTEGER PRIMARY KEY AUTOINCREMENT,
++     customer_name TEXT NOT NULL,
++     quote TEXT NOT NULL,
++     approved INTEGER NOT NULL DEFAULT 0,
++     created_at TEXT NOT NULL DEFAULT (datetime('now')),
++     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
++   );
++   CREATE INDEX IF NOT EXISTS idx_testimonials_approved ON testimonials(approved,id DESC);`,
+ ];
+ 
+ function open(): DB {
+diff --git a/src/lib/orders.ts b/src/lib/orders.ts
+index 6592ae1..171764b 100644
+--- a/src/lib/orders.ts
++++ b/src/lib/orders.ts
+@@ -1,10 +1,12 @@
+ import "server-only";
+-import { randomBytes, timingSafeEqual } from "crypto";
++import { createHash, randomBytes, timingSafeEqual } from "crypto";
+ import { db, tx } from "@/lib/db";
+ import { quoteLines } from "@/lib/catalog";
+ import { getBank } from "@/lib/settings";
+ import { NIGERIAN_STATES, normalisePhone } from "@/lib/site";
+ import { clean, isEmail } from "@/lib/validate";
++import { logAdminActivity, notifyAdmin } from "@/lib/admin-events";
++import { validateCoupon } from "@/lib/coupons";
+ 
+ export type OrderRow = Record<string, unknown> & {
+   id: number; number: string; access_token: string; created_at: string; customer_name: string; phone: string; whatsapp: string;
+@@ -28,6 +30,7 @@ function orderNumber() {
+ export type CheckoutInput = {
+   name: unknown; phone: unknown; whatsapp: unknown; email: unknown; state: unknown; city: unknown; address: unknown; instructions: unknown;
+   items: unknown;
++  couponCode?: unknown;
+   tracking?: { fbp?: string; fbc?: string; ua?: string; ip?: string };
+ };
+ 
+@@ -63,7 +66,7 @@ export function createOrder(input: CheckoutInput) {
+   if (bad) errors.items = `${bad.name} (${bad.label}): ${bad.reason}. Update your cart and try again.`;
+   if (Object.keys(errors).length) return { ok: false as const, errors };
+ 
+-  const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
++  const itemsSubtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
+   // Product payment is collected first. A configured state fee is quoted and remains payable separately.
+   const bank = getBank();
+ 
+@@ -72,7 +75,31 @@ export function createOrder(input: CheckoutInput) {
+     if (zone && Number(zone.active) !== 1) throw new Error("delivery:disabled");
+     if (!zone || zone.fee == null) throw new Error("delivery:unconfigured");
+     const fee = Number(zone.fee);
++    const couponCode = String(input.couponCode || "").trim();
++    const customerKey = `phone:${createHash("sha256").update(phone).digest("hex")}`;
++    const coupon = couponCode ? validateCoupon(couponCode, lines.map((line) => ({ productId: line.productId, variantId: line.variantId, lineTotal: line.lineTotal })), customerKey, d) : null;
++    if (coupon && !coupon.ok) throw new Error(`coupon:${coupon.error}`);
++    const discountAmount = coupon?.ok ? coupon.discountAmount : 0;
++    const subtotal = itemsSubtotal - discountAmount;
+     const total = subtotal + fee;
++    const lineDiscounts = new Map<number, number>();
++    if (coupon?.ok) {
++      const eligible = lines.filter((line) => coupon.eligibleVariantIds.includes(line.variantId));
++      let allocated = 0;
++      for (const line of eligible) {
++        const share = Math.min(line.lineTotal, Math.floor(discountAmount * line.lineTotal / coupon.eligibleSubtotal));
++        lineDiscounts.set(line.variantId, share);
++        allocated += share;
++      }
++      let remainder = discountAmount - allocated;
++      for (const line of eligible) {
++        if (!remainder) break;
++        const prior = lineDiscounts.get(line.variantId) || 0;
++        const extra = Math.min(line.lineTotal - prior, remainder);
++        lineDiscounts.set(line.variantId, prior + extra);
++        remainder -= extra;
++      }
++    }
+     const deliveryEstimate = String(zone?.estimated_delivery || "");
+     // Validate stock at checkout. Tracked stock is deducted only after an admin verifies payment.
+     for (const l of lines) {
+@@ -84,19 +111,24 @@ export function createOrder(input: CheckoutInput) {
+     const token = randomBytes(24).toString("base64url");
+     const r = d
+       .prepare(
+-        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,delivery_estimate,bank_snapshot,tracking)
+-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?,?)`
++        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,delivery_estimate,bank_snapshot,tracking,discount_amount,coupon_code)
++         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?)`
+       )
+-         .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, "pending", deliveryEstimate, JSON.stringify(bank), JSON.stringify(trackingOf(input)));
++         .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, "pending", deliveryEstimate, JSON.stringify(bank), JSON.stringify(trackingOf(input)), discountAmount, coupon?.ok ? coupon.code : "");
+     const oid = Number(r.lastInsertRowid);
+-    const insI = d.prepare("INSERT INTO order_items (order_id,product_id,variant_id,name,variant_label,sku,unit_price,qty,line_total) VALUES (?,?,?,?,?,?,?,?,?)");
++    if (coupon?.ok) {
++      const couponRow = d.prepare("SELECT id FROM coupons WHERE code=?").get(coupon.code);
++      d.prepare("INSERT INTO coupon_redemptions(coupon_id,order_id,customer_key,discount_amount) VALUES (?,?,?,?)").run(couponRow?.id, oid, customerKey, discountAmount);
++    }
++    const insI = d.prepare("INSERT INTO order_items (order_id,product_id,variant_id,name,variant_label,sku,unit_price,qty,line_total,discount_amount) VALUES (?,?,?,?,?,?,?,?,?,?)");
+     for (const l of lines) {
+-      insI.run(oid, l.productId, l.variantId, l.name, l.label, l.sku, l.unitPrice, l.qty, l.lineTotal);
++      insI.run(oid, l.productId, l.variantId, l.name, l.label, l.sku, l.unitPrice, l.qty, l.lineTotal, lineDiscounts.get(l.variantId) || 0);
+     }
+     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
+-      oid, "customer", "order_placed", "Product payment due: ₦" + subtotal.toLocaleString("en-NG") + ". Delivery fee of ₦" + fee.toLocaleString("en-NG") + " is payable separately."
++      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Product payment due: ₦${subtotal.toLocaleString("en-NG")}. Delivery fee of ₦${fee.toLocaleString("en-NG")} is payable separately.`
+     );
+-    return { ok: true as const, number, token, total, subtotal, fee };
++    notifyAdmin(`order:${oid}:created`, "new_order", "New order received", `${number} · ${name} · ${state}`, `/admin/orders/${oid}`);
++    return { ok: true as const, number, token, total, subtotal, itemsSubtotal, discountAmount, couponCode: coupon?.ok ? coupon.code : "", fee };
+   });
+ }
+ 
+@@ -133,6 +165,10 @@ export function getOrderForCustomer(number: string, token: string) {
+ export function logEvent(orderId: number, actor: string, action: string, note = "") {
+   db().prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(orderId, actor, action, note);
+   db().prepare("UPDATE orders SET updated_at = datetime('now') WHERE id = ?").run(orderId);
++  const order = db().prepare("SELECT number FROM orders WHERE id=?").get(orderId);
++  if (actor !== "customer" && actor !== "system") logAdminActivity(actor, action, "order", orderId, `${String(order?.number || "")} ${note}`.trim());
++  if (action === "payment_confirmation_submitted") notifyAdmin(`order:${orderId}:payment-submitted`, "payment_update", "Product payment confirmation submitted", String(order?.number || `Order ${orderId}`), `/admin/orders/${orderId}`);
++  if (action === "delivery_payment_confirmation_submitted") notifyAdmin(`order:${orderId}:delivery-payment-submitted`, "payment_update", "Delivery payment confirmation submitted", String(order?.number || `Order ${orderId}`), `/admin/orders/${orderId}`);
+ }
+ 
+ export function restoreStock(orderId: number, actor = "system") {
+diff --git a/src/components/ReviewForm.tsx b/src/components/ReviewForm.tsx
+new file mode 100644
+index 0000000..601e136
+--- /dev/null
++++ b/src/components/ReviewForm.tsx
+@@ -0,0 +1,28 @@
++"use client";
++import { useState } from "react";
++
++export default function ReviewForm({ product }: { product: string }) {
++  const [message, setMessage] = useState("");
++  const [busy, setBusy] = useState(false);
++  async function submit(form: FormData) {
++    setBusy(true); setMessage("");
++    try {
++      const response = await fetch("/api/reviews", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
++        product, orderNumber: form.get("orderNumber"), phone: form.get("phone"), rating: form.get("rating"), review: form.get("review"),
++      }) });
++      const result = await response.json();
++      setMessage(result.message || result.error || "Could not submit your review.");
++      if (response.ok) (document.getElementById(`review-${product}`) as HTMLFormElement | null)?.reset();
++    } catch { setMessage("Could not submit your review. Check your connection and try again."); }
++    finally { setBusy(false); }
++  }
++  return <form id={`review-${product}`} action={submit} className="mt-5 grid gap-3 sm:grid-cols-2">
++    <label className="text-sm">Order number<input required name="orderNumber" autoComplete="off" className="mt-1 w-full rounded-lg border p-3" /></label>
++    <label className="text-sm">Phone used for order<input required name="phone" inputMode="tel" autoComplete="tel" className="mt-1 w-full rounded-lg border p-3" /></label>
++    <label className="text-sm">Rating<select required name="rating" defaultValue="5" className="mt-1 w-full rounded-lg border p-3"><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></label>
++    <label className="text-sm sm:col-span-2">Your review<textarea required name="review" minLength={10} maxLength={1200} rows={4} className="mt-1 w-full rounded-lg border p-3" /></label>
++    <button disabled={busy} className="btn btn-primary w-fit disabled:opacity-60">{busy ? "Submitting…" : "Submit verified review"}</button>
++    <p role="status" aria-live="polite" className="self-center text-sm text-neutral-600">{message}</p>
++    <p className="text-xs text-neutral-500 sm:col-span-2">Only paid orders are eligible. Your review is checked before it appears publicly.</p>
++  </form>;
++}
+diff --git a/src/lib/admin-events.ts b/src/lib/admin-events.ts
+new file mode 100644
+index 0000000..54e13aa
+--- /dev/null
++++ b/src/lib/admin-events.ts
+@@ -0,0 +1,12 @@
++import "server-only";
++import { db } from "@/lib/db";
++
++export function notifyAdmin(eventKey: string, type: string, title: string, body: string, href = "/admin") {
++  db().prepare(`INSERT OR IGNORE INTO admin_notifications (event_key,type,title,body,href) VALUES (?,?,?,?,?)`)
++    .run(eventKey.slice(0, 180), type.slice(0, 40), title.slice(0, 160), body.slice(0, 500), href.slice(0, 300));
++}
++
++export function logAdminActivity(actor: string, action: string, entityType: string, entityId: string | number, details = "") {
++  db().prepare(`INSERT INTO admin_activity (actor,action,entity_type,entity_id,details) VALUES (?,?,?,?,?)`)
++    .run(actor.slice(0, 254), action.slice(0, 80), entityType.slice(0, 80), String(entityId).slice(0, 120), details.slice(0, 800));
++}
+diff --git a/src/lib/analytics.ts b/src/lib/analytics.ts
+new file mode 100644
+index 0000000..5126f09
+--- /dev/null
++++ b/src/lib/analytics.ts
+@@ -0,0 +1,46 @@
++import "server-only";
++import { db } from "@/lib/db";
++
++const DAY = 86_400_000;
++const validDate = (x: string) => /^\d{4}-\d{2}-\d{2}$/.test(x) && !Number.isNaN(Date.parse(`${x}T00:00:00Z`));
++export function analyticsRange(from?: string, to?: string) {
++  const today = new Date().toISOString().slice(0, 10);
++  const end = validDate(to || "") ? to! : today;
++  const startFallback = new Date(Date.parse(`${end}T00:00:00Z`) - 29 * DAY).toISOString().slice(0, 10);
++  const start = validDate(from || "") ? from! : startFallback;
++  const after = new Date(Date.parse(`${end}T00:00:00Z`) + DAY).toISOString().slice(0, 10);
++  return { from: start <= end ? start : startFallback, to: end, start: `${start <= end ? start : startFallback} 00:00:00`, end: `${after} 00:00:00` };
++}
++
++export function salesAnalytics(range: { start: string; end: string }) {
++  const d = db();
++  const orders = d.prepare(`SELECT COUNT(*) total,
++    SUM(CASE WHEN payment_status='paid' AND fulfilment_status!='cancelled' THEN 1 ELSE 0 END) paid,
++    SUM(CASE WHEN payment_status='pending_payment' AND fulfilment_status!='cancelled' THEN 1 ELSE 0 END) pending,
++    SUM(CASE WHEN payment_status='awaiting_verification' AND fulfilment_status!='cancelled' THEN 1 ELSE 0 END) awaiting,
++    SUM(CASE WHEN fulfilment_status='cancelled' THEN 1 ELSE 0 END) cancelled,
++    SUM(CASE WHEN fulfilment_status='delivered' THEN 1 ELSE 0 END) completed,
++    COALESCE(SUM(CASE WHEN payment_status='paid' AND fulfilment_status!='cancelled' THEN subtotal ELSE 0 END),0) revenue,
++    COALESCE(SUM(CASE WHEN delivery_payment_status='paid' AND fulfilment_status!='cancelled' THEN delivery_fee ELSE 0 END),0) delivery_collected
++    FROM orders WHERE created_at>=? AND created_at<?`).get(range.start, range.end);
++  const paid = Number(orders?.paid || 0);
++  const revenue = Number(orders?.revenue || 0);
++  const products = d.prepare(`SELECT oi.name,oi.variant_label,SUM(oi.qty) quantity,SUM(oi.line_total-oi.discount_amount) gross
++    FROM order_items oi JOIN orders o ON o.id=oi.order_id
++    WHERE o.created_at>=? AND o.created_at<? AND o.payment_status='paid' AND o.fulfilment_status!='cancelled'
++    GROUP BY oi.product_id,oi.variant_label,oi.name ORDER BY gross DESC LIMIT 100`).all(range.start, range.end);
++  const categories = d.prepare(`SELECT COALESCE(c.name,'Uncategorised') name,COUNT(DISTINCT o.id) orders,
++    SUM(oi.line_total-oi.discount_amount) gross FROM order_items oi JOIN orders o ON o.id=oi.order_id
++    LEFT JOIN products p ON p.id=oi.product_id LEFT JOIN categories c ON c.slug=p.category
++    WHERE o.created_at>=? AND o.created_at<? AND o.payment_status='paid' AND o.fulfilment_status!='cancelled'
++    GROUP BY c.slug,c.name ORDER BY gross DESC`).all(range.start, range.end);
++  const states = d.prepare(`SELECT state,COUNT(*) orders,SUM(subtotal) revenue,
++    SUM(CASE WHEN delivery_payment_status='paid' THEN COALESCE(delivery_fee,0) ELSE 0 END) delivery_collected
++    FROM orders WHERE created_at>=? AND created_at<? AND payment_status='paid' AND fulfilment_status!='cancelled'
++    GROUP BY state ORDER BY revenue DESC`).all(range.start, range.end);
++  return { summary: {
++    total: Number(orders?.total || 0), paid, pending: Number(orders?.pending || 0), awaiting: Number(orders?.awaiting || 0),
++    cancelled: Number(orders?.cancelled || 0), completed: Number(orders?.completed || 0), revenue,
++    delivery_collected: Number(orders?.delivery_collected || 0), avgOrderValue: paid ? Math.round(revenue / paid) : 0,
++  }, products, categories, states };
++}
+diff --git a/src/lib/coupons.ts b/src/lib/coupons.ts
+new file mode 100644
+index 0000000..0035012
+--- /dev/null
++++ b/src/lib/coupons.ts
+@@ -0,0 +1,45 @@
++import "server-only";
++import { db } from "@/lib/db";
++import type { DB } from "@/lib/db";
++
++export type CouponLine = { productId: number; variantId?: number; lineTotal: number };
++export type CouponResult = { ok: true; code: string; discountAmount: number; eligibleSubtotal: number; eligibleVariantIds: number[] } | { ok: false; error: string };
++const parseIds = (value: unknown): number[] => { try { const v = JSON.parse(String(value || "[]")); return Array.isArray(v) ? v.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0) : []; } catch { return []; } };
++const parseSlugs = (value: unknown): string[] => { try { const v = JSON.parse(String(value || "[]")); return Array.isArray(v) ? v.map(String).filter((x) => /^[a-z0-9-]{1,70}$/.test(x)) : []; } catch { return []; } };
++
++export function validateCoupon(codeInput: unknown, lines: CouponLine[], customerKey = "", connection: DB = db(), now = new Date()): CouponResult {
++  const code = String(codeInput || "").trim().toUpperCase().slice(0, 40);
++  if (!code) return { ok: false, error: "Enter a coupon code." };
++  const coupon = connection.prepare("SELECT * FROM coupons WHERE code=?").get(code);
++  if (!coupon || Number(coupon.active) !== 1) return { ok: false, error: "That coupon is not available." };
++  const today = now.toISOString().slice(0, 10);
++  const startsAt = String(coupon.starts_at || "");
++  const expiresAt = String(coupon.expires_at || "");
++  if (startsAt && today < startsAt) return { ok: false, error: "That coupon is not active yet." };
++  if (expiresAt && today > expiresAt) return { ok: false, error: "That coupon has expired." };
++  const used = Number(connection.prepare("SELECT COUNT(*) n FROM coupon_redemptions WHERE coupon_id=?").get(coupon.id)?.n || 0);
++  if (coupon.usage_limit != null && used >= Number(coupon.usage_limit)) return { ok: false, error: "That coupon has reached its usage limit." };
++  if (customerKey && Number(coupon.customer_limit) > 0) {
++    const customerUsed = Number(connection.prepare("SELECT COUNT(*) n FROM coupon_redemptions WHERE coupon_id=? AND customer_key=?").get(coupon.id, customerKey)?.n || 0);
++    if (customerUsed >= Number(coupon.customer_limit)) return { ok: false, error: "You have already used that coupon the allowed number of times." };
++  }
++  const productIds = parseIds(coupon.product_ids);
++  const categorySlugs = parseSlugs(coupon.category_slugs);
++  let eligible = lines;
++  if (productIds.length || categorySlugs.length) {
++    eligible = lines.filter((line) => {
++      if (productIds.includes(line.productId)) return true;
++      if (categorySlugs.length) return categorySlugs.includes(String(connection.prepare("SELECT category FROM products WHERE id=?").get(line.productId)?.category || ""));
++      return false;
++    });
++  }
++  const eligibleSubtotal = eligible.reduce((sum, line) => sum + Math.max(0, Math.floor(line.lineTotal)), 0);
++  if (!eligibleSubtotal) return { ok: false, error: "This coupon does not apply to the items in your cart." };
++  const orderTotal = lines.reduce((sum, line) => sum + Math.max(0, Math.floor(line.lineTotal)), 0);
++  if (orderTotal < Number(coupon.minimum_order || 0)) return { ok: false, error: `Your product subtotal must be at least ₦${Number(coupon.minimum_order).toLocaleString("en-NG")} to use this coupon.` };
++  const value = Number(coupon.discount_value);
++  const discountAmount = coupon.discount_type === "percent" ? Math.floor(eligibleSubtotal * Math.min(100, value) / 100) : Math.min(eligibleSubtotal, value);
++  if (discountAmount < 1) return { ok: false, error: "This coupon does not discount the items in your cart." };
++  if (discountAmount >= orderTotal) return { ok: false, error: "The coupon cannot reduce the product payment to zero. Use a smaller discount." };
++  return { ok: true, code, discountAmount, eligibleSubtotal, eligibleVariantIds: eligible.map((line) => Number(line.variantId || 0)).filter((id) => id > 0) };
++}
+diff --git a/src/app/admin/activity/page.tsx b/src/app/admin/activity/page.tsx
+new file mode 100644
+index 0000000..32495d2
+--- /dev/null
++++ b/src/app/admin/activity/page.tsx
+@@ -0,0 +1,21 @@
++import { requireAdmin } from "@/lib/auth";
++import { db } from "@/lib/db";
++
++export const metadata = { title: "Activity log" };
++
++export default async function Activity({ searchParams }: { searchParams: { q?: string } }) {
++  await requireAdmin("owner");
++  const q = (searchParams.q || "").trim().slice(0, 100);
++  const like = `%${q.replace(/[%_]/g, "")}%`;
++  const rows = q
++    ? db().prepare("SELECT * FROM admin_activity WHERE actor LIKE ? OR action LIKE ? OR entity_type LIKE ? OR entity_id LIKE ? OR details LIKE ? ORDER BY id DESC LIMIT 250").all(like, like, like, like, like)
++    : db().prepare("SELECT * FROM admin_activity ORDER BY id DESC LIMIT 250").all();
++  return <div>
++    <h1 className="text-2xl">Administrator activity</h1>
++    <p className="mt-1 text-sm text-neutral-600">Read-only history of important administrator actions. The log is not editable from the dashboard.</p>
++    <form className="mt-4 flex flex-wrap gap-2" action="/admin/activity"><input name="q" defaultValue={q} placeholder="Search admin, action, record or details" className="admin-input max-w-lg" /><button className="admin-btn">Search</button></form>
++    <div className="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white"><table className="w-full text-sm"><thead className="bg-neutral-50 text-left text-neutral-600"><tr><th className="p-3">Time</th><th className="p-3">Administrator</th><th className="p-3">Action</th><th className="p-3">Record</th><th className="p-3">Details</th></tr></thead><tbody>
++      {rows.length ? rows.map((row) => <tr key={String(row.id)} className="border-t border-neutral-100 align-top"><td className="whitespace-nowrap p-3 text-neutral-500">{String(row.created_at)}</td><td className="p-3">{String(row.actor)}</td><td className="p-3">{String(row.action)}</td><td className="p-3">{String(row.entity_type)} · {String(row.entity_id)}</td><td className="p-3">{String(row.details)}</td></tr>) : <tr><td colSpan={5} className="p-6 text-neutral-500">No activity matches.</td></tr>}
++    </tbody></table></div>
++  </div>;
++}
+diff --git a/src/app/admin/analytics/page.tsx b/src/app/admin/analytics/page.tsx
+new file mode 100644
+index 0000000..e0ce3f6
+--- /dev/null
++++ b/src/app/admin/analytics/page.tsx
+@@ -0,0 +1,26 @@
++import { requireAdmin } from "@/lib/auth";
++import { analyticsRange, salesAnalytics } from "@/lib/analytics";
++import { naira } from "@/lib/site";
++
++export const metadata = { title: "Sales analytics" };
++
++export default async function Analytics({ searchParams }: { searchParams: { from?: string; to?: string } }) {
++  await requireAdmin("owner");
++  const range = analyticsRange(searchParams.from, searchParams.to);
++  const data = salesAnalytics(range);
++  const card = (label: string, value: string | number) => <div className="rounded-xl border border-neutral-200 bg-white p-4"><p className="text-sm text-neutral-500">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></div>;
++  const table = (title: string, headers: string[], rows: Record<string, unknown>[], render: (row: Record<string, unknown>) => React.ReactNode) => <section className="rounded-xl border border-neutral-200 bg-white p-4"><h2 className="text-lg font-semibold">{title}</h2><div className="mt-3 overflow-x-auto"><table className="w-full text-sm"><thead className="bg-neutral-50 text-left text-neutral-600"><tr>{headers.map((h) => <th key={h} className="p-2">{h}</th>)}</tr></thead><tbody>{rows.length ? rows.map((row, i) => <tr key={i} className="border-t border-neutral-100">{render(row)}</tr>) : <tr><td colSpan={headers.length} className="p-3 text-neutral-500">No sales in this period.</td></tr>}</tbody></table></div></section>;
++  const cell = (value: React.ReactNode, align = "") => <td className={`p-2 ${align}`}>{value}</td>;
++  const summary = data.summary;
++  return <div>
++    <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl">Sales analytics</h1><p className="mt-1 text-sm text-neutral-600">Revenue includes product payments verified in the bank. Delivery fees are counted separately only after delivery payment is verified. Cancelled and unpaid orders are excluded.</p></div><a href={`/api/admin/analytics/export?from=${range.from}&to=${range.to}`} className="admin-btn-ghost">Export reports CSV</a></div>
++    <form action="/admin/analytics" className="mt-4 flex flex-wrap items-end gap-2 rounded-xl border border-neutral-200 bg-white p-3"><label className="text-xs font-semibold text-neutral-600">From<input type="date" name="from" defaultValue={range.from} className="admin-input mt-1" /></label><label className="text-xs font-semibold text-neutral-600">To<input type="date" name="to" defaultValue={range.to} className="admin-input mt-1" /></label><button className="admin-btn">Apply dates</button></form>
++    <p className="mt-3 text-xs text-neutral-500">Reporting period: {range.from} to {range.to} (UTC dates).</p>
++    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">{card("Orders", Number(summary.total || 0))}{card("Paid orders", Number(summary.paid || 0))}{card("Pending", Number(summary.pending || 0) + Number(summary.awaiting || 0))}{card("Cancelled", Number(summary.cancelled || 0))}{card("Delivered", Number(summary.completed || 0))}{card("Confirmed product revenue", naira(Number(summary.revenue || 0)))}{card("Average paid order", naira(Number(summary.avgOrderValue || 0)))}{card("Delivery fees collected", naira(Number(summary.delivery_collected || 0)))}</div>
++    <div className="mt-5 grid gap-4 xl:grid-cols-2">
++      {table("Sales by product", ["Product / option", "Units", "Line sales"], data.products, (r) => <>{cell(<>{String(r.name)}<span className="block text-xs text-neutral-500">{String(r.variant_label)}</span></>)}{cell(Number(r.quantity))}{cell(naira(Number(r.gross)), "text-right")}</>)}
++      {table("Sales by category", ["Category", "Paid orders", "Line sales"], data.categories, (r) => <>{cell(String(r.name))}{cell(Number(r.orders))}{cell(naira(Number(r.gross)), "text-right")}</>)}
++      {table("Paid sales by state", ["State", "Paid orders", "Product revenue", "Delivery collected"], data.states, (r) => <>{cell(String(r.state))}{cell(Number(r.orders))}{cell(naira(Number(r.revenue)), "text-right")}{cell(naira(Number(r.delivery_collected)), "text-right")}</>)}
++    </div>
++  </div>;
++}
+diff --git a/src/app/admin/notifications/page.tsx b/src/app/admin/notifications/page.tsx
+new file mode 100644
+index 0000000..003ca32
+--- /dev/null
++++ b/src/app/admin/notifications/page.tsx
+@@ -0,0 +1,23 @@
++import Link from "next/link";
++import { requireAdmin } from "@/lib/auth";
++import { db } from "@/lib/db";
++import { markNotificationReadAction } from "@/app/admin/actions";
++import Flash from "@/components/admin/Flash";
++
++export const metadata = { title: "Notifications" };
++
++export default async function Notifications({ searchParams }: { searchParams: { msg?: string } }) {
++  await requireAdmin();
++  const rows = db().prepare("SELECT * FROM admin_notifications ORDER BY (read_at IS NULL) DESC,id DESC LIMIT 250").all();
++  const unread = rows.filter((row) => row.read_at == null).length;
++  return <div>
++    <Flash msg={searchParams.msg} />
++    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-2xl">Notifications</h1><p className="mt-1 text-sm text-neutral-600">{unread} unread · duplicate events are suppressed.</p></div>
++      {unread ? <form action={markNotificationReadAction}><input type="hidden" name="all" value="yes" /><button className="admin-btn-ghost">Mark all read</button></form> : null}
++    </div>
++    <div className="mt-4 space-y-2">{rows.length ? rows.map((row) => <article key={String(row.id)} className={`rounded-xl border bg-white p-4 ${row.read_at == null ? "border-brand-300" : "border-neutral-200"}`}>
++      <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="font-semibold">{String(row.title)}{row.read_at == null ? <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-900">New</span> : null}</p><p className="mt-1 text-sm text-neutral-600">{String(row.body)}</p><p className="mt-1 text-xs text-neutral-500">{String(row.created_at)}</p><Link href={String(row.href).startsWith("/admin") ? String(row.href) : "/admin"} className="mt-2 inline-block text-sm font-semibold text-brand-700 underline">Open</Link></div>
++        {row.read_at == null ? <form action={markNotificationReadAction}><input type="hidden" name="id" value={String(row.id)} /><button className="text-sm text-brand-700 underline">Mark read</button></form> : null}</div>
++    </article>) : <p className="rounded-xl border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-600">No notifications yet.</p>}</div>
++  </div>;
++}
+diff --git a/src/app/admin/promotions/page.tsx b/src/app/admin/promotions/page.tsx
+new file mode 100644
+index 0000000..93f5461
+--- /dev/null
++++ b/src/app/admin/promotions/page.tsx
+@@ -0,0 +1,38 @@
++import { requireAdmin } from "@/lib/auth";
++import { db } from "@/lib/db";
++import { allProductsAdmin, getCategories } from "@/lib/catalog";
++import { deleteCouponAction, saveCouponAction } from "@/app/admin/actions";
++import Flash from "@/components/admin/Flash";
++
++export const metadata = { title: "Promotions and coupons" };
++const Field = ({ label, name, ...props }: { label: string; name: string } & React.InputHTMLAttributes<HTMLInputElement>) => <label className="block text-xs font-semibold text-neutral-600">{label}<input name={name} className="admin-input mt-1" {...props} /></label>;
++function csvValues(raw: unknown) { try { const x = JSON.parse(String(raw || "[]")); return Array.isArray(x) ? x.join(", ") : ""; } catch { return ""; } }
++
++export default async function Promotions({ searchParams }: { searchParams: { msg?: string } }) {
++  await requireAdmin("owner");
++  const coupons = db().prepare("SELECT c.*, (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id=c.id) uses FROM coupons c ORDER BY c.id DESC").all();
++  const products = allProductsAdmin();
++  const categories = getCategories(true);
++  const editor = (coupon?: Record<string, unknown>) => <form action={saveCouponAction} className="grid gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
++    {coupon ? <input type="hidden" name="id" value={String(coupon.id)} /> : null}
++    <Field label="Code" name="code" defaultValue={String(coupon?.code || "")} placeholder="WELCOME10" required maxLength={40} />
++    <label className="block text-xs font-semibold text-neutral-600">Discount type<select name="discountType" defaultValue={String(coupon?.discount_type || "percent")} className="admin-input mt-1"><option value="percent">Percentage</option><option value="fixed">Fixed amount (₦)</option></select></label>
++    <Field label="Discount value" name="discountValue" type="number" min={1} max={100000000} defaultValue={String(coupon?.discount_value ?? "")} required />
++    <Field label="Minimum product subtotal (₦)" name="minimumOrder" type="number" min={0} defaultValue={String(coupon?.minimum_order ?? 0)} />
++    <Field label="Starts on (optional)" name="startsAt" type="date" defaultValue={String(coupon?.starts_at || "")} />
++    <Field label="Expires on (optional)" name="expiresAt" type="date" defaultValue={String(coupon?.expires_at || "")} />
++    <Field label="Total uses (blank = unlimited)" name="usageLimit" type="number" min={1} defaultValue={coupon?.usage_limit == null ? "" : String(coupon.usage_limit)} />
++    <Field label="Uses per customer" name="customerLimit" type="number" min={1} max={1000} defaultValue={String(coupon?.customer_limit ?? 1)} required />
++    <Field label="Restricted product IDs (comma separated; blank = all)" name="productIds" defaultValue={csvValues(coupon?.product_ids)} placeholder={products.slice(0,2).map((p)=>p.id).join(", ")} />
++    <Field label="Restricted category slugs (comma separated; blank = all)" name="categorySlugs" defaultValue={csvValues(coupon?.category_slugs)} placeholder={categories.slice(0,2).map((c)=>c.slug).join(", ")} />
++    <label className="flex min-h-10 items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={coupon ? Number(coupon.active) === 1 : false} className="h-4 w-4 accent-brand-700" /> Active</label>
++    <button className="admin-btn w-fit">{coupon ? "Save coupon" : "Create coupon"}</button>
++  </form>;
++  return <div>
++    <Flash msg={searchParams.msg} />
++    <h1 className="text-2xl">Promotions and coupons</h1>
++    <p className="mt-1 max-w-3xl text-sm text-neutral-600">A coupon discounts eligible product lines only; delivery stays separate. Checkout validates the code and limits again on the server. Product IDs and category slugs define optional eligible items; when both are set, either restriction can qualify a line.</p>
++    <section className="mt-4"><h2 className="mb-2 text-lg font-semibold">Create coupon</h2>{editor()}</section>
++    <section className="mt-6"><h2 className="mb-2 text-lg font-semibold">Existing coupons ({coupons.length})</h2><div className="space-y-4">{coupons.map((coupon) => <article key={String(coupon.id)} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3"><div className="mb-2 flex flex-wrap justify-between gap-2 text-sm"><p className="font-semibold">{String(coupon.code)} · {Number(coupon.active) ? "Active" : "Inactive"} · {Number(coupon.uses)} redemption{Number(coupon.uses) === 1 ? "" : "s"}</p><form action={deleteCouponAction}><input type="hidden" name="id" value={String(coupon.id)} /><button className="text-red-700 underline">{Number(coupon.uses) ? "Deactivate and preserve history" : "Delete coupon"}</button></form></div>{editor(coupon)}</article>)}</div></section>
++  </div>;
++}
+diff --git a/src/app/admin/reviews/page.tsx b/src/app/admin/reviews/page.tsx
+new file mode 100644
+index 0000000..efbafdd
+--- /dev/null
++++ b/src/app/admin/reviews/page.tsx
+@@ -0,0 +1,24 @@
++import { requireAdmin } from "@/lib/auth";
++import { db } from "@/lib/db";
++import { moderateReviewAction, saveTestimonialAction, toggleTestimonialAction } from "@/app/admin/actions";
++
++export const metadata = { title: "Reviews and testimonials" };
++
++export default async function ReviewsPage() {
++  const admin = await requireAdmin();
++  const reviews = db().prepare(`SELECT r.*,p.name product_name,o.number order_number FROM product_reviews r JOIN products p ON p.id=r.product_id JOIN orders o ON o.id=r.order_id ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END,r.created_at DESC LIMIT 300`).all();
++  const testimonials = admin.role === "owner" ? db().prepare("SELECT * FROM testimonials ORDER BY id DESC LIMIT 200").all() : [];
++  return <div className="space-y-10">
++    <section><h1 className="text-2xl">Reviews</h1><p className="mt-1 text-sm text-neutral-600">Only reviews matched to a paid order are accepted. New submissions stay private until approved.</p>
++      <div className="mt-4 grid gap-3">{reviews.length ? reviews.map((r) => <article key={String(r.id)} className="rounded-xl border bg-white p-4">
++        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-semibold">{String(r.product_name)} · {Number(r.rating)}/5</h2><p className="text-sm text-neutral-500">{String(r.customer_name)} · verified order {String(r.order_number)} · {String(r.created_at)}</p></div><span className="rounded-full bg-neutral-100 px-2 py-1 text-xs">{String(r.status)}</span></div>
++        <p className="mt-3 whitespace-pre-line text-sm">{String(r.review_text)}</p>
++        <div className="mt-3 flex flex-wrap gap-2"><form action={moderateReviewAction}><input type="hidden" name="id" value={String(r.id)} /><input type="hidden" name="status" value="approved" /><button className="admin-btn">Approve</button></form><form action={moderateReviewAction}><input type="hidden" name="id" value={String(r.id)} /><input type="hidden" name="status" value="rejected" /><button className="admin-btn-ghost">Reject / hide</button></form></div>
++      </article>) : <p className="rounded-xl border bg-white p-5 text-sm text-neutral-500">No submitted reviews.</p>}</div>
++    </section>
++    {admin.role === "owner" ? <section><h2 className="text-2xl">Testimonials</h2><p className="mt-1 text-sm text-neutral-600">Add only customer statements you have permission to publish. Drafts are not shown on the store.</p>
++      <form action={saveTestimonialAction} className="mt-4 grid gap-3 rounded-xl border bg-white p-4 sm:grid-cols-2"><label className="text-sm">Customer name<input required name="customerName" minLength={2} maxLength={80} className="admin-input mt-1" /></label><label className="text-sm sm:col-span-2">Customer statement<textarea required name="quote" minLength={10} maxLength={1000} rows={3} className="admin-input mt-1" /></label><label className="flex items-center gap-2 text-sm"><input type="checkbox" name="approved" /> Publish after saving</label><button className="admin-btn w-fit">Add testimonial</button></form>
++      <div className="mt-3 grid gap-3">{testimonials.map((t) => <article key={String(t.id)} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4"><div><p className="font-semibold">{String(t.customer_name)} <span className="ml-2 text-xs text-neutral-500">{Number(t.approved) ? "Published" : "Draft"}</span></p><p className="mt-1 whitespace-pre-line text-sm text-neutral-700">{String(t.quote)}</p></div><form action={toggleTestimonialAction}><input type="hidden" name="id" value={String(t.id)} /><button className="admin-btn-ghost">{Number(t.approved) ? "Unpublish" : "Publish"}</button></form></article>)}</div>
++    </section> : null}
++  </div>;
++}
+diff --git a/src/app/api/admin/analytics/export/route.ts b/src/app/api/admin/analytics/export/route.ts
+new file mode 100644
+index 0000000..f0d0a05
+--- /dev/null
++++ b/src/app/api/admin/analytics/export/route.ts
+@@ -0,0 +1,20 @@
++import { currentAdmin } from "@/lib/auth";
++import { analyticsRange, salesAnalytics } from "@/lib/analytics";
++
++const csv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
++export async function GET(req: Request) {
++  const admin = await currentAdmin();
++  if (!admin || admin.role !== "owner") return new Response("Forbidden", { status: 403 });
++  const url = new URL(req.url);
++  const range = analyticsRange(url.searchParams.get("from") || undefined, url.searchParams.get("to") || undefined);
++  const data = salesAnalytics(range);
++  const lines = [["Report", "Period from", range.from, "Period to", range.to], ["Metric", "Name", "Units or orders", "Amount (NGN)"]];
++  lines.push(["Summary", "Confirmed product revenue", "", String(data.summary.revenue || 0)]);
++  lines.push(["Summary", "Delivery fees collected", "", String(data.summary.delivery_collected || 0)]);
++  for (const row of data.products) lines.push(["Product", `${row.name} · ${row.variant_label}`, String(row.quantity), String(row.gross)]);
++  for (const row of data.categories) lines.push(["Category", String(row.name), String(row.orders), String(row.gross)]);
++  for (const row of data.states) lines.push(["State", String(row.state), String(row.orders), String(row.revenue)]);
++  return new Response(lines.map((row) => row.map(csv).join(",")).join("\r\n"), {
++    headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="wellnessxpress-sales-${range.from}-to-${range.to}.csv"`, "Cache-Control": "no-store" },
++  });
++}
+diff --git a/src/app/api/coupons/validate/route.ts b/src/app/api/coupons/validate/route.ts
+new file mode 100644
+index 0000000..fc60324
+--- /dev/null
++++ b/src/app/api/coupons/validate/route.ts
+@@ -0,0 +1,19 @@
++import { createHash } from "crypto";
++import { quoteLines } from "@/lib/catalog";
++import { validateCoupon } from "@/lib/coupons";
++import { ipOf, limited, sameOrigin } from "@/lib/ratelimit";
++import { normalisePhone } from "@/lib/site";
++
++export const dynamic = "force-dynamic";
++export async function POST(req: Request) {
++  if (!sameOrigin(req)) return Response.json({ error: "Invalid request." }, { status: 403 });
++  if (limited(`coupon:${ipOf(req)}`, 20)) return Response.json({ error: "Too many coupon checks. Please wait a moment." }, { status: 429 });
++  const body = await req.json().catch(() => null);
++  if (!body || typeof body !== "object" || !Array.isArray(body.items)) return Response.json({ error: "Add products to your cart before applying a coupon." }, { status: 400 });
++  const lines = quoteLines(body.items.map((item: { variantId: unknown; qty: unknown }) => ({ variantId: Number(item?.variantId), qty: Number(item?.qty) })));
++  if (!lines.length || lines.length !== body.items.length || lines.some((line) => !line.available)) return Response.json({ error: "Update your cart before applying a coupon." }, { status: 400 });
++  const phone = normalisePhone(String(body.phone || ""));
++  const key = phone ? `phone:${createHash("sha256").update(phone).digest("hex")}` : "";
++  const result = validateCoupon(body.code, lines.map((line) => ({ productId: line.productId, variantId: line.variantId, lineTotal: line.lineTotal })), key);
++  return result.ok ? Response.json(result, { headers: { "Cache-Control": "no-store" } }) : Response.json({ error: result.error }, { status: 400, headers: { "Cache-Control": "no-store" } });
++}
+diff --git a/src/app/api/reviews/route.ts b/src/app/api/reviews/route.ts
+new file mode 100644
+index 0000000..517c5ea
+--- /dev/null
++++ b/src/app/api/reviews/route.ts
+@@ -0,0 +1,31 @@
++import { db } from "@/lib/db";
++import { ipOf, limited, sameOrigin } from "@/lib/ratelimit";
++import { clean } from "@/lib/validate";
++import { normalisePhone } from "@/lib/site";
++
++export const dynamic = "force-dynamic";
++
++export async function POST(req: Request) {
++  if (!sameOrigin(req)) return Response.json({ error: "Invalid request." }, { status: 403 });
++  if (limited("review:" + ipOf(req), 4, 60_000)) return Response.json({ error: "Too many attempts. Try again later." }, { status: 429 });
++  const body = await req.json().catch(() => null);
++  const slug = clean(body?.product, 100);
++  const orderNumber = clean(body?.orderNumber, 40);
++  const phone = normalisePhone(clean(body?.phone, 30));
++  const rating = Number(body?.rating);
++  const review = clean(body?.review, 1200);
++  if (!slug || !orderNumber || !phone || !Number.isInteger(rating) || rating < 1 || rating > 5 || review.length < 10)
++    return Response.json({ error: "Enter your order number, order phone, a rating, and a review of at least 10 characters." }, { status: 400 });
++  const order = db().prepare(`SELECT o.id,o.customer_name FROM orders o WHERE o.number=? AND o.phone=? AND o.payment_status='paid' AND o.fulfilment_status!='cancelled'`).get(orderNumber, phone);
++  const product = db().prepare("SELECT id FROM products WHERE slug=? AND status='published'").get(slug);
++  if (!order || !product || !db().prepare("SELECT 1 FROM order_items WHERE order_id=? AND product_id=?").get(order.id, product.id))
++    return Response.json({ error: "We could not verify a paid order for this product with those details." }, { status: 400 });
++  try {
++    db().prepare(`INSERT INTO product_reviews (product_id,order_id,customer_name,rating,review_text,status,verified_purchase) VALUES (?,?,?,?,?,'pending',1)`)
++      .run(product.id, order.id, clean(order.customer_name, 80) || "Verified customer", rating, review);
++  } catch (error) {
++    if (String(error).includes("UNIQUE")) return Response.json({ error: "A review has already been submitted for this product and order." }, { status: 409 });
++    throw error;
++  }
++  return Response.json({ ok: true, message: "Thanks. Your verified review is awaiting moderation." });
++} 
