@@ -39,7 +39,7 @@ export default async function Users({ searchParams }: { searchParams: { msg?: st
               <form action={setUserPermissionsAction} className="mt-3 space-y-2">
                 <input type="hidden" name="id" value={String(u.id)} />
                 <label className="flex items-center gap-2 text-sm font-semibold">Role
-                  <select name="role" defaultValue={String(u.role)} className="admin-input w-auto py-1" disabled={self || locked}><option value="staff">Staff</option><option value="owner">Owner (full access)</option></select>
+                  <select name="role" defaultValue={String(u.role)} className="admin-input w-auto py-1" disabled={self || locked}><option value="staff">Staff</option>{me.role === "owner" || u.role === "owner" ? <option value="owner">Owner (full access)</option> : null}</select>
                 </label>
                 <PermGrid checked={u.role === "owner" ? PERMISSIONS.map(([k]) => k) : perms} disabled={self || locked} />
                 {!self && !locked ? <button className="admin-btn">Save permissions</button> : <p className="text-xs text-neutral-500">{self ? "You cannot change your own access." : "Only an owner can change an owner account."}</p>}

@@ -331,6 +331,11 @@ await step("coupons", async () => {
     for (const [k, v] of Object.entries(vals)) {
       if (k === "active") { if (v) await f.locator('input[name="active"]').check(); continue; }
       if (k === "discountType") { await f.locator('select[name="discountType"]').selectOption(v); continue; }
+      if (k === "categorySlugs" || k === "productNames") {
+        const box = f.locator("fieldset", { hasText: k === "categorySlugs" ? "limit to these categories" : "Limit to these products" });
+        for (const label of String(v).split("|")) { await box.locator('input[type="search"]').fill(label); await box.locator("label", { hasText: label }).first().locator("input").check(); }
+        continue;
+      }
       await f.locator(`input[name="${k}"]`).evaluate((el) => { el.removeAttribute("max"); el.removeAttribute("min"); }); // test the server-side checks
       await f.locator(`input[name="${k}"]`).fill(String(v));
     }
@@ -341,7 +346,11 @@ await step("coupons", async () => {
   await make({ code: "FIXED500", discountType: "fixed", discountValue: 500, minimumOrder: 100000, active: true });
   await make({ code: "OLDCODE", discountType: "fixed", discountValue: 500, expiresAt: "2020-01-31", active: true });
   await make({ code: "OFFCODE", discountType: "fixed", discountValue: 500 });
-  await make({ code: "COMBOONLY", discountType: "percent", discountValue: 20, categorySlugs: "combos", active: true });
+  await make({ code: "COMBOONLY", discountType: "percent", discountValue: 20, categorySlugs: "Combo Sets", active: true });
+  ok(q1("SELECT category_slugs c FROM coupons WHERE code='COMBOONLY'").c === '["combos"]', "category picker saves the chosen category");
+  await make({ code: "OILONLY", discountType: "fixed", discountValue: 1000, productNames: "Get Snatched Oil", active: true });
+  const oilId = q1("SELECT id FROM products WHERE slug='get-snatched-oil'").id;
+  ok(q1("SELECT product_ids p FROM coupons WHERE code='OILONLY'").p === `[${oilId}]`, "product picker saves the chosen product");
   await make({ code: "ONEUSE", discountType: "fixed", discountValue: 1000, usageLimit: 1, customerLimit: 5, active: true });
   ok(/percentage from 1 to 100/.test(await make({ code: "BAD150", discountType: "percent", discountValue: 150, active: true })), "percentage above 100 rejected");
   ok(/already in use/.test(await make({ code: "SAVE10", discountType: "fixed", discountValue: 5, active: true })), "duplicate coupon code rejected");
@@ -353,6 +362,9 @@ await step("coupons", async () => {
   ok(/not available/.test((await v("OFFCODE")).error || ""), "inactive coupon rejected");
   ok(/not available/.test((await v("NOPE")).error || ""), "unknown coupon rejected");
   ok(/does not apply/.test((await v("COMBOONLY")).error || ""), "category-restricted coupon rejected for non-combo cart");
+  ok(/does not apply/.test((await v("OILONLY")).error || ""), "product-restricted coupon rejected for other products");
+  const oilV = q1("SELECT id FROM variants WHERE sku='WX-GET-SNATCHED-OIL-1MONTH'").id;
+  ok((await v("OILONLY", [{ variantId: oilV, qty: 1 }, { variantId: coffee(), qty: 1 }])).discountAmount === 1000, "product-restricted coupon applies to the chosen product");
   // order with coupon; browser-supplied discount fields are ignored
   const r = await (await postJ("/api/orders", { ...orderBase("08030000001"), couponCode: "save10", discountAmount: 20000, subtotal: 1, total: 1 })).json();
   const o = q1("SELECT * FROM orders WHERE number=?", r.number);
@@ -471,22 +483,208 @@ await step("staff permissions and customer privacy", async () => {
   const f = admin.locator("form").filter({ has: admin.locator("button:has-text('Add user')") });
   await f.locator('input[name="name"]').fill("Staff Tester"); await f.locator('input[name="email"]').fill("staff@test.local"); await f.locator('input[name="password"]').fill("staff-password-123");
   await go(admin, f.locator("button:has-text('Add user')"));
-  const sp = await (await browser.newContext()).newPage();
+  ok(q1("SELECT permissions p FROM users WHERE email='staff@test.local'").p === '["dashboard","orders"]', "new staff gets only the ticked permissions (dashboard, orders)");
+  const sctx = await browser.newContext(); const sp = await sctx.newPage();
   await sp.goto(B + "/admin/login"); await sp.fill("#email", "staff@test.local"); await sp.fill("#password", "staff-password-123"); await sp.click("button:has-text('Sign in')"); await sp.waitForURL(B + "/admin");
-  for (const u of ["/admin/promotions", "/admin/analytics", "/admin/activity", "/admin/delivery", "/admin/inventory", "/admin/media", "/admin/users", "/admin/settings"]) {
-    await sp.goto(B + u); ok(/denied=1/.test(sp.url()), `staff blocked from ${u}`);
-  }
-  for (const u of ["/api/admin/export", "/api/admin/analytics/export", "/api/admin/delivery-export"]) ok([403, 404].includes((await sp.request.get(B + u)).status()), `staff blocked from ${u}`);
-  await sp.goto(B + "/admin/orders"); ok(sp.url().endsWith("/admin/orders"), "staff can open orders");
-  await sp.goto(B + "/admin/reviews"); ok(!(await sp.locator("text=Add testimonial").count()), "staff cannot manage testimonials");
+  const blocked = ["/admin/promotions", "/admin/analytics", "/admin/activity", "/admin/delivery", "/admin/inventory", "/admin/media", "/admin/users", "/admin/settings", "/admin/invoices", "/admin/customers", "/admin/banners", "/admin/seo", "/admin/products", "/admin/categories", "/admin/reviews", "/admin/notifications", "/admin/messages", "/admin/invoices/1", "/admin/customers/2348030000001", "/admin/banners/new"];
+  const leaks = [];
+  for (const u of blocked) { await sp.goto(B + u); if (!/denied=1/.test(sp.url())) leaks.push(u); }
+  ok(leaks.length === 0, `staff blocked from ${blocked.length} pages without permission${leaks.length ? " — " + leaks.join(", ") : ""}`);
+  const apis = ["/api/admin/export", "/api/admin/analytics/export", "/api/admin/delivery-export", "/api/admin/customers-export", "/api/admin/invoices/1", "/api/admin/receipt/1"];
+  const apiLeaks = []; for (const u of apis) if (![403, 404].includes((await sp.request.get(B + u)).status())) apiLeaks.push(u);
+  ok(apiLeaks.length === 0, `staff blocked from ${apis.length} admin downloads${apiLeaks.length ? " — " + apiLeaks.join(", ") : ""}`);
   const nav = await sp.locator('nav[aria-label="Admin"]').innerText();
-  ok(!/Coupons|Analytics|Activity log/.test(nav), "owner-only links hidden from staff");
+  ok(/Orders/.test(nav) && !/Coupons|Analytics|Activity log|Invoices|Customers|Staff|SEO|Banners/.test(nav), "staff sees only permitted menu items");
+  const target = q1("SELECT id FROM orders WHERE payment_status != 'paid' AND fulfilment_status != 'cancelled' ORDER BY id DESC LIMIT 1").id;
+  await sp.goto(B + `/admin/orders/${target}`);
+  ok(sp.url().endsWith(`/admin/orders/${target}`) && (await sp.locator("text=Confirm product payment").count()) === 0 && (await sp.locator("text=Payment verification permission").count()) === 1, "staff with Orders can view an order but sees no payment verification");
+  // Forge the owner's payment form directly against the server as staff: the server must refuse.
+  await admin.goto(B + `/admin/orders/${target}`);
+  const actionField = await admin.locator("form:has(button:has-text('Confirm product payment')) input[name^='$ACTION_ID_']").getAttribute("name");
+  const forged = await sp.request.post(B + `/admin/orders/${target}`, { headers: { origin: B }, multipart: { [actionField]: "", id: String(target), confirm: "yes", note: "forged" }, maxRedirects: 0 });
+  ok(q1("SELECT payment_status s FROM orders WHERE id=?", target).s !== "paid", `forged payment verification by staff is refused on the server (HTTP ${forged.status()})`);
+  // Owner grants Payment verification and Invoices.
+  await admin.goto(B + "/admin/users");
+  const card = admin.locator("article", { hasText: "staff@test.local" });
+  for (const p of ["payments", "invoices"]) await card.locator(`input[name="perms"][value="${p}"]`).check();
+  await go(admin, card.locator("button:has-text('Save permissions')"));
+  ok(JSON.parse(q1("SELECT permissions p FROM users WHERE email='staff@test.local'").p).sort().join() === "dashboard,invoices,orders,payments", "owner grants permissions");
+  await sp.goto(B + "/admin/invoices"); ok(sp.url().endsWith("/admin/invoices"), "granted permission works on the next page load");
+  await sp.goto(B + `/admin/orders/${target}`); ok((await sp.locator("text=Confirm product payment").count()) === 1, "staff now sees payment verification");
+  ok((await sp.request.get(B + `/api/admin/invoices/${target}`)).headers()["content-type"] === "application/pdf", "staff with Invoices can download a PDF");
+  await admin.goto(B + "/admin/users");
+  for (const p of ["payments", "invoices"]) await admin.locator("article", { hasText: "staff@test.local" }).locator(`input[name="perms"][value="${p}"]`).uncheck();
+  await go(admin, admin.locator("article", { hasText: "staff@test.local" }).locator("button:has-text('Save permissions')"));
+  await sp.goto(B + "/admin/invoices"); ok(/denied=1/.test(sp.url()), "revoked permission is removed immediately");
+  ok(q1("SELECT COUNT(*) c FROM admin_activity WHERE action='set_permissions' AND entity_id='staff@test.local'").c === 2, "permission changes are logged");
+  // A staff manager cannot hand out permissions they do not hold, nor create owners.
+  await admin.goto(B + "/admin/users");
+  await admin.locator("article", { hasText: "staff@test.local" }).locator('input[name="perms"][value="staff"]').check();
+  await go(admin, admin.locator("article", { hasText: "staff@test.local" }).locator("button:has-text('Save permissions')"));
+  await sp.goto(B + "/admin/users");
+  const sf = sp.locator("form").filter({ has: sp.locator("button:has-text('Add user')") });
+  await sf.locator('input[name="name"]').fill("Sneaky"); await sf.locator('input[name="email"]').fill("sneaky@test.local"); await sf.locator('input[name="password"]').fill("sneaky-password-123");
+  await sf.locator('input[name="perms"][value="seo"]').check();
+  await go(sp, sf.locator("button:has-text('Add user')"));
+  ok(/cannot grant permissions you do not have: seo/.test(await flash(sp)) && !q1("SELECT 1 x FROM users WHERE email='sneaky@test.local'"), "staff manager cannot grant permissions they lack");
+  ok((await sp.locator('select[name="role"] option[value="owner"]').count()) === 0, "staff manager is not offered the owner role");
+  // Disabling an account ends its access.
+  await admin.goto(B + "/admin/users");
+  await go(admin, admin.locator("article", { hasText: "staff@test.local" }).locator("button:has-text('Disable account')"));
+  await sp.goto(B + "/admin/orders"); ok(/\/admin\/login/.test(sp.url()), "disabled staff account is signed out");
+  await sctx.close();
   ok(q1("SELECT COUNT(*) c FROM admin_activity WHERE action='add_user' AND entity_id='staff@test.local'").c === 1, "user creation logged");
   const any = q1("SELECT number FROM orders LIMIT 1").number;
   const fresh = (await browser.newContext()).request; // a visitor without the private order link
   const pub = await (await fresh.get(B + `/order/${any}`)).text();
   ok(pub.includes("Order not found") && !pub.includes("Coupon Street") && !pub.includes("Allen Avenue"), "order page without the private link shows no customer data");
-  ok((await anon.request.get(B + `/order/${any}?t=wrong-token-value`)).status() === 200 && !(await (await anon.request.get(B + `/order/${any}?t=wrong-token-value`)).text()).includes("Ikeja"), "wrong order token reveals nothing");
+  ok(!(await (await fresh.get(B + `/order/${any}?t=wrong-token-value`)).text()).includes("Ikeja"), "wrong order token reveals nothing");
+  ok((await fresh.get(B + `/order/${any}/invoice`)).status() === 404, "invoice PDF needs the private order link");
+});
+
+await step("invoices", async () => {
+  const o = q1("SELECT * FROM orders WHERE coupon_code='SAVE10' ORDER BY id LIMIT 1");
+  ok(q1("SELECT number FROM invoices WHERE order_id=?", o.id)?.number?.startsWith("INV-"), "invoice created automatically when payment was verified");
+  await admin.goto(B + `/admin/invoices/${o.id}`);
+  const t = await admin.locator("article").innerText();
+  ok(/PAID/.test(t) && /Products subtotal\s*₦25,000/.test(t) && /Discount \(SAVE10\)\s*−₦2,500/.test(t) && /Delivery\s*FREE \(₦0\)/.test(t) && /Total\s*₦22,500/.test(t) && /Balance due\s*₦0/.test(t), "invoice amounts match the order (₦25,000 − ₦2,500, free delivery, ₦22,500 paid)");
+  const unpaid = q1("SELECT * FROM orders WHERE payment_status='pending_payment' AND fulfilment_status!='cancelled' ORDER BY id DESC LIMIT 1");
+  await admin.goto(B + `/admin/invoices/${unpaid.id}`);
+  const u = await admin.locator("article").innerText();
+  ok(/UNPAID/.test(u) && /Amount paid \(verified\)\s*₦0/.test(u) && !/\bPAID\b(?!.*UN)/.test(u.replace("UNPAID", "")), "unpaid order's invoice is not marked paid");
+  const legacy = q1("SELECT id FROM orders WHERE number='WX200101-OLD01'").id;
+  await admin.goto(B + `/admin/invoices/${legacy}`);
+  const l = await admin.locator("article").innerText();
+  ok(/Delivery\s*₦4,000/.test(l) && /Total\s*₦24,000/.test(l) && /PART PAID/.test(l) && /Balance due\s*₦4,000/.test(l), "pre-policy invoice uses its historical ₦4,000 delivery fee (part paid)");
+  const pdf = await admin.request.get(B + `/api/admin/invoices/${o.id}`);
+  const body = await pdf.body();
+  ok(pdf.headers()["content-type"] === "application/pdf" && body.slice(0, 5).toString() === "%PDF-" && body.length > 1500, `PDF download works (${body.length} bytes)`);
+  fs.writeFileSync(path.join(SHOTS, "invoice.pdf"), body);
+  const numbers = qa("SELECT number FROM invoices").map((r) => r.number);
+  ok(new Set(numbers).size === numbers.length, `invoice numbers are unique (${numbers.length})`);
+  await admin.goto(B + "/admin/invoices?q=" + encodeURIComponent(o.number));
+  ok((await admin.locator("tbody tr").count()) === 1, "invoice search finds the order");
+  await admin.goto(B + "/admin/invoices?status=paid");
+  ok((await admin.locator("tbody").innerText()).includes(o.number), "invoice status filter");
+  const cust = await (await browser.newContext()).request.get(B + `/order/${o.number}/invoice?t=${o.access_token}`);
+  ok(cust.headers()["content-type"] === "application/pdf", "customer can download their invoice with the private link");
+  await admin.goto(B + `/admin/invoices/${o.id}`); await admin.emulateMedia({ media: "print" });
+  ok(!(await admin.locator('nav[aria-label="Admin"]').isVisible()) && await admin.locator("article").isVisible(), "print view hides the admin menu");
+  await admin.screenshot({ path: path.join(SHOTS, "invoice-print.png"), fullPage: true }); await admin.emulateMedia({ media: "screen" });
+});
+
+await step("customers", async () => {
+  await admin.goto(B + "/admin/customers?q=Coupon");
+  ok((await admin.locator("tbody tr").count()) >= 1 && (await admin.locator("tbody").innerText()).includes("Coupon Tester"), "customer search by name");
+  await admin.goto(B + "/admin/customers?q=0803 000 0001");
+  ok((await admin.locator("tbody tr").count()) === 1, "customer search by phone");
+  const phone = "2348030000001";
+  const exp = q1(`SELECT COUNT(*) n, SUM(CASE WHEN payment_status='paid' THEN subtotal ELSE 0 END) paid, SUM(CASE WHEN payment_status!='paid' AND fulfilment_status!='cancelled' THEN subtotal ELSE 0 END) owed FROM orders WHERE phone=?`, phone);
+  await admin.goto(B + `/admin/customers/${phone}`);
+  const t = await admin.locator("main").innerText();
+  const n = (x) => "₦" + Number(x).toLocaleString("en-NG");
+  ok(new RegExp(`Orders\\s+${exp.n}`).test(t) && new RegExp(`Confirmed payments\\s+${n(exp.paid)}`).test(t) && new RegExp(`Outstanding\\s+${n(exp.owed)}`).test(t), `profile figures match verified payments (${n(exp.paid)} confirmed, ${n(exp.owed)} outstanding)`);
+  ok(/Order history/.test(t) && /Activity/.test(t) && /Delivery addresses used/.test(t), "profile shows order history, activity and addresses");
+  await admin.fill('textarea[name="note"]', "Prefers WhatsApp after 5pm."); await go(admin, admin.locator("button:has-text('Save notes')"));
+  ok(q1("SELECT note FROM customer_notes WHERE customer_key=?", "phone:" + phone).note === "Prefers WhatsApp after 5pm.", "customer note saved");
+  const csv = await (await admin.request.get(B + "/api/admin/customers-export")).text();
+  ok(csv.includes("Confirmed payments (NGN)") && csv.includes(phone), "customer CSV export");
+  await admin.goto(B + "/admin/customers/999"); ok((await admin.locator("text=not found").count()) + (await admin.locator("text=404").count()) > 0, "unknown customer returns not found");
+});
+
+await step("banners and homepage", async () => {
+  await admin.goto(B + "/admin/banners/new");
+  await admin.fill('input[name="heading"]', "Test promo banner");
+  await admin.fill('textarea[name="description"]', "Banner created by the automated test.");
+  await admin.fill('input[name="buttonText"]', "Shop combos"); await admin.fill('input[name="buttonUrl"]', "javascript:alert(1)");
+  await admin.setInputFiles('input[name="desktopFile"]', path.join(FIX, "fixture-product.png"));
+  await go(admin, admin.locator("button:has-text('Create banner')"));
+  ok(/must start with/.test(await flash(admin)) && !q1("SELECT 1 x FROM banners"), "unsafe banner link rejected");
+  await admin.goto(B + "/admin/banners/new");
+  await admin.fill('input[name="heading"]', "Test promo banner"); await admin.fill('textarea[name="description"]', "Banner created by the automated test.");
+  await admin.fill('input[name="buttonText"]', "Shop combos"); await admin.fill('input[name="buttonUrl"]', "/category/combos");
+  await admin.setInputFiles('input[name="desktopFile"]', path.join(FIX, "fixture-product.png"));
+  await admin.selectOption('select[name="placement"]', "hero");
+  await go(admin, admin.locator("button:has-text('Create banner')"));
+  const bn = q1("SELECT * FROM banners ORDER BY id DESC LIMIT 1");
+  ok(bn && bn.active === 0 && bn.desktop_image.startsWith("/product-images/") && bn.button_url === "/category/combos", "banner created switched off, image uploaded to persistent storage");
+  ok(!(await (await anon.request.get(B + "/")).text()).includes("Test promo banner"), "switched-off banner not shown to customers");
+  await admin.goto(B + `/?bannerPreview=${bn.id}`);
+  ok(await admin.locator("text=Preview of banner").isVisible() && await admin.locator("h2", { hasText: "Test promo banner" }).isVisible(), "admin preview shows the banner before publishing");
+  ok(!(await (await anon.request.get(B + `/?bannerPreview=${bn.id}`)).text()).includes("Test promo banner"), "preview link does nothing for customers");
+  await admin.goto(B + "/admin/banners");
+  await go(admin, admin.locator("tr", { hasText: "Test promo banner" }).locator("button:has-text('Switch on')"));
+  const home = await (await anon.request.get(B + "/")).text();
+  ok(home.includes("Test promo banner") && home.includes('href="/category/combos"') && home.includes("FREE DELIVERY ACROSS NIGERIA"), "live banner shows on the homepage; free delivery message still shown");
+  await go(admin, admin.locator("tr", { hasText: "Test promo banner" }).locator("button:has-text('Duplicate')"));
+  ok(q1("SELECT COUNT(*) c FROM banners").c === 2 && q1("SELECT active FROM banners WHERE heading LIKE '%(copy)'").active === 0, "duplicate creates a switched-off copy");
+  await admin.goto(B + `/admin/banners/${bn.id}`);
+  await admin.fill('input[name="startsAt"]', "2099-01-01"); await go(admin, admin.locator("button:has-text('Save banner')"));
+  ok(!(await (await anon.request.get(B + "/")).text()).includes("Test promo banner"), "banner scheduled in the future is hidden");
+  await admin.goto(B + `/admin/banners/${bn.id}`);
+  await admin.fill('input[name="startsAt"]', "2099-01-05"); await admin.fill('input[name="endsAt"]', "2099-01-01"); await go(admin, admin.locator("button:has-text('Save banner')"));
+  ok(/end date/.test(await flash(admin)), "end date before start date rejected");
+  await admin.goto(B + "/admin/media");
+  ok((await admin.locator("article", { has: admin.locator(`img[src="${bn.desktop_image}"]`) }).locator("text=(banner)").count()) === 1, "media library marks the banner image as in use");
+  await admin.goto(B + "/admin/banners");
+  const row = admin.locator("tr", { hasText: "(copy)" }); await row.locator("summary:has-text('Delete')").click(); await row.locator('input[name="confirm"]').check();
+  await go(admin, row.locator("button:has-text('Delete banner')"));
+  ok(q1("SELECT COUNT(*) c FROM banners").c === 1, "banner deleted after confirmation");
+  await admin.goto(B + "/admin/banners");
+  await admin.fill('input[name="title"]', "Feel lighter with"); await admin.fill('input[name="accent"]', "WellnessXpress.");
+  await go(admin, admin.locator("button:has-text('Save homepage text')"));
+  ok((await (await anon.request.get(B + "/")).text()).includes("Feel lighter with"), "homepage hero text editable");
+  await admin.fill('input[name="title"]', "Your weightloss journey"); await admin.fill('input[name="accent"]', "starts here."); await go(admin, admin.locator("button:has-text('Save homepage text')"));
+});
+
+await step("seo", async () => {
+  await admin.goto(B + "/admin/seo");
+  ok((await admin.locator("text=Checks").count()) === 1, "SEO dashboard loads with checks");
+  const tb = q1("SELECT id FROM products WHERE slug='tummy-balance'").id;
+  const pf = admin.locator(`form#p-${tb}`);
+  await pf.locator('input[name="seoTitle"]').fill("Tummy Balance | Test SEO Title");
+  await pf.locator('textarea[name="metaDescription"]').fill("Test meta description for Tummy Balance with free delivery across Nigeria.");
+  await go(admin, pf.locator("button:has-text('Save')"));
+  const html = await (await anon.request.get(B + "/product/tummy-balance")).text();
+  ok(html.includes("<title>Tummy Balance | Test SEO Title") && html.includes('content="Test meta description for Tummy Balance') && html.includes('rel="canonical" href="' ) && html.includes("BreadcrumbList") && html.includes('"@type":"Product"'), "product title, description, canonical and structured data on the page");
+  await admin.goto(B + "/admin/seo");
+  await admin.locator(`form#p-${tb} input[name="noindex"]`).check(); await go(admin, admin.locator(`form#p-${tb} button:has-text('Save')`));
+  ok(/noindex/.test(await (await anon.request.get(B + "/product/tummy-balance")).text()) && !(await (await anon.request.get(B + "/sitemap.xml")).text()).includes("/product/tummy-balance"), "hidden product gets noindex and leaves the sitemap");
+  await admin.goto(B + "/admin/seo");
+  await admin.locator(`form#p-${tb} input[name="noindex"]`).uncheck(); await go(admin, admin.locator(`form#p-${tb} button:has-text('Save')`));
+  // redirects
+  await admin.goto(B + "/admin/seo");
+  const rf = admin.locator("#redirects form").first();
+  await rf.locator('input[name="from"]').fill("/admin/x"); await rf.locator('input[name="to"]').fill("/shop"); await go(admin, rf.locator("button"));
+  ok(/cannot be an admin/.test(await flash(admin)), "redirect from an admin path refused");
+  await admin.goto(B + "/admin/seo");
+  await admin.locator("#redirects form").first().locator('input[name="from"]').fill("/old-promo"); await admin.locator("#redirects form").first().locator('input[name="to"]').fill("/category/combos");
+  await go(admin, admin.locator("#redirects form").first().locator("button"));
+  const r = await anon.request.get(B + "/old-promo", { maxRedirects: 0 });
+  ok([301, 308].includes(r.status()) && /\/category\/combos$/.test(r.headers()["location"] || ""), `saved redirect answers with a permanent redirect (${r.status()})`);
+  await admin.goto(B + "/admin/seo");
+  await admin.locator("#redirects form").first().locator('input[name="from"]').fill("/category/combos-x"); await admin.locator("#redirects form").first().locator('input[name="to"]').fill("/old-promo");
+  await go(admin, admin.locator("#redirects form").first().locator("button"));
+  await admin.goto(B + "/admin/seo");
+  await admin.locator("#redirects form").first().locator('input[name="from"]').fill("/old-promo"); await admin.locator("#redirects form").first().locator('input[name="to"]').fill("/category/combos-x");
+  await go(admin, admin.locator("#redirects form").first().locator("button"));
+  ok(/loop/.test(await flash(admin)), "redirect loop refused");
+  ok((await anon.request.get(B + "/no-such-page-xyz")).status() === 404, "unknown address still returns 404");
+  // product address change keeps the old link working
+  const pid = q1("SELECT id FROM products WHERE slug='e2e-test-product'").id;
+  await admin.goto(B + `/admin/products/${pid}`); await admin.fill('input[name="slug"]', "e2e-test-product-renamed"); await go(admin, admin.locator("button:has-text('Save product')"));
+  const old = await anon.request.get(B + "/product/e2e-test-product", { maxRedirects: 0 });
+  ok([301, 308].includes(old.status()) && /e2e-test-product-renamed$/.test(old.headers()["location"] || ""), "old product address redirects to the new one");
+  // global settings + noindex site
+  await admin.goto(B + "/admin/seo");
+  await admin.fill('input[name="homeTitle"]', "WellnessXpressBrand | Test Home Title"); await go(admin, admin.locator("button:has-text('Save site SEO')"));
+  ok((await (await anon.request.get(B + "/")).text()).includes("<title>WellnessXpressBrand | Test Home Title</title>"), "homepage title from SEO settings");
+  await admin.check('input[name="noindexSite"]'); await go(admin, admin.locator("button:has-text('Save site SEO')"));
+  ok(/Disallow: \//.test(await (await anon.request.get(B + "/robots.txt")).text()), "whole-site noindex switches robots.txt to disallow");
+  await admin.uncheck('input[name="noindexSite"]'); await go(admin, admin.locator("button:has-text('Save site SEO')"));
+  const robots = await (await anon.request.get(B + "/robots.txt")).text();
+  ok(/Allow: \//.test(robots) && /Sitemap:/.test(robots), "robots.txt restored with sitemap");
+  ok(q1("SELECT COUNT(*) c FROM admin_activity WHERE action LIKE 'seo_%' OR action LIKE 'redirect_%'").c >= 5, "SEO changes logged");
 });
 
 await step("meta tracking regression", async () => {

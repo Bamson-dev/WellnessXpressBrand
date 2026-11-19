@@ -38,7 +38,10 @@ const audit = (a: { email: string }, action: string, f: FormData, details = "") 
     .find((t) => name.includes(t)) || "Settings").toLowerCase();
   logAdminActivity(a.email, name.replace(/([A-Z])/g, "_$1").toLowerCase(), type, key ? String(f.get(key)) : "", details);
 };
-const back = (url: string, msg?: string) => redirect(msg ? `${url}${url.includes("?") ? "&" : "?"}msg=${encodeURIComponent(msg)}` : url);
+const back = (url: string, msg?: string) => {
+  const [path, hash] = url.split("#");
+  return redirect(msg ? `${path}${path.includes("?") ? "&" : "?"}msg=${encodeURIComponent(msg)}${hash ? "#" + hash : ""}` : url);
+};
 
 /* ---------- auth ---------- */
 export async function loginAction(_: unknown, f: FormData) {
