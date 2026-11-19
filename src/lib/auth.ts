@@ -37,19 +37,19 @@ export async function login(email: string, password: string): Promise<Session | 
   }
   if (!s) return null;
   const token = await signSession(s);
-  cookies().set(SESSION_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 12 * 3600 });
+  (await cookies()).set(SESSION_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 12 * 3600 });
   return { ...s, exp: Date.now() + 12 * 3600_000 };
 }
 
-export function logout() {
-  cookies().set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+export async function logout() {
+  (await cookies()).set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
 }
 
 export type Admin = Session & { perms: Permission[] };
 
 /** The signed-in admin. Role and permissions are read from the database on every request, so revoking takes effect at once. */
 export async function currentAdmin(): Promise<Admin | null> {
-  const s = await verifySession(cookies().get(SESSION_COOKIE)?.value);
+  const s = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!s) return null;
   if (s.uid === "owner") return { ...s, role: "owner", perms: [...ALL_PERMISSIONS] };
   const u = db().prepare("SELECT active, role, permissions FROM users WHERE id = ?").get(Number(s.uid));

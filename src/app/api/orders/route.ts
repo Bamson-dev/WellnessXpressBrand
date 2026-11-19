@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => null);
   if (!b || typeof b !== "object") return Response.json({ error: "Invalid request." }, { status: 400 });
   if (typeof b.company === "string" && b.company) return Response.json({ error: "Invalid request." }, { status: 400 }); // honeypot
-  const c = cookies();
+  const c = await cookies();
   try {
     const r = createOrder({
       ...b,
