@@ -43,9 +43,11 @@ export default function CheckoutForm({ states }: { states: string[] }) {
     }
   }, [ready, lines]);
 
-  if (ready && !lines.length && !placed.current) {
+  // Reserve the same height while the saved cart loads and when it is empty, so the page does not jump (layout shift).
+  if (!ready) return <div className="container-x min-h-[70vh] py-8 sm:py-12" aria-busy="true"><h1 className="text-3xl sm:text-4xl">Checkout</h1><p className="mt-6 text-neutral-500">Loading your cart…</p></div>;
+  if (!lines.length && !placed.current) {
     return (
-      <div className="container-x py-20 text-center">
+      <div className="container-x min-h-[70vh] py-20 text-center">
         <h1 className="text-3xl">Your cart is empty</h1>
         <Link href="/shop" className="btn btn-primary mt-6">Shop products</Link>
       </div>

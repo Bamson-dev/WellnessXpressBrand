@@ -47,9 +47,12 @@ export default function ShopGrid({ sp, category, basePath, title, intro }: { sp:
       {q ? <p className="mt-5 text-neutral-700">{res.total} result{res.total === 1 ? "" : "s"} for “{q}”. <Link href={qs({ q: "" })} className="font-semibold text-brand-700 hover:underline">Clear search</Link></p> : null}
 
       {res.items.length ? (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-          {res.items.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 4} />)}
-        </div>
+        <section aria-label="Products">
+          <h2 className="sr-only">Products</h2>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+            {res.items.map((p, i) => <ProductCard key={p.id} p={p} priority={i < 4} />)}
+          </div>
+        </section>
       ) : (
         <div className="mt-10 rounded-2xl border border-dashed border-neutral-300 p-10 text-center">
           <p className="text-lg font-semibold">No products found</p>

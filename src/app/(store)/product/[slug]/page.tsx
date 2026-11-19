@@ -118,7 +118,7 @@ export default async function ProductPage({ params, searchParams }: { params: { 
             <li className="flex gap-3 rounded-xl bg-brand-50/70 p-4"><IconBank className="h-5 w-5 shrink-0 text-brand-700" /> Pay by bank transfer. We confirm your payment before we process your order.</li>
             <li className="flex gap-3 rounded-xl bg-brand-50/70 p-4"><IconTruck className="h-5 w-5 shrink-0 text-brand-700" /> <span><strong className="text-brand-900">Free delivery across Nigeria.</strong> All 36 states and Abuja, no minimum order.</span></li>
           </ul>
-          {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#178a45] hover:underline"><IconWhatsApp /> Questions about {p.name}? Ask us on WhatsApp</a> : null}
+          {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#12703a] hover:underline"><IconWhatsApp /> Questions about {p.name}? Ask us on WhatsApp</a> : null}
         </div>
       </div>
 

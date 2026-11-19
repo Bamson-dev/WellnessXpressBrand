@@ -361,6 +361,11 @@ const MIGRATIONS: string[] = [
      created_by TEXT NOT NULL DEFAULT '',
      created_at TEXT NOT NULL DEFAULT (datetime('now'))
    );
+   CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(phone, id);
+   CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+   CREATE INDEX IF NOT EXISTS idx_order_items_variant ON order_items(variant_id);
+   CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
+   CREATE INDEX IF NOT EXISTS idx_orders_coupon ON orders(coupon_code);
    CREATE TABLE IF NOT EXISTS product_redirects (
      old_slug TEXT PRIMARY KEY,
      new_slug TEXT NOT NULL,

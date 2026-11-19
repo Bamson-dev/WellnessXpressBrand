@@ -22,7 +22,7 @@ export default function Footer() {
       <div className="container-x grid gap-10 py-12 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div>
           <Link href="/" className="inline-flex items-center gap-3">
-            <Image src="/brand/logo-480.webp" alt="" width={56} height={56} className="h-14 w-14" />
+            <Image src="/brand/logo-480.webp" alt="" width={56} height={50} className="h-auto w-14" />
             <span>
               <span className="block text-lg font-bold text-brand-900">WellnessXpressBrand</span>
               <span className="block text-sm text-neutral-600">Your Weightloss Journey Starts Here.</span>

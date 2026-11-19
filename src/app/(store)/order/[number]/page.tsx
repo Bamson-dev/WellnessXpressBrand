@@ -93,7 +93,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
           ) : <p className="mt-4 rounded-lg bg-amber-50 p-3 text-amber-900">Our bank details are being updated. Message us on WhatsApp for payment details.</p>}
           <p className="mt-4 text-neutral-700">After you transfer, submit your payment confirmation below. We check our bank account before we confirm your payment.</p>
           <PaymentConfirmForm number={o.number} token={token} />
-          {receiptWa ? <a href={receiptWa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#178a45] hover:underline"><IconWhatsApp /> Or send your receipt on WhatsApp</a> : null}
+          {receiptWa ? <a href={receiptWa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#12703a] hover:underline"><IconWhatsApp /> Or send your receipt on WhatsApp</a> : null}
         </section>
       ) : null}
 

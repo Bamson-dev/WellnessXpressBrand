@@ -13,9 +13,11 @@ export default function CartPage() {
   const q = (id: number) => quote?.lines.find((l) => l.variantId === id);
   const blocked = quote?.lines.some((l) => !l.available) || (quote && quote.lines.length < lines.length);
 
-  if (ready && !lines.length) {
+  // Same reserved height while the saved cart loads and when it is empty, so the page does not jump (layout shift).
+  if (!ready) return <div className="container-x min-h-[70vh] py-8 sm:py-12" aria-busy="true"><h1 className="text-3xl sm:text-4xl">Your cart</h1><p className="mt-6 text-neutral-500">Loading your cart…</p></div>;
+  if (!lines.length) {
     return (
-      <div className="container-x flex flex-col items-center py-20 text-center">
+      <div className="container-x flex min-h-[70vh] flex-col items-center py-20 text-center">
         <span className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-700"><IconCart className="h-8 w-8" /></span>
         <h1 className="mt-4 text-3xl">Your cart is empty</h1>
         <p className="mt-2 text-neutral-600">Add products to your cart to place an order.</p>

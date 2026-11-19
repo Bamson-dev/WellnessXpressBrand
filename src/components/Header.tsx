@@ -29,7 +29,7 @@ export default function Header() {
       <div className="border-b border-neutral-200">
         <div className="container-x flex h-16 items-center gap-3 sm:h-[72px]">
           <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="WellnessXpressBrand home">
-            <Image src="/brand/logo-480.webp" alt="" width={44} height={44} className="h-10 w-10 sm:h-11 sm:w-11" priority />
+            <Image src="/brand/logo-480.webp" alt="" width={45} height={40} className="h-10 w-auto sm:h-11" priority />
             <span className="leading-tight">
               <span className="block text-[15px] font-bold text-brand-900 sm:text-base">WellnessXpress</span>
               <span className="hidden text-[11px] font-medium text-neutral-500 sm:block">Your Weightloss Journey Starts Here.</span>
