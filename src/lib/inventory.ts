@@ -1,5 +1,6 @@
 import "server-only";
 import { db, tx, type DB } from "@/lib/db";
+import { notifyAdmin } from "@/lib/admin-events";
 
 /*
  * Inventory. A variant with stock NULL is "not tracked" (always available). Tracked stock changes only through
@@ -17,6 +18,18 @@ export function recordMovement(d: DB, variantId: number, delta: number, reason: 
   const after = v?.stock == null ? null : Number(v.stock);
   d.prepare("INSERT INTO stock_movements (variant_id, order_id, delta, stock_after, reason, note, actor) VALUES (?,?,?,?,?,?,?)")
     .run(variantId, orderId, delta, after, reason, note.slice(0, 300), actor.slice(0, 120));
+  if (after != null && delta < 0) lowStockAlert(d, variantId, after);
+}
+
+/** One notification per low-stock episode: the key resets once stock goes back above the threshold. */
+function lowStockAlert(d: DB, variantId: number, after: number) {
+  const v = d.prepare("SELECT v.label, v.low_stock_threshold t, p.name FROM variants v JOIN products p ON p.id = v.product_id WHERE v.id = ?").get(variantId);
+  const t = v?.t == null ? 0 : Number(v.t);
+  if (!v || (after > t && after > 0)) return;
+  const episode = Number(d.prepare("SELECT COALESCE(MAX(id),0) m FROM stock_movements WHERE variant_id = ? AND (stock_after IS NULL OR stock_after > ?)").get(variantId, Math.max(t, 0))?.m || 0);
+  const out = after <= 0;
+  notifyAdmin(`stock:${variantId}:${out ? "out" : "low"}:${episode}`, "low_stock", out ? "Product out of stock" : "Product stock is low",
+    `${String(v.name)} · ${String(v.label)}: ${after} left`, "/admin/inventory?status=" + (out ? "out" : "low"), d);
 }
 
 export type AdjustKind = "opening" | "increase" | "decrease" | "correction" | "untrack";
@@ -50,10 +63,17 @@ export function releaseOrderStock(d: DB, orderId: number, actor: string, note: s
   for (const it of items) {
     const vid = Number(it.variant_id);
     // Orders placed before movement tracking have no rows: treat their quantity as still held once.
-    const net = byVariant.has(vid) ? (byVariant.get(vid) as number) : -Number(it.qty);
+    if (!byVariant.has(vid)) {
+      // Record the implicit reservation once, without touching stock, so later reopen/cancel maths stays exact.
+      const cur = d.prepare("SELECT stock FROM variants WHERE id = ?").get(vid);
+      d.prepare("INSERT INTO stock_movements (variant_id, order_id, delta, stock_after, reason, note, actor) VALUES (?,?,?,?, 'order_reserved', 'Reserved before stock history began', 'system')")
+        .run(vid, orderId, -Number(it.qty), cur?.stock == null ? null : Number(cur.stock));
+      byVariant.set(vid, -Number(it.qty));
+    }
+    const net = byVariant.get(vid) as number;
     if (net >= 0) continue;
     const r = d.prepare("UPDATE variants SET stock = stock + ? WHERE id = ? AND stock IS NOT NULL").run(-net, vid);
-    if (Number(r.changes) > 0 || !byVariant.has(vid)) recordMovement(d, vid, -net, "order_released", note, actor, orderId);
+    if (Number(r.changes) > 0) recordMovement(d, vid, -net, "order_released", note, actor, orderId);
   }
 }
 

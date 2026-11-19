@@ -6,6 +6,7 @@ import { getContact, getSetting } from "@/lib/settings";
 import ProductCard from "@/components/ProductCard";
 import { IconBank, IconChevron, IconInfo, IconShield, IconTruck, IconUser, IconWhatsApp } from "@/components/icons";
 import { site } from "@/lib/site";
+import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: { absolute: `${site.name} | Your Weightloss Journey Starts Here.` },
@@ -18,6 +19,7 @@ export default function Home() {
   const combos = listProducts({ category: "combos", perPage: 12 }).items;
   const categories = getCategories();
   const contact = getContact();
+  const testimonials = db().prepare("SELECT customer_name,quote FROM testimonials WHERE approved=1 ORDER BY id DESC LIMIT 6").all();
   const notice = getSetting<string>("productNotice");
 
   return (
@@ -105,6 +107,8 @@ export default function Home() {
           {combos.map((p) => <ProductCard key={p.id} p={p} />)}
         </div>
       </section>
+
+      {testimonials.length ? <section className="container-x py-12" aria-labelledby="testimonials-heading"><p className="eyebrow">Customer testimonials</p><h2 id="testimonials-heading" className="mt-2 text-2xl sm:text-3xl">What customers have shared</h2><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{testimonials.map((t, i) => <figure key={i} className="card p-5"><blockquote className="whitespace-pre-line text-neutral-700">“{String(t.quote)}”</blockquote><figcaption className="mt-4 font-semibold">{String(t.customer_name)}</figcaption></figure>)}</div></section> : null}
 
       {/* Why us — only what the store actually does */}
       <section className="border-y border-neutral-100 bg-white py-14 sm:py-16" aria-labelledby="why-h">

@@ -15,7 +15,7 @@ export default async function MediaPage({ searchParams }: { searchParams: { msg?
       <h1 className="text-2xl">Media library</h1>
       <p className="mt-1 max-w-3xl text-sm text-neutral-600">Uploaded images are stored on the server&apos;s persistent volume, so they survive restarts and redeployments. JPG, PNG and WebP up to 6 MB. An image that is used by a product or category cannot be deleted.</p>
       <form action={libraryUploadAction} className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white p-4">
-        <input type="file" name="images" multiple accept="image/jpeg,image/png,image/webp" className="text-sm" aria-label="Images to upload" required />
+        <input type="file" name="images" multiple accept="image/jpeg,image/png,image/webp" className="w-full min-w-0 max-w-xs text-sm" aria-label="Images to upload" required />
         <button className="admin-btn">Upload</button>
       </form>
       <form className="mt-3 flex gap-2" action="/admin/media">

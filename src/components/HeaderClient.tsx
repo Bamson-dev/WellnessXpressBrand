@@ -29,31 +29,31 @@ export default function HeaderClient({ nav, whatsapp }: { nav: { href: string; l
 
   return (
     <>
-      <div className="ml-auto flex items-center gap-1 sm:gap-2">
-        <form onSubmit={submit} role="search" className="hidden md:block">
+      <div className="ml-auto flex items-center gap-0 min-[360px]:gap-1 sm:gap-2">
+        <form onSubmit={submit} role="search" className="hidden xl:block">
           <label className="relative block">
             <span className="sr-only">Search products</span>
             <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} type="search" placeholder="Search products"
-              className="h-11 w-56 rounded-full border border-neutral-300 bg-neutral-50 pl-9 pr-4 text-[15px] focus:border-brand-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 xl:w-64" />
+              className="h-11 w-56 rounded-full border border-neutral-300 bg-neutral-50 pl-9 pr-4 text-[15px] focus:border-brand-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20" />
           </label>
         </form>
-        <button type="button" onClick={() => setSearch((s) => !s)} className="grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-brand-50 md:hidden" aria-label="Search products" aria-expanded={search}>
+        <button type="button" onClick={() => setSearch((s) => !s)} className="grid h-11 w-10 place-items-center rounded-full text-ink hover:bg-brand-50 min-[360px]:w-11 xl:hidden" aria-label="Search products" aria-expanded={search}>
           <IconSearch className="h-[22px] w-[22px]" />
         </button>
-        <button type="button" onClick={() => setOpen(true)} className="relative grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-brand-50" aria-label={`Open cart, ${count} item${count === 1 ? "" : "s"}`}>
+        <button type="button" onClick={() => setOpen(true)} className="relative grid h-11 w-10 place-items-center rounded-full text-ink hover:bg-brand-50 min-[360px]:w-11" aria-label={`Open cart, ${count} item${count === 1 ? "" : "s"}`}>
           <IconCart className="h-6 w-6" />
           {ready && count > 0 ? (
             <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-700 px-1 text-[11px] font-bold text-white">{count}</span>
           ) : null}
         </button>
-        <button type="button" onClick={() => setMenu(true)} className="grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-brand-50 lg:hidden" aria-label="Open menu" aria-expanded={menu}>
+        <button type="button" onClick={() => setMenu(true)} className="grid h-11 w-10 place-items-center rounded-full text-ink hover:bg-brand-50 min-[360px]:w-11 lg:hidden" aria-label="Open menu" aria-expanded={menu}>
           <IconMenu className="h-6 w-6" />
         </button>
       </div>
 
       {search ? (
-        <form onSubmit={submit} role="search" className="absolute inset-x-0 top-full border-b border-neutral-200 bg-white px-4 py-3 shadow-sm md:hidden">
+        <form onSubmit={submit} role="search" className="absolute inset-x-0 top-full border-b border-neutral-200 bg-white px-4 py-3 shadow-sm xl:hidden">
           <label className="relative block">
             <span className="sr-only">Search products</span>
             <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />

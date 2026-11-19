@@ -15,7 +15,7 @@ export default function DeliveryImport() {
       <h2 className="text-lg">Import from CSV</h2>
       <p className="mt-1 text-sm text-neutral-600">Columns: State, Fee, Enabled (yes/no), ETA, Note. Export first to get a template. You see a preview before anything is saved.</p>
       <form action={action} className="mt-3 flex flex-wrap items-center gap-2">
-        <input type="file" name="file" accept=".csv,text/csv" className="text-sm" aria-label="Delivery CSV file" />
+        <input type="file" name="file" accept=".csv,text/csv" className="w-full min-w-0 max-w-xs text-sm" aria-label="Delivery CSV file" />
         <Btn className="admin-btn-ghost">Preview import</Btn>
       </form>
       {state?.error ? <p className="err mt-3">{state.error}</p> : null}

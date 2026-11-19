@@ -10,6 +10,7 @@ import { IconBank, IconInfo, IconShield } from "@/components/icons";
 import { naira } from "@/lib/site";
 
 type Errors = Record<string, string>;
+type AppliedCoupon = { code: string; discountAmount: number; eligibleSubtotal: number };
 
 export default function CheckoutForm({ states }: { states: string[]; statesWithFee: string[] }) {
   const { lines, ready, clear } = useCart();
@@ -22,6 +23,16 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
   const router = useRouter();
   const tracked = useRef(false);
   const placed = useRef(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponPreview, setCouponPreview] = useState<AppliedCoupon | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponCartKey, setCouponCartKey] = useState("");
+  const cartKey = JSON.stringify(lines.map((l) => [l.variantId, l.qty]));
+  useEffect(() => {
+    // Any cart change invalidates a previously checked coupon; the customer must check it again.
+    setCouponPreview(null); setCouponCartKey(""); setCouponMessage("");
+  }, [cartKey]);
   const clientKey = useRef("");
   if (!clientKey.current && typeof window !== "undefined") clientKey.current = (crypto.randomUUID?.() || String(Date.now()) + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9]/g, "").padEnd(16, "0").slice(0, 40);
 
@@ -45,6 +56,21 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
   const delivery = state && quote?.delivery && quote.delivery.state === state ? quote.delivery : null;
   const deliveryBlocked = !!state && !!delivery && !delivery.available;
   const missing = quote ? lines.length - quote.lines.length : 0;
+  const activeCoupon = couponCartKey === cartKey ? couponPreview : null;
+  const discount = activeCoupon?.discountAmount || 0;
+  const payNow = quote ? Math.max(0, quote.subtotal - discount) : 0;
+
+  async function applyCoupon() {
+    setCouponMessage(""); setCouponPreview(null); setCouponBusy(true);
+    const phone = (document.getElementById("phone") as HTMLInputElement | null)?.value || "";
+    try {
+      const r = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: couponInput, phone, items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })) }) });
+      const result = await r.json().catch(() => ({}));
+      if (r.ok && result.code) { setCouponPreview(result); setCouponCartKey(cartKey); setCouponInput(result.code); setCouponMessage(`Coupon applied. You save ${naira(result.discountAmount)} on eligible products.`); }
+      else setCouponMessage(result.error || "We could not check that coupon.");
+    } catch { setCouponMessage("We could not check the coupon. Check your connection and try again."); }
+    setCouponBusy(false);
+  }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -55,6 +81,7 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
       state: fd.get("state"), city: fd.get("city"), address: fd.get("address"), instructions: fd.get("instructions"), company: fd.get("company"),
       items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
       clientKey: clientKey.current,
+      couponCode: activeCoupon?.code || "",
     };
     const local: Errors = {};
     if (String(body.name || "").trim().length < 2) local.name = "Enter your full name.";
@@ -74,7 +101,7 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
         window.location.assign(`/order/${j.number}?t=${encodeURIComponent(j.token)}&new=1`);
         return;
       }
-      if (j.errors) { setErrors(j.errors); focusFirst(j.errors); }
+      if (j.errors) { setErrors(j.errors); if (j.errors.coupon) { setCouponMessage(j.errors.coupon); setCouponPreview(null); } focusFirst(j.errors); }
       setFail(j.error || (j.errors?.items ? j.errors.items : "Check the highlighted fields."));
     } catch {
       setFail("We could not reach the server. Check your connection and try again.");
@@ -160,6 +187,12 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
         <aside className="h-fit space-y-4 lg:sticky lg:top-28">
           <section className="card p-5 sm:p-6" aria-labelledby="s-h">
             <h2 id="s-h" className="text-xl">Your order</h2>
+            <div className="mt-4 flex gap-2">
+              <label htmlFor="couponCode" className="sr-only">Coupon code</label>
+              <input id="couponCode" value={couponInput} onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponPreview(null); setCouponMessage(""); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (couponInput.trim()) applyCoupon(); } }} placeholder="Coupon code (optional)" className="field min-w-0 flex-1 uppercase" maxLength={40} autoComplete="off" />
+              <button type="button" onClick={applyCoupon} disabled={couponBusy || !couponInput.trim()} className="btn btn-outline shrink-0 px-4">{couponBusy ? "Checking…" : "Apply"}</button>
+            </div>
+            {couponMessage ? <p className={`mt-2 text-sm ${activeCoupon ? "text-brand-800" : "text-red-700"}`} role="status">{couponMessage}</p> : null}
             <ul className="mt-4 divide-y divide-neutral-100">
               {lines.map((l) => {
                 const s = quote?.lines.find((x) => x.variantId === l.variantId);
@@ -174,12 +207,13 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
             </ul>
             <dl className="mt-3 space-y-2 border-t border-neutral-200 pt-4 text-[15px]">
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
+              {activeCoupon ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Coupon ({activeCoupon.code})</dt><dd className="font-semibold text-brand-800">−{naira(discount)}</dd></div> : null}
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery{state ? ` (${state})` : ""}</dt>
                 <dd className="text-right">{!state ? <span className="text-neutral-500">Choose your state</span> : loading || !delivery ? "…" : delivery.available ? <span className="font-semibold">{naira(delivery.fee || 0)}</span> : <span className="font-medium text-red-700">Not available</span>}</dd>
               </div>
               {delivery?.available && delivery.eta ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery time</dt><dd className="text-right">{delivery.eta}</dd></div> : null}
-              {delivery?.available && quote ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Order total</dt><dd className="text-right font-semibold">{naira(quote.subtotal + (delivery.fee || 0))}</dd></div> : null}
-              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
+              {delivery?.available && quote ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Order total</dt><dd className="text-right font-semibold">{naira(payNow + (delivery.fee || 0))}</dd></div> : null}
+              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(payNow) : "…"}</dd></div>
             </dl>
             <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> {delivery?.available ? `You pay for your products now. The delivery fee of ${naira(delivery.fee || 0)} is paid separately; we send delivery payment details before dispatch.` : "You pay for your products now. The delivery fee for your state is shown here and paid separately before dispatch."}</p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       tracking: { fbp: c.get("_fbp")?.value, fbc: c.get("_fbc")?.value, ua: req.headers.get("user-agent") || "", ip: ipOf(req) },
     });
     if (!r.ok) return Response.json({ errors: r.errors }, { status: 400 });
-    return Response.json({ ok: true, number: r.number, token: r.token, total: r.total, subtotal: r.subtotal, deliveryFee: r.fee, duplicate: r.duplicate });
+    return Response.json({ ok: true, number: r.number, token: r.token, total: r.total, subtotal: r.subtotal, itemsSubtotal: r.itemsSubtotal, discountAmount: r.discountAmount, couponCode: r.couponCode, deliveryFee: r.fee, duplicate: r.duplicate });
   } catch (e) {
     const m = (e as Error).message || "";
     if (/UNIQUE.*client_key/i.test(m)) {
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       const again = createOrder({ ...b });
       if (again.ok) return Response.json({ ok: true, number: again.number, token: again.token, total: again.total, subtotal: again.subtotal, deliveryFee: again.fee });
     }
+    if (m.startsWith("coupon:")) return Response.json({ errors: { coupon: m.slice(7) } }, { status: 400 });
     if (m.startsWith("stock:")) return Response.json({ errors: { items: `${m.slice(6)} just went out of stock. Update your cart.` } }, { status: 409 });
     console.error("order create failed", m);
     return Response.json({ error: "We could not place your order. Try again, or message us on WhatsApp." }, { status: 500 });
