@@ -18,6 +18,7 @@ import { ipOf, limited } from "@/lib/ratelimit";
 import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
 import { logAdminActivity } from "@/lib/admin-events";
 import { ensureInvoice } from "@/lib/invoices";
+import { safeImage, safeLink } from "@/lib/banners";
 
 const s = (f: FormData, k: string, max = 500) => clean(f.get(k), max);
 const text = (f: FormData, k: string, max = 8000) => {
@@ -865,4 +866,81 @@ export async function deleteCouponAction(f: FormData) {
   else db().prepare("DELETE FROM coupons WHERE id=?").run(id);
   logAdminActivity(a.email, uses ? "coupon_deactivated_preserving_history" : "coupon_deleted", "coupon", id, `${String(coupon.code)} · ${uses} redemptions`);
   back("/admin/promotions", uses ? "Coupon deactivated. Its redemption history was kept." : "Coupon deleted.");
+}
+
+/* ---------- banners and homepage text ---------- */
+async function bannerImage(f: FormData, field: string, pick: string, actor: string): Promise<{ url?: string; error?: string }> {
+  const file = f.get(field);
+  if (file && typeof file !== "string" && file.size) {
+    const r = await saveImageUpload(file, actor);
+    return r.error ? { error: r.error } : { url: r.media!.url };
+  }
+  const url = s(f, pick, 300);
+  return safeImage(url) ? { url } : { error: "Choose an image from the media library." };
+}
+
+export async function saveBannerAction(f: FormData) {
+  const a = await requirePerm("banners");
+  const id = Number(f.get("id")) || 0;
+  const heading = s(f, "heading", 120), description = text(f, "description", 400), buttonText = s(f, "buttonText", 40), buttonUrl = s(f, "buttonUrl", 300);
+  const placement = f.get("placement") === "hero" ? "hero" : "promo";
+  const startsAt = s(f, "startsAt", 10), endsAt = s(f, "endsAt", 10);
+  const dateOk = (x: string) => !x || (/^\d{4}-\d{2}-\d{2}$/.test(x) && new Date(`${x}T00:00:00Z`).toISOString().slice(0, 10) === x);
+  const ret = id ? `/admin/banners/${id}` : "/admin/banners";
+  if (!heading && !f.get("desktopFile") && !s(f, "desktopImage", 300)) return back(ret, "Add a heading or an image.");
+  if (buttonText && !safeLink(buttonUrl)) return back(ret, "The button link must start with / (a store page) or https://.");
+  if (!dateOk(startsAt) || !dateOk(endsAt) || (startsAt && endsAt && startsAt > endsAt)) return back(ret, "Check the dates. The end date must be on or after the start date.");
+  const desk = await bannerImage(f, "desktopFile", "desktopImage", a.email);
+  if (desk.error) return back(ret, desk.error);
+  const mob = await bannerImage(f, "mobileFile", "mobileImage", a.email);
+  if (mob.error) return back(ret, mob.error);
+  const vals = [heading, description, buttonText, buttonText ? buttonUrl : "", desk.url || "", mob.url || "", s(f, "imageAlt", 160), placement, f.get("active") === "on" ? 1 : 0, startsAt, endsAt];
+  let bid = id;
+  if (id) {
+    if (!db().prepare("SELECT 1 FROM banners WHERE id = ?").get(id)) return back("/admin/banners", "Banner not found.");
+    db().prepare("UPDATE banners SET heading=?, description=?, button_text=?, button_url=?, desktop_image=?, mobile_image=?, image_alt=?, placement=?, active=?, starts_at=?, ends_at=?, updated_at=datetime('now') WHERE id=?").run(...vals, id);
+  } else {
+    const sort = Number(db().prepare("SELECT COALESCE(MAX(sort),0)+1 n FROM banners").get()?.n || 1);
+    bid = Number(db().prepare("INSERT INTO banners (heading, description, button_text, button_url, desktop_image, mobile_image, image_alt, placement, active, starts_at, ends_at, sort) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)").run(...vals, sort).lastInsertRowid);
+  }
+  logAdminActivity(a.email, id ? "banner_updated" : "banner_created", "banner", bid, `${heading} · ${placement} · ${vals[8] ? "on" : "off"}`);
+  revalidatePath("/");
+  back(`/admin/banners/${bid}`, "Banner saved. Use Preview to check it before switching it on.");
+}
+
+export async function bannerOpAction(f: FormData) {
+  const a = await requirePerm("banners");
+  const id = Number(f.get("id"));
+  const op = s(f, "op", 20);
+  const b = db().prepare("SELECT * FROM banners WHERE id = ?").get(id);
+  if (!b) return back("/admin/banners", "Banner not found.");
+  if (op === "toggle") db().prepare("UPDATE banners SET active = 1 - active, updated_at = datetime('now') WHERE id = ?").run(id);
+  else if (op === "duplicate") {
+    const r = db().prepare(`INSERT INTO banners (heading, description, button_text, button_url, desktop_image, mobile_image, image_alt, placement, active, starts_at, ends_at, sort)
+      SELECT heading || ' (copy)', description, button_text, button_url, desktop_image, mobile_image, image_alt, placement, 0, starts_at, ends_at, (SELECT COALESCE(MAX(sort),0)+1 FROM banners) FROM banners WHERE id = ?`).run(id);
+    logAdminActivity(a.email, "banner_duplicated", "banner", Number(r.lastInsertRowid), `copy of ${id}`);
+    revalidatePath("/");
+    return back(`/admin/banners/${r.lastInsertRowid}`, "Copy created. It is switched off until you turn it on.");
+  } else if (op === "delete") {
+    if (f.get("confirm") !== "yes") return back("/admin/banners", "Tick the box to confirm deleting the banner.");
+    db().prepare("DELETE FROM banners WHERE id = ?").run(id);
+  } else if (op === "up" || op === "down") {
+    const list = db().prepare("SELECT id FROM banners WHERE placement = ? ORDER BY sort, id").all(b.placement).map((r) => Number(r.id));
+    const i = list.indexOf(id); const j = op === "up" ? i - 1 : i + 1;
+    if (j >= 0 && j < list.length) { [list[i], list[j]] = [list[j], list[i]]; tx((d) => list.forEach((bid, k) => d.prepare("UPDATE banners SET sort = ? WHERE id = ?").run(k + 1, bid))); }
+  } else return back("/admin/banners", "Unknown action.");
+  logAdminActivity(a.email, `banner_${op}`, "banner", id, String(b.heading));
+  revalidatePath("/");
+  back("/admin/banners", op === "delete" ? "Banner deleted. Its images stay in the media library." : "Banner updated.");
+}
+
+export async function saveHomeHeroAction(f: FormData) {
+  const a = await requirePerm("banners");
+  const v = { title: s(f, "title", 80), accent: s(f, "accent", 60), text: text(f, "text", 300), primaryLabel: s(f, "primaryLabel", 40), primaryUrl: s(f, "primaryUrl", 200), secondaryLabel: s(f, "secondaryLabel", 40), secondaryUrl: s(f, "secondaryUrl", 200) };
+  if (v.title.length < 3) return back("/admin/banners", "Enter a homepage heading.");
+  if ((v.primaryLabel && !safeLink(v.primaryUrl)) || (v.secondaryLabel && !safeLink(v.secondaryUrl))) return back("/admin/banners", "Button links must start with /, # or https://.");
+  setSetting("homeHero", v);
+  logAdminActivity(a.email, "homepage_text_updated", "settings", "homeHero", v.title);
+  revalidatePath("/");
+  back("/admin/banners", "Homepage text saved.");
 }

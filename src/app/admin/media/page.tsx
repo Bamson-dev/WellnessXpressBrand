@@ -30,7 +30,7 @@ export default async function MediaPage({ searchParams }: { searchParams: { msg?
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={m.url} alt={m.alt} className="aspect-square w-full rounded-lg bg-brand-50 object-contain" loading="lazy" />
               <p className="mt-2 truncate text-xs text-neutral-500" title={m.url}>{m.originalName || m.url}{m.bytes ? ` · ${Math.round(m.bytes / 1024)} KB` : ""}{m.builtin ? " · built-in" : ""}</p>
-              <p className="text-xs text-neutral-600">{refs.count ? `Used by ${[...refs.products.map((p) => p.name), ...refs.categories.map((c) => c.name + " (category)")].join(", ")}` : "Not used"}</p>
+              <p className="text-xs text-neutral-600">{refs.count ? `Used by ${[...refs.products.map((p) => p.name), ...refs.categories.map((c) => c.name + " (category)"), ...refs.banners.map((b) => b.name + " (banner)")].join(", ")}` : "Not used"}</p>
               <form action={saveMediaMetaAction} className="mt-2 space-y-1">
                 <input type="hidden" name="id" value={m.id} />
                 <input name="alt" defaultValue={m.alt} placeholder="Alt text (what the image shows)" className="admin-input" aria-label="Alt text" />

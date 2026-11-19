@@ -170,6 +170,17 @@ export function seedCatalogue(db: DB) {
 }
 
 export const DEFAULT_SETTINGS: Record<string, unknown> = {
+  homeHero: {
+    title: "Your weightloss journey", accent: "starts here.",
+    text: "Explore WellnessXpressBrand products and practical wellness resources designed to support your everyday wellness journey.",
+    primaryLabel: "Shop now", primaryUrl: "/shop", secondaryLabel: "Explore our products", secondaryUrl: "#combos",
+  },
+  seo: {
+    titleTemplate: "%s | WellnessXpressBrand", homeTitle: "WellnessXpressBrand | Your Weightloss Journey Starts Here.",
+    homeDescription: "Shop WellnessXpress weight-management and wellness products in Nigeria. Order without an account, pay by bank transfer and enjoy free delivery to all 36 states and Abuja.",
+    defaultDescription: "Shop WellnessXpress weight-management and wellness products in Nigeria. Order without an account, pay by bank transfer and enjoy free delivery to all 36 states and Abuja.",
+    ogImage: "/og.jpg", noindexSite: false,
+  },
   bank: { bank: "Ecobank", accountName: "Edith Ofili", accountNumber: "2930024274" },
   contact: { whatsapp: "2347079596063", email: "wellnessxpressglobal@gmail.com", instagram: "", facebook: "", tiktok: "" },
   announcement: "Pay by bank transfer. We process your order as soon as we confirm your payment.",

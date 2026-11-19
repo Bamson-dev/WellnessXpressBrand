@@ -59,7 +59,10 @@ export function mediaReferences(url: string) {
   const products = db().prepare("SELECT id, name, status FROM products WHERE images LIKE ?").all(`%"${url.replace(/[%_]/g, "")}"%`)
     .map((r) => ({ id: Number(r.id), name: String(r.name), status: String(r.status) }));
   const categories = db().prepare("SELECT id, name FROM categories WHERE image = ?").all(url).map((r) => ({ id: Number(r.id), name: String(r.name) }));
-  return { products, categories, count: products.length + categories.length };
+  const banners = db().prepare("SELECT id, heading FROM banners WHERE desktop_image = ? OR mobile_image = ?").all(url, url).map((r) => ({ id: Number(r.id), name: String(r.heading || `Banner #${r.id}`) }));
+  const seo = db().prepare("SELECT id, name FROM products WHERE og_image = ?").all(url).map((r) => ({ id: Number(r.id), name: `${String(r.name)} (sharing image)` }));
+  const site = String(db().prepare("SELECT value FROM settings WHERE key = 'seo'").get()?.value || "").includes(`"${url}"`) ? [{ id: 0, name: "Site sharing image" }] : [];
+  return { products: [...products, ...seo], categories, banners: [...banners, ...site], count: products.length + categories.length + banners.length + seo.length + site.length };
 }
 
 /** Deletes an uploaded image only when nothing uses it. Built-in store images cannot be deleted here. */

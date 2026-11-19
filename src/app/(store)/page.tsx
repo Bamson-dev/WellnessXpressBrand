@@ -7,6 +7,9 @@ import ProductCard from "@/components/ProductCard";
 import { IconBank, IconChevron, IconInfo, IconShield, IconTruck, IconUser, IconWhatsApp } from "@/components/icons";
 import { FREE_DELIVERY_TEXT, FREE_DELIVERY_TITLE, site } from "@/lib/site";
 import { db } from "@/lib/db";
+import { can, currentAdmin } from "@/lib/auth";
+import { getBanner, liveBanners } from "@/lib/banners";
+import BannerBlock from "@/components/BannerBlock";
 
 export const metadata: Metadata = {
   title: { absolute: `${site.name} | Your Weightloss Journey Starts Here.` },
@@ -14,7 +17,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export default function Home() {
+type Hero = { title: string; accent: string; text: string; primaryLabel: string; primaryUrl: string; secondaryLabel: string; secondaryUrl: string };
+
+export default async function Home({ searchParams }: { searchParams: { bannerPreview?: string } }) {
+  const hero = getSetting<Hero>("homeHero");
+  const previewId = Number(searchParams.bannerPreview);
+  const preview = previewId > 0 && can(await currentAdmin(), "banners") ? getBanner(previewId) : null;
+  const heroBanners = liveBanners("hero").filter((b) => b.id !== preview?.id);
+  const promoBanners = liveBanners("promo").filter((b) => b.id !== preview?.id);
   const singles = listProducts({ category: "individual", featured: true, perPage: 8 }).items;
   const combos = listProducts({ category: "combos", perPage: 12 }).items;
   const categories = getCategories();
@@ -32,14 +42,14 @@ export default function Home() {
           <div className="max-w-xl">
             <p className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-3 py-1.5 text-xs font-bold tracking-wide text-white sm:text-sm"><IconTruck className="h-4 w-4" /> {FREE_DELIVERY_TITLE}</p>
             <h1 className="mt-3 text-[2.4rem] font-extrabold leading-[1.05] sm:text-5xl lg:text-[3.6rem]">
-              Your weightloss journey <span className="text-brand-700">starts here.</span>
+              {hero.title} {hero.accent ? <span className="text-brand-700">{hero.accent}</span> : null}
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-neutral-700">
-              Explore WellnessXpressBrand products and practical wellness resources designed to support your everyday wellness journey.
+              {hero.text}
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link href="/shop" className="btn btn-primary px-8 text-base">Shop now</Link>
-              <Link href="#combos" className="btn btn-outline px-8 text-base">Explore our products</Link>
+              {hero.primaryLabel ? <Link href={hero.primaryUrl || "/shop"} className="btn btn-primary px-8 text-base">{hero.primaryLabel}</Link> : null}
+              {hero.secondaryLabel ? <Link href={hero.secondaryUrl || "#combos"} className="btn btn-outline px-8 text-base">{hero.secondaryLabel}</Link> : null}
             </div>
             <ul className="mt-8 grid grid-cols-1 gap-3 text-[15px] text-neutral-700 sm:grid-cols-3">
               <li className="flex items-center gap-2"><IconUser className="h-5 w-5 text-brand-700" /> No account needed</li>
@@ -52,6 +62,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {preview ? <div className="container-x pt-8"><p className="mb-2 rounded-lg bg-amber-100 p-2 text-sm font-semibold text-amber-900">Preview of banner #{preview.id} ({preview.placement}). Customers do not see this preview.</p><BannerBlock b={preview} priority /></div> : null}
+      {heroBanners.length ? <div className="container-x space-y-6 pt-8">{heroBanners.map((b, i) => <BannerBlock key={b.id} b={b} priority={i === 0} />)}</div> : null}
 
       {/* Free delivery promotion */}
       <section className="bg-brand-50" aria-labelledby="free-delivery-h">
@@ -121,6 +134,8 @@ export default function Home() {
           {combos.map((p) => <ProductCard key={p.id} p={p} />)}
         </div>
       </section>
+
+      {promoBanners.length ? <div className="container-x space-y-6 py-6">{promoBanners.map((b) => <BannerBlock key={b.id} b={b} />)}</div> : null}
 
       {testimonials.length ? <section className="container-x py-12" aria-labelledby="testimonials-heading"><p className="eyebrow">Customer testimonials</p><h2 id="testimonials-heading" className="mt-2 text-2xl sm:text-3xl">What customers have shared</h2><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{testimonials.map((t, i) => <figure key={i} className="card p-5"><blockquote className="whitespace-pre-line text-neutral-700">“{String(t.quote)}”</blockquote><figcaption className="mt-4 font-semibold">{String(t.customer_name)}</figcaption></figure>)}</div></section> : null}
 
