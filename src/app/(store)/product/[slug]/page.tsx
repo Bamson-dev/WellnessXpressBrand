@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
-import { effective, getProduct, inStock, priceRange, relatedProducts } from "@/lib/catalog";
+import { notFound, permanentRedirect } from "next/navigation";
+import { effective, getCategories, getProduct, inStock, priceRange, relatedProducts } from "@/lib/catalog";
 import { getContact } from "@/lib/settings";
 import { PurchaseBox } from "@/components/AddToCart";
 import ProductCard from "@/components/ProductCard";
@@ -18,18 +18,25 @@ import { naira, site } from "@/lib/site";
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const p = getProduct(params.slug);
-  if (!p) return { title: "Product not found" };
+  if (!p) return { title: "Product not found", robots: { index: false } };
   const r = priceRange(p);
-  const desc = `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Order from WellnessXpressBrand.`.trim();
+  const title = p.seoTitle || p.name;
+  const desc = p.metaDescription || `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Free delivery across Nigeria. Order from WellnessXpressBrand.`.trim();
+  const image = p.ogImage || p.images[0];
   return {
-    title: p.name, description: desc, alternates: { canonical: `/product/${p.slug}` },
-    openGraph: { title: p.name, description: desc, url: `${site.url}/product/${p.slug}`, images: p.images[0] ? [{ url: p.images[0], width: 1200, height: 1200, alt: p.name }] : undefined },
+    title, description: desc, alternates: { canonical: `/product/${p.slug}` },
+    openGraph: { title, description: desc, url: `${site.url}/product/${p.slug}`, images: image ? [{ url: image, alt: p.name }] : undefined },
+    robots: p.noindex ? { index: false, follow: true } : undefined,
   };
 }
 
 export default async function ProductPage({ params, searchParams }: { params: { slug: string }; searchParams: { preview?: string } }) {
   const preview = searchParams.preview === "1" && !!(await currentAdmin());
   const p = getProduct(params.slug, { includeUnpublished: preview });
+  if (!p) {
+    const moved = db().prepare("SELECT new_slug FROM product_redirects WHERE old_slug = ?").get(params.slug);
+    if (moved) permanentRedirect(`/product/${String(moved.new_slug)}`);
+  }
   if (!p || !p.variants.length) notFound();
   const contact = getContact();
   const related = relatedProducts(p);
@@ -45,7 +52,18 @@ export default async function ProductPage({ params, searchParams }: { params: { 
     offers: r ? {
       "@type": "AggregateOffer", priceCurrency: "NGN", lowPrice: r.min, highPrice: r.max, offerCount: p.variants.length,
       availability: p.variants.some(inStock) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `${site.url}/product/${p.slug}`,
+      shippingDetails: { "@type": "OfferShippingDetails", shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "NGN" }, shippingDestination: { "@type": "DefinedRegion", addressCountry: "NG" } },
     } : undefined,
+    aggregateRating: reviews.length ? { "@type": "AggregateRating", ratingValue: (reviews.reduce((t, x) => t + Number(x.rating), 0) / reviews.length).toFixed(1), reviewCount: reviews.length } : undefined,
+  };
+  const cat = getCategories().find((c) => c.slug === p.category);
+  const crumbs = {
+    "@context": "https://schema.org", "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: site.url },
+      ...(cat ? [{ "@type": "ListItem", position: 2, name: cat.name, item: `${site.url}/category/${cat.slug}` }] : []),
+      { "@type": "ListItem", position: cat ? 3 : 2, name: p.name, item: `${site.url}/product/${p.slug}` },
+    ],
   };
   const wa = contact.whatsapp ? `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(`Hello WellnessXpressBrand. I have a question about ${p.name}.`)}` : null;
 
@@ -147,7 +165,8 @@ export default async function ProductPage({ params, searchParams }: { params: { 
       ) : null}
 
       <TrackView event="ViewContent" data={{ content_ids: p.variants.map((v) => v.sku), content_type: "product", currency: "NGN", value: r?.min || 0 }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbs).replace(/</g, "\\u003c") }} />
     </div>
   );
 }

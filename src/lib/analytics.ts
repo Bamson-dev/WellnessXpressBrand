@@ -41,7 +41,14 @@ export function salesAnalytics(range: { start: string; end: string }) {
     SUM(CASE WHEN delivery_payment_status='paid' THEN COALESCE(delivery_fee,0) ELSE 0 END) delivery_collected
     FROM orders WHERE created_at>=? AND created_at<? AND payment_status='paid' AND fulfilment_status!='cancelled'
     GROUP BY state ORDER BY revenue DESC`).all(range.start, range.end);
-  return { summary: {
+  const customers = Number(d.prepare(`SELECT COUNT(DISTINCT phone) n FROM orders WHERE created_at>=? AND created_at<? AND payment_status='paid' AND fulfilment_status!='cancelled'`).get(range.start, range.end)?.n || 0);
+  const coupons = d.prepare(`SELECT coupon_code code, COUNT(*) orders, SUM(CASE WHEN payment_status='paid' THEN 1 ELSE 0 END) paid_orders,
+    SUM(CASE WHEN payment_status='paid' THEN discount_amount ELSE 0 END) discount, SUM(CASE WHEN payment_status='paid' THEN subtotal ELSE 0 END) revenue
+    FROM orders WHERE created_at>=? AND created_at<? AND coupon_code!='' AND fulfilment_status!='cancelled' GROUP BY coupon_code ORDER BY revenue DESC`).all(range.start, range.end);
+  const inventory = d.prepare(`SELECT p.name, v.label, v.sku, v.stock, v.low_stock_threshold threshold,
+    COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE oi.variant_id=v.id AND o.created_at>=? AND o.created_at<? AND o.payment_status='paid' AND o.fulfilment_status!='cancelled'),0) sold
+    FROM variants v JOIN products p ON p.id=v.product_id WHERE p.status!='archived' AND v.status='active' ORDER BY sold DESC, p.sort LIMIT 100`).all(range.start, range.end);
+  return { customers, coupons, inventory, summary: {
     total: Number(orders?.total || 0), paid, pending: Number(orders?.pending || 0), awaiting: Number(orders?.awaiting || 0),
     cancelled: Number(orders?.cancelled || 0), completed: Number(orders?.completed || 0), revenue,
     delivery_collected: Number(orders?.delivery_collected || 0), discounts: Number(orders?.discounts || 0),

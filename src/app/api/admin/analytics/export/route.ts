@@ -28,6 +28,9 @@ export async function GET(req: Request) {
   for (const row of data.products) lines.push(["Product", `${row.name} · ${row.variant_label}`, String(row.quantity), String(row.gross)]);
   for (const row of data.categories) lines.push(["Category", String(row.name), String(row.orders), String(row.gross)]);
   for (const row of data.states) lines.push(["State", String(row.state), String(row.orders), String(row.revenue)]);
+  lines.push(["Summary", "Paying customers", String(data.customers), ""]);
+  for (const row of data.coupons) lines.push(["Coupon", String(row.code), String(row.paid_orders), String(row.discount)]);
+  for (const row of data.inventory) lines.push(["Inventory", `${row.name} · ${row.label}`, String(row.sold), row.stock == null ? "not tracked" : `stock ${row.stock}`]);
   return new Response(lines.map((row) => row.map(csv).join(",")).join("\r\n"), {
     headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="wellnessxpress-sales-${range.from}-to-${range.to}.csv"`, "Cache-Control": "no-store" },
   });

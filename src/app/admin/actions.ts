@@ -19,6 +19,7 @@ import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
 import { logAdminActivity } from "@/lib/admin-events";
 import { ensureInvoice } from "@/lib/invoices";
 import { safeImage, safeLink } from "@/lib/banners";
+import { validFromPath, validToPath } from "@/lib/seo";
 
 const s = (f: FormData, k: string, max = 500) => clean(f.get(k), max);
 const text = (f: FormData, k: string, max = 8000) => {
@@ -368,8 +369,14 @@ export async function saveProductAction(f: FormData) {
   ).run(s(f, "name", 120), slug, category, s(f, "short", 300), text(f, "description"), text(f, "information"),
     text(f, "ingredients", 2000), text(f, "directions", 4000), JSON.stringify(faqs), JSON.stringify(related), status, f.get("featured") ? 1 : 0,
     Number(f.get("sort")) || 0, text(f, "review", 2000), id);
+  if (slug !== String(p.slug)) {
+    // Keep old product links working: /product/<old> answers with a permanent redirect to the new address.
+    db().prepare("UPDATE product_redirects SET new_slug = ? WHERE new_slug = ?").run(slug, String(p.slug));
+    db().prepare("DELETE FROM product_redirects WHERE old_slug = ?").run(slug);
+    db().prepare("INSERT INTO product_redirects (old_slug, new_slug) VALUES (?, ?) ON CONFLICT(old_slug) DO UPDATE SET new_slug = excluded.new_slug").run(String(p.slug), slug);
+  }
   revalidatePath("/", "layout");
-  audit(a, "saveProductAction", f, "");
+  audit(a, "saveProductAction", f, slug !== String(p.slug) ? `address changed ${String(p.slug)} → ${slug}` : "");
   back(`/admin/products/${id}`, "Product saved.");
 }
 
@@ -943,4 +950,60 @@ export async function saveHomeHeroAction(f: FormData) {
   logAdminActivity(a.email, "homepage_text_updated", "settings", "homeHero", v.title);
   revalidatePath("/");
   back("/admin/banners", "Homepage text saved.");
+}
+
+/* ---------- SEO ---------- */
+export async function saveSeoGlobalAction(f: FormData) {
+  const a = await requirePerm("seo");
+  const v = { titleTemplate: s(f, "titleTemplate", 80), homeTitle: s(f, "homeTitle", 90), homeDescription: text(f, "homeDescription", 300), defaultDescription: text(f, "defaultDescription", 300), ogImage: s(f, "ogImage", 300), noindexSite: f.get("noindexSite") === "on" };
+  if (!v.titleTemplate.includes("%s")) return back("/admin/seo", "The title template must contain %s where the page title goes.");
+  if (v.homeTitle.length < 10 || v.homeDescription.length < 50) return back("/admin/seo", "Write a homepage title (10+ characters) and description (50+ characters).");
+  if (v.ogImage && !safeImage(v.ogImage) && v.ogImage !== "/og.jpg") return back("/admin/seo", "Choose the sharing image from the media library.");
+  setSetting("seo", v);
+  logAdminActivity(a.email, "seo_global_updated", "seo", "site", v.noindexSite ? "SEARCH ENGINES BLOCKED" : "indexing allowed");
+  revalidatePath("/", "layout");
+  back("/admin/seo", v.noindexSite ? "Saved. Search engines are now asked NOT to index the store." : "SEO settings saved.");
+}
+
+export async function saveItemSeoAction(f: FormData) {
+  const a = await requirePerm("seo");
+  const kind = f.get("kind") === "category" ? "category" : "product";
+  const id = Number(f.get("id"));
+  const title = s(f, "seoTitle", 90), desc = text(f, "metaDescription", 300), noindex = f.get("noindex") === "on" ? 1 : 0;
+  if (kind === "product") {
+    const og = s(f, "ogImage", 300);
+    if (og && !safeImage(og)) return back("/admin/seo", "Choose the sharing image from the media library.");
+    const r = db().prepare("UPDATE products SET seo_title = ?, meta_description = ?, og_image = ?, noindex = ?, updated_at = datetime('now') WHERE id = ?").run(title, desc, og, noindex, id);
+    if (!r.changes) return back("/admin/seo", "Product not found.");
+  } else {
+    const r = db().prepare("UPDATE categories SET seo_title = ?, meta_description = ?, noindex = ?, updated_at = datetime('now') WHERE id = ?").run(title, desc, noindex, id);
+    if (!r.changes) return back("/admin/seo", "Category not found.");
+  }
+  logAdminActivity(a.email, `seo_${kind}_updated`, kind, id, `${title || "(default title)"}${noindex ? " · hidden from search" : ""}`);
+  revalidatePath("/", "layout");
+  back(`/admin/seo#${kind === "product" ? "p" : "c"}-${id}`, "Saved.");
+}
+
+export async function saveRedirectAction(f: FormData) {
+  const a = await requirePerm("seo");
+  const op = s(f, "op", 10);
+  const from = s(f, "from", 200).replace(/\/+$/, "") || "/";
+  if (op === "delete") {
+    db().prepare("DELETE FROM redirects WHERE from_path = ?").run(from);
+    logAdminActivity(a.email, "redirect_deleted", "redirect", from);
+    return back("/admin/seo#redirects", "Redirect removed.");
+  }
+  const to = s(f, "to", 300);
+  if (!validFromPath(from)) return back("/admin/seo#redirects", "The old address must start with / and cannot be an admin, API, image or order address.");
+  if (!validToPath(to)) return back("/admin/seo#redirects", "The new address must start with / or https://.");
+  if (to === from) return back("/admin/seo#redirects", "The old and new addresses are the same.");
+  if (db().prepare("SELECT 1 FROM redirects WHERE from_path = ?").get(to) && resolveRedirectFrom(to, from)) return back("/admin/seo#redirects", "That would create a redirect loop.");
+  db().prepare("INSERT INTO redirects (from_path, to_path, created_by) VALUES (?,?,?) ON CONFLICT(from_path) DO UPDATE SET to_path = excluded.to_path").run(from, to, a.email);
+  logAdminActivity(a.email, "redirect_saved", "redirect", from, `→ ${to}`);
+  back("/admin/seo#redirects", "Redirect saved. It only applies to addresses that do not exist as pages.");
+}
+function resolveRedirectFrom(start: string, banned: string) {
+  let cur = start;
+  for (let i = 0; i < 10; i++) { if (cur === banned) return true; const r = db().prepare("SELECT to_path FROM redirects WHERE from_path = ?").get(cur); if (!r) return false; cur = String(r.to_path); }
+  return true;
 }

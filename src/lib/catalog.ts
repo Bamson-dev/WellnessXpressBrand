@@ -12,17 +12,18 @@ export type Product = {
   id: number; slug: string; name: string; type: "single" | "combo"; category: string; shortDescription: string;
   description: string; information: string; ingredients: string; directions: string; faqs: Faq[]; images: string[];
   related: string[]; status: string; featured: boolean; sort: number; reviewNote: string; createdAt: string; updatedAt: string;
+  seoTitle: string; metaDescription: string; ogImage: string; noindex: boolean;
   variants: Variant[]; items: ComboItem[];
 };
 
-export type Category = { id: number; slug: string; name: string; description: string; image: string; seoTitle: string; metaDescription: string; status: "published" | "hidden"; sort: number; productCount: number };
+export type Category = { id: number; slug: string; name: string; description: string; image: string; seoTitle: string; metaDescription: string; status: "published" | "hidden"; sort: number; productCount: number; noindex: boolean };
 
 export function getCategories(includeHidden = false): Category[] {
   const where = includeHidden ? "" : "WHERE c.status = 'published'";
   return db().prepare(`SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category = c.slug) product_count
     FROM categories c ${where} ORDER BY c.sort,c.id`).all().map((r) => ({
     id: Number(r.id), slug: String(r.slug), name: String(r.name), description: String(r.description), image: String(r.image),
-    seoTitle: String(r.seo_title), metaDescription: String(r.meta_description), status: r.status as "published" | "hidden",
+    seoTitle: String(r.seo_title), metaDescription: String(r.meta_description), status: r.status as "published" | "hidden", noindex: Number(r.noindex || 0) === 1,
     sort: Number(r.sort), productCount: Number(r.product_count),
   }));
 }
@@ -68,7 +69,8 @@ function mapProduct(r: Record<string, unknown>, opts: { allVariants?: boolean } 
     shortDescription: String(r.short_description), description: String(r.description), information: String(r.information),
     ingredients: String(r.ingredients), directions: String(r.directions), faqs: parse<Faq[]>(r.faqs, []), images: parse<string[]>(r.images, []),
     related: parse<string[]>(r.related, []), status: String(r.status), featured: Number(r.featured) === 1, sort: Number(r.sort),
-    reviewNote: String(r.review_note), createdAt: String(r.created_at), updatedAt: String(r.updated_at), variants, items,
+    reviewNote: String(r.review_note), createdAt: String(r.created_at), updatedAt: String(r.updated_at),
+    seoTitle: String(r.seo_title || ""), metaDescription: String(r.meta_description || ""), ogImage: String(r.og_image || ""), noindex: Number(r.noindex || 0) === 1, variants, items,
   };
 }
 

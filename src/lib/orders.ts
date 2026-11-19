@@ -197,7 +197,8 @@ export type OrderFilter = { payment?: string; fulfilment?: string; q?: string; l
 export function listOrders(f: OrderFilter = {}) {
   const w: string[] = [];
   const p: unknown[] = [];
-  if (f.payment === "awaiting_fee") w.push("delivery_payment_status IN ('not_set','pending') AND fulfilment_status != 'cancelled'");
+  if (f.payment === "to_dispatch") w.push("payment_status = 'paid' AND dispatched_at IS NULL AND fulfilment_status NOT IN ('shipped','delivered','cancelled')");
+  else if (f.payment === "awaiting_fee") w.push("delivery_payment_status IN ('not_set','pending') AND fulfilment_status != 'cancelled'");
   else if (f.payment) { w.push("payment_status = ?"); p.push(f.payment); }
   if (f.fulfilment) { w.push("fulfilment_status = ?"); p.push(f.fulfilment); }
   if (f.q) {

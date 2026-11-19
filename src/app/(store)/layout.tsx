@@ -7,8 +7,24 @@ import { StorePixel } from "@/components/pixel";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { getContact } from "@/lib/settings";
 import { site } from "@/lib/site";
+import type { Metadata } from "next";
+import { getSeo } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+/** Store-wide SEO defaults from the SEO dashboard. Pages override title, description and image where they have their own. */
+export function generateMetadata(): Metadata {
+  const seo = getSeo();
+  const template = seo.titleTemplate?.includes("%s") ? seo.titleTemplate : `%s | ${site.name}`;
+  const image = seo.ogImage || "/og.jpg";
+  return {
+    title: { default: seo.homeTitle || site.name, template },
+    description: seo.defaultDescription || site.description,
+    openGraph: { type: "website", siteName: site.name, url: site.url, locale: "en_NG", description: seo.defaultDescription || site.description, images: [{ url: image, alt: site.name }] },
+    twitter: { card: "summary_large_image", images: [image] },
+    robots: seo.noindexSite ? { index: false, follow: false } : undefined,
+  };
+}
 
 const outfit = localFont({ src: "../fonts/Outfit-latin.woff2", variable: "--font-outfit", display: "swap", weight: "300 800" });
 

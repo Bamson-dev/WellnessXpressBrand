@@ -4,7 +4,7 @@ import { listOrders } from "@/lib/orders";
 import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, naira } from "@/lib/site";
 
 export const metadata = { title: "Orders" };
-const PAY_FILTERS = [["", "All"], ["awaiting_verification", "Awaiting verification"], ["pending_payment", "Pending payment"], ["awaiting_fee", "Need delivery fee"], ["paid", "Paid"], ["payment_failed", "Payment failed"]];
+const PAY_FILTERS = [["", "All"], ["awaiting_verification", "Awaiting verification"], ["pending_payment", "Pending payment"], ["awaiting_fee", "Need delivery fee (old orders)"], ["paid", "Paid"], ["to_dispatch", "Paid, not dispatched"], ["payment_failed", "Payment failed"]];
 
 export default async function Orders({ searchParams }: { searchParams: { payment?: string; fulfilment?: string; q?: string; page?: string } }) {
   await requirePerm("orders");

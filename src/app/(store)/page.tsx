@@ -7,15 +7,17 @@ import ProductCard from "@/components/ProductCard";
 import { IconBank, IconChevron, IconInfo, IconShield, IconTruck, IconUser, IconWhatsApp } from "@/components/icons";
 import { FREE_DELIVERY_TEXT, FREE_DELIVERY_TITLE, site } from "@/lib/site";
 import { db } from "@/lib/db";
+import { getSeo } from "@/lib/seo";
 import { can, currentAdmin } from "@/lib/auth";
 import { getBanner, liveBanners } from "@/lib/banners";
 import BannerBlock from "@/components/BannerBlock";
 
-export const metadata: Metadata = {
-  title: { absolute: `${site.name} | Your Weightloss Journey Starts Here.` },
-  description: site.description,
-  alternates: { canonical: "/" },
-};
+export function generateMetadata(): Metadata {
+  const seo = getSeo();
+  const title = seo.homeTitle || `${site.name} | Your Weightloss Journey Starts Here.`;
+  const description = seo.homeDescription || site.description;
+  return { title: { absolute: title }, description, alternates: { canonical: "/" }, openGraph: { title, description, url: site.url, images: [{ url: seo.ogImage || "/og.jpg", alt: site.name }] } };
+}
 
 type Hero = { title: string; accent: string; text: string; primaryLabel: string; primaryUrl: string; secondaryLabel: string; secondaryUrl: string };
 

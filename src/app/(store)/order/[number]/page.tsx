@@ -61,7 +61,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
           <div>
             <h2 className="text-xl text-brand-900">Free delivery to {o.state}</h2>
             <p className="mt-1 text-neutral-700">Delivery charge: ₦0. You pay only for your products.{o.delivery_eta ? ` Estimated delivery time: ${String(o.delivery_eta)}.` : ""}</p>
-            {o.tracking_reference ? <p className="mt-2 text-neutral-700">Dispatched{o.courier ? ` with ${String(o.courier)}` : ""}. Tracking reference: <strong>{String(o.tracking_reference)}</strong></p> : null}
+            {o.dispatched_at || o.tracking_reference ? <p className="mt-2 text-neutral-700">Dispatched{o.dispatched_at ? ` on ${String(o.dispatched_at).slice(0, 10)}` : ""}{o.courier ? ` with ${String(o.courier)}` : ""}.{o.tracking_reference ? <> Tracking reference: <strong>{String(o.tracking_reference)}</strong></> : null}</p> : null}
           </div>
         </section>
       ) : o.fulfilment_status !== "cancelled" ? (
