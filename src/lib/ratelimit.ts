@@ -8,8 +8,16 @@ export function limited(key: string, limit = 8, windowMs = 60_000) {
   if (hits.size > 5000) hits.clear();
   return arr.length > limit;
 }
-export const ipOf = (req: Request | { headers: Headers }) =>
-  (req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+/**
+ * Client address for rate limiting. Cloudflare sets cf-connecting-ip. Otherwise use the LAST X-Forwarded-For entry,
+ * which our own reverse proxy (Traefik) appends; earlier entries come from the client and can be faked.
+ */
+export const ipOf = (req: Request | { headers: Headers }) => {
+  const cf = req.headers.get("cf-connecting-ip");
+  if (cf) return cf.trim().slice(0, 64);
+  const xff = (req.headers.get("x-forwarded-for") || "").split(",").map((x) => x.trim()).filter(Boolean);
+  return (xff[xff.length - 1] || req.headers.get("x-real-ip") || "unknown").slice(0, 64);
+};
 
 /** Rejects cross-site POSTs to JSON/form endpoints. */
 export function sameOrigin(req: Request) {

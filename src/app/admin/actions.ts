@@ -1,7 +1,7 @@
 "use server";
 import path from "path";
 import { promises as fs } from "fs";
-import { randomBytes } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -13,7 +13,7 @@ import { setSetting } from "@/lib/settings";
 import { deleteMedia, getMedia, saveImageUpload } from "@/lib/media";
 import { sendStorePurchase } from "@/lib/meta";
 import { clean, isEmail, sniffType } from "@/lib/validate";
-import { limited } from "@/lib/ratelimit";
+import { ipOf, limited } from "@/lib/ratelimit";
 import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
 import { logAdminActivity } from "@/lib/admin-events";
 
@@ -38,7 +38,7 @@ const back = (url: string, msg?: string) => redirect(msg ? `${url}${url.includes
 
 /* ---------- auth ---------- */
 export async function loginAction(_: unknown, f: FormData) {
-  const ip = (headers().get("cf-connecting-ip") || headers().get("x-forwarded-for") || "x").split(",")[0];
+  const ip = ipOf({ headers: headers() });
   if (limited("login:" + ip, 6, 10 * 60_000)) return { error: "Too many attempts. Wait 10 minutes and try again." };
   const ok = await login(s(f, "email", 254), String(f.get("password") || "").slice(0, 200));
   if (!ok) return { error: "Email or password is not correct." };
@@ -126,7 +126,17 @@ export async function setFulfilmentAction(f: FormData) {
       if (e) return e;
     }
     d.prepare("UPDATE orders SET fulfilment_status = ?, updated_at = datetime('now') WHERE id = ?").run(st, id);
-    if (st === "cancelled" && o.fulfilment_status !== "cancelled") releaseOrderStock(d, id, a.email, `Order ${o.number} cancelled`);
+    if (st === "cancelled" && o.fulfilment_status !== "cancelled") {
+      releaseOrderStock(d, id, a.email, `Order ${o.number} cancelled`);
+      // A cancelled order no longer uses up its coupon. The code and discount stay on the order for the record.
+      d.prepare("DELETE FROM coupon_redemptions WHERE order_id = ?").run(id);
+    }
+    if (o.fulfilment_status === "cancelled" && st !== "cancelled" && String(o.coupon_code || "")) {
+      // Reopening keeps the discount the customer was given and counts the use again.
+      const c = d.prepare("SELECT id FROM coupons WHERE code = ?").get(String(o.coupon_code));
+      const key = `phone:${createHash("sha256").update(String(o.phone)).digest("hex")}`;
+      if (c) d.prepare("INSERT OR IGNORE INTO coupon_redemptions (coupon_id,order_id,customer_key,discount_amount) VALUES (?,?,?,?)").run(c.id, id, key, Number(o.discount_amount || 0));
+    }
     return null;
   });
   if (err) return back(`/admin/orders/${id}`, `Cannot reopen this order: ${err}`);

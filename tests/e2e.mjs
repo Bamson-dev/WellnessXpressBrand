@@ -440,6 +440,17 @@ await step("analytics", async () => {
   ok(/Confirmed product revenue\s+₦0\b/.test(await admin.locator("body").innerText()), "date filter excludes orders outside the range");
 });
 
+await step("coupon release on cancel", async () => {
+  const o = q1("SELECT * FROM orders WHERE number=?", order.couponOrder);
+  const setStatus = async (st) => { await admin.goto(B + `/admin/orders/${o.id}`); await admin.selectOption('select[name="status"]', st); await go(admin, admin.locator("button:has-text('Update status')").first()); };
+  await setStatus("cancelled");
+  ok(q1("SELECT COUNT(*) c FROM coupon_redemptions WHERE order_id=?", o.id).c === 0 && q1("SELECT discount_amount d FROM orders WHERE id=?", o.id).d === 2500, "cancelling frees the coupon use and keeps the discount on record");
+  await setStatus("unfulfilled");
+  ok(q1("SELECT COUNT(*) c FROM coupon_redemptions WHERE order_id=?", o.id).c === 1, "reopening counts the coupon use again");
+  const spoof = await anon.request.post(B + "/api/orders", { headers: { origin: B, "x-forwarded-for": "1.2.3.4, 10.9.9.9" }, data: {} });
+  ok(spoof.status() === 400, "forwarded-for handling accepts proxy chain");
+});
+
 await step("staff permissions and customer privacy", async () => {
   await admin.goto(B + "/admin/users");
   const f = admin.locator("form").filter({ has: admin.locator("button:has-text('Add user')") });
