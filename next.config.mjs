@@ -14,6 +14,8 @@ const securityHeaders = [
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // Put page metadata in <head> for every visitor (Next 15 otherwise streams it later for non-bot browsers).
+  htmlLimitedBots: /.*/,
   reactStrictMode: true,
   compress: true,
   images: { formats: ["image/webp"] },
