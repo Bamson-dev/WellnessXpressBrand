@@ -142,6 +142,114 @@ export async function createProductAction(f: FormData) {
   redirect(`/admin/products/${r.lastInsertRowid}?msg=${encodeURIComponent("Product created as a draft. Add a price option and a photo, then publish it.")}`);
 }
 
+/** Clone catalog configuration only. Orders, customers, and sales history are never copied. */
+export async function duplicateProductAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  const source = db().prepare("SELECT * FROM products WHERE id = ?").get(id);
+  if (!source) return back("/admin/products", "Product not found.");
+  const slugBase = `${String(source.slug).slice(0, 68)}-copy`;
+  let slug = slugBase;
+  let suffix = 2;
+  while (db().prepare("SELECT 1 FROM products WHERE slug = ?").get(slug)) slug = `${slugBase}-${suffix++}`;
+  let newId = 0;
+  tx((d) => {
+    const result = d.prepare(`INSERT INTO products
+      (slug,name,type,category,short_description,description,information,ingredients,directions,faqs,images,related,status,featured,sort,review_note)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'draft',0,?,?)`).run(
+      slug, `${String(source.name)} (Copy)`, source.type, source.category, source.short_description, source.description,
+      source.information, source.ingredients, source.directions, source.faqs, source.images, "[]", Number(source.sort) + 1,
+      "Draft duplicate. Review its details, image rights, pricing, and stock before publishing."
+    );
+    newId = Number(result.lastInsertRowid);
+    const variants = d.prepare("SELECT * FROM variants WHERE product_id = ? ORDER BY sort,id").all(id);
+    for (const v of variants) {
+      const originalSku = String(v.sku).slice(0, 30);
+      let sku = `${originalSku}-COPY-${newId}`;
+      let n = 2;
+      while (d.prepare("SELECT 1 FROM variants WHERE sku = ?").get(sku)) sku = `${originalSku}-COPY-${newId}-${n++}`;
+      d.prepare(`INSERT INTO variants
+        (product_id,label,size,duration,sku,price,sale_price,stock,status,needs_confirmation,price_source,sort)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(newId, v.label, v.size, v.duration, sku, v.price, v.sale_price, null,
+        v.status, v.needs_confirmation, `Copied from product ${id}; verify before publishing.`, v.sort);
+    }
+    if (String(source.type) === "combo") {
+      const items = d.prepare("SELECT * FROM combo_items WHERE combo_id = ? ORDER BY sort,id").all(id);
+      for (const item of items) d.prepare(`INSERT INTO combo_items (combo_id,item_product_id,item_name,size_note,quantity_note,sort)
+        VALUES (?,?,?,?,?,?)`).run(newId, item.item_product_id, item.item_name, item.size_note, item.quantity_note, item.sort);
+    }
+  });
+  redirect(`/admin/products/${newId}?msg=${encodeURIComponent("Draft copy created. Review its options and contents before publishing.")}`);
+}
+
+export async function archiveProductAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  const exists = db().prepare("SELECT id FROM products WHERE id = ?").get(id);
+  if (!exists) return back("/admin/products", "Product not found.");
+  db().prepare("UPDATE products SET status='archived', updated_at=datetime('now') WHERE id=?").run(id);
+  revalidatePath("/", "layout");
+  back("/admin/products", "Product archived. Historical order records were retained.");
+}
+
+export async function createCategoryAction(f: FormData) {
+  await requireAdmin("owner");
+  const name = s(f, "name", 80);
+  if (name.length < 2) return back("/admin/categories", "Enter a category name.");
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70);
+  if (!slug) return back("/admin/categories", "Use a category name containing letters or numbers.");
+  if (db().prepare("SELECT 1 FROM categories WHERE slug = ?").get(slug)) return back("/admin/categories", "A category already uses that web address.");
+  db().prepare("INSERT INTO categories (slug,name,description,image,sort,status) VALUES (?,?,?,'',?,'hidden')")
+    .run(slug, name, text(f, "description", 1000), Number(f.get("sort")) || 0);
+  back("/admin/categories", "Category created hidden. Review its details and publish it when ready.");
+}
+
+export async function saveCategoryAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  const current = db().prepare("SELECT * FROM categories WHERE id = ?").get(id);
+  if (!current) return back("/admin/categories", "Category not found.");
+  const slug = s(f, "slug", 70).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/--+/g, "-").replace(/^-|-$/g, "");
+  const duplicate = db().prepare("SELECT 1 FROM categories WHERE slug = ? AND id != ?").get(slug, id);
+  const used = Number(db().prepare("SELECT COUNT(*) n FROM products WHERE category = ?").get(current.slug)?.n || 0);
+  if (!slug || duplicate) return back("/admin/categories", "That slug is empty or already used.");
+  if (used && slug !== current.slug) return back("/admin/categories", "This category is assigned to products. Keep its slug to preserve existing category URLs.");
+  if (slug !== current.slug) {
+    db().prepare("UPDATE category_redirects SET new_slug = ? WHERE new_slug = ?").run(slug, current.slug);
+    db().prepare("INSERT INTO category_redirects (old_slug,new_slug) VALUES (?,?) ON CONFLICT(old_slug) DO UPDATE SET new_slug=excluded.new_slug").run(current.slug, slug);
+  }
+  const status = f.get("status") === "published" ? "published" : "hidden";
+  const image = s(f, "image", 300);
+  if (image && !image.startsWith("/images/") && !/^\/media\/[a-f0-9]{24}\.(jpg|png|webp)$/.test(image))
+    return back("/admin/categories", "Choose a project image path or an uploaded media URL.");
+  db().prepare(`UPDATE categories SET slug=?,name=?,description=?,image=?,seo_title=?,meta_description=?,status=?,sort=?,updated_at=datetime('now') WHERE id=?`)
+    .run(slug, s(f, "name", 80), text(f, "description", 1000), image, s(f, "seoTitle", 120), text(f, "metaDescription", 300), status, Number(f.get("sort")) || 0, id);
+  revalidatePath("/", "layout");
+  revalidatePath(`/category/${slug}`);
+  back("/admin/categories", "Category saved.");
+}
+
+export async function uploadCategoryImageAction(f: FormData) {
+  await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  const category = db().prepare("SELECT slug FROM categories WHERE id = ?").get(id);
+  if (!category) return back("/admin/categories", "Category not found.");
+  const file = f.get("image");
+  if (!file || typeof file === "string" || !file.size) return back("/admin/categories", "Choose an image to upload.");
+  if (file.size > 6 * 1024 * 1024) return back("/admin/categories", "The image must be 6 MB or smaller.");
+  const buf = Buffer.from(await file.arrayBuffer());
+  const type = sniffType(buf);
+  if (!type || type === "pdf") return back("/admin/categories", "Upload a JPG, PNG or WebP image.");
+  const name = `${randomBytes(12).toString("hex")}.${type}`;
+  await fs.mkdir(MEDIA_DIR, { recursive: true });
+  await fs.writeFile(path.join(MEDIA_DIR, name), buf, { flag: "wx", mode: 0o644 });
+  const image = `/media/${name}`;
+  db().prepare("UPDATE categories SET image=?,updated_at=datetime('now') WHERE id=?").run(image, id);
+  revalidatePath("/", "layout");
+  revalidatePath(`/category/${String(category.slug)}`);
+  back("/admin/categories", "Category image uploaded and saved.");
+}
+
 export async function saveProductAction(f: FormData) {
   await requireAdmin("owner");
   const id = Number(f.get("id"));
@@ -149,6 +257,8 @@ export async function saveProductAction(f: FormData) {
   if (!p) return back("/admin/products");
   const slug = s(f, "slug", 80).toLowerCase().replace(/[^a-z0-9-]+/g, "-");
   if (!slug || db().prepare("SELECT 1 FROM products WHERE slug = ? AND id != ?").get(slug, id)) return back(`/admin/products/${id}`, "That web address (slug) is empty or already used.");
+  const category = s(f, "category", 70);
+  if (!db().prepare("SELECT 1 FROM categories WHERE slug = ?").get(category)) return back(`/admin/products/${id}`, "Choose an existing category.");
   const status = STATUSES.includes(s(f, "status", 30)) ? s(f, "status", 30) : "draft";
   if (status === "published" && !db().prepare("SELECT 1 FROM variants WHERE product_id = ? AND status = 'active'").get(id))
     return back(`/admin/products/${id}`, "Add at least one active price option before you publish.");
@@ -157,7 +267,7 @@ export async function saveProductAction(f: FormData) {
   db().prepare(
     `UPDATE products SET name=?, slug=?, category=?, short_description=?, description=?, information=?, ingredients=?, directions=?, faqs=?, related=?,
      status=?, featured=?, sort=?, review_note=?, updated_at=datetime('now') WHERE id=?`
-  ).run(s(f, "name", 120), slug, f.get("category") === "combos" ? "combos" : "individual", s(f, "short", 300), text(f, "description"), text(f, "information"),
+  ).run(s(f, "name", 120), slug, category, s(f, "short", 300), text(f, "description"), text(f, "information"),
     text(f, "ingredients", 2000), text(f, "directions", 4000), JSON.stringify(faqs), JSON.stringify(related), status, f.get("featured") ? 1 : 0,
     Number(f.get("sort")) || 0, text(f, "review", 2000), id);
   revalidatePath("/", "layout");
@@ -246,6 +356,8 @@ export async function imageOrderAction(f: FormData) {
   if (!(idx >= 0 && idx < imgs.length)) return back(`/admin/products/${pid}`);
   if (op === "remove") imgs.splice(idx, 1);
   if (op === "first") imgs.unshift(...imgs.splice(idx, 1));
+  if (op === "up" && idx > 0) [imgs[idx - 1], imgs[idx]] = [imgs[idx], imgs[idx - 1]];
+  if (op === "down" && idx < imgs.length - 1) [imgs[idx + 1], imgs[idx]] = [imgs[idx], imgs[idx + 1]];
   db().prepare("UPDATE products SET images = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(imgs), pid);
   revalidatePath("/", "layout");
   back(`/admin/products/${pid}`, op === "remove" ? "Image removed from this product." : "Main image updated.");

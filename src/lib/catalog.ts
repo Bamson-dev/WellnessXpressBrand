@@ -15,10 +15,22 @@ export type Product = {
   variants: Variant[]; items: ComboItem[];
 };
 
-export const CATEGORIES = [
-  { slug: "individual", name: "Individual Products", description: "Each WellnessXpress product on its own.", image: "/images/categories/category-individual.webp" },
-  { slug: "combos", name: "Combo Sets", description: "WellnessXpress products packed together as a set.", image: "/images/categories/category-combos.webp" },
-];
+export type Category = { id: number; slug: string; name: string; description: string; image: string; seoTitle: string; metaDescription: string; status: "published" | "hidden"; sort: number; productCount: number };
+
+export function getCategories(includeHidden = false): Category[] {
+  const where = includeHidden ? "" : "WHERE c.status = 'published'";
+  return db().prepare(`SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category = c.slug) product_count
+    FROM categories c ${where} ORDER BY c.sort,c.id`).all().map((r) => ({
+    id: Number(r.id), slug: String(r.slug), name: String(r.name), description: String(r.description), image: String(r.image),
+    seoTitle: String(r.seo_title), metaDescription: String(r.meta_description), status: r.status as "published" | "hidden",
+    sort: Number(r.sort), productCount: Number(r.product_count),
+  }));
+}
+
+export function getCategoryRedirect(slug: string): string | null {
+  const row = db().prepare("SELECT new_slug FROM category_redirects WHERE old_slug = ?").get(slug);
+  return row ? String(row.new_slug) : null;
+}
 
 const parse = <T,>(s: unknown, d: T): T => {
   try { return JSON.parse(String(s)) as T; } catch { return d; }
@@ -73,6 +85,7 @@ export type ShopQuery = { category?: string; q?: string; sort?: string; featured
 export function listProducts(qy: ShopQuery = {}) {
   const where = ["status = 'published'"];
   const params: unknown[] = [];
+  where.push("category IN (SELECT slug FROM categories WHERE status = 'published')");
   if (qy.category) { where.push("category = ?"); params.push(qy.category); }
   if (qy.featured) where.push("featured = 1");
   if (qy.q) {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { CATEGORIES, listProducts } from "@/lib/catalog";
+import { getCategories, listProducts } from "@/lib/catalog";
 import { getContact, getSetting } from "@/lib/settings";
 import ProductCard from "@/components/ProductCard";
 import { IconBank, IconChevron, IconInfo, IconShield, IconTruck, IconUser, IconWhatsApp } from "@/components/icons";
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 export default function Home() {
   const singles = listProducts({ category: "individual", featured: true, perPage: 8 }).items;
   const combos = listProducts({ category: "combos", perPage: 12 }).items;
+  const categories = getCategories();
   const contact = getContact();
   const notice = getSetting<string>("productNotice");
 
@@ -59,10 +60,10 @@ export default function Home() {
           </div>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Link key={c.slug} href={`/category/${c.slug}`} className="group card flex items-center gap-4 overflow-hidden p-4 transition hover:-translate-y-0.5 hover:shadow-lg sm:gap-6 sm:p-5">
               <div className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-xl bg-brand-50 sm:w-36">
-                <Image src={c.image} alt="" fill sizes="144px" className="object-contain" />
+                {c.image ? <Image src={c.image} alt="" fill sizes="144px" className="object-contain" /> : <div className="grid h-full place-items-center text-xs text-neutral-500">Browse products</div>}
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-xl">{c.name}</h3>

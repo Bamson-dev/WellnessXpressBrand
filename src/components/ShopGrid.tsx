@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CATEGORIES, listProducts } from "@/lib/catalog";
+import { getCategories, listProducts } from "@/lib/catalog";
 import ProductCard from "@/components/ProductCard";
 import SortSelect from "@/components/SortSelect";
 import { IconSearch } from "@/components/icons";
@@ -10,7 +10,8 @@ export default function ShopGrid({ sp, category, basePath, title, intro }: { sp:
   const q = (sp.q || "").slice(0, 60);
   const sort = ["featured", "newest", "price-asc", "price-desc"].includes(sp.sort || "") ? sp.sort : "featured";
   const page = Math.max(1, parseInt(sp.page || "1", 10) || 1);
-  const cat = category || (CATEGORIES.some((c) => c.slug === sp.category) ? sp.category : undefined);
+  const categories = getCategories();
+  const cat = category || (categories.some((c) => c.slug === sp.category) ? sp.category : undefined);
   const res = listProducts({ category: cat, q, sort, page, perPage: 12 });
   const qs = (o: Partial<SP>) => {
     const u = new URLSearchParams();
@@ -27,7 +28,7 @@ export default function ShopGrid({ sp, category, basePath, title, intro }: { sp:
       <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <nav aria-label="Categories" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
           <Link href={category ? "/shop" : qs({ category: "" })} className={`shrink-0 rounded-full border px-4 py-2.5 text-[15px] font-medium ${!cat ? "border-brand-700 bg-brand-700 text-white" : "border-neutral-300 hover:border-brand-500"}`}>All</Link>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Link key={c.slug} href={category ? `/category/${c.slug}` : qs({ category: c.slug })} className={`shrink-0 rounded-full border px-4 py-2.5 text-[15px] font-medium ${cat === c.slug ? "border-brand-700 bg-brand-700 text-white" : "border-neutral-300 hover:border-brand-500"}`}>{c.name}</Link>
           ))}
         </nav>

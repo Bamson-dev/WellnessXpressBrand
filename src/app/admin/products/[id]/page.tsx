@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
-import { allProductsAdmin, getProductById } from "@/lib/catalog";
+import { allProductsAdmin, getCategories, getProductById } from "@/lib/catalog";
 import Flash from "@/components/admin/Flash";
 import { deleteVariantAction, imageOrderAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
 
@@ -11,6 +11,7 @@ export default async function EditProduct({ params, searchParams }: { params: { 
   await requireAdmin("owner");
   const p = getProductById(Number(params.id));
   if (!p) notFound();
+  const categories = getCategories(true);
   const singles = allProductsAdmin().filter((x) => x.type === "single");
   const L = ({ children }: { children: React.ReactNode }) => <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</span>;
   const comboRows = [...p.items, ...Array.from({ length: Math.max(0, 6 - p.items.length) }, () => null)];
@@ -38,7 +39,7 @@ export default async function EditProduct({ params, searchParams }: { params: { 
               </select>
             </label>
             <label><L>Category</L>
-              <select name="category" defaultValue={p.category} className="admin-input"><option value="individual">Individual Products</option><option value="combos">Combo Sets</option></select>
+              <select name="category" defaultValue={p.category} className="admin-input">{categories.map((c) => <option key={c.id} value={c.slug}>{c.name}{c.status === "hidden" ? " (hidden)" : ""}</option>)}</select>
             </label>
             <label><L>Sort order (lower shows first)</L><input name="sort" type="number" defaultValue={p.sort} className="admin-input" /></label>
             <label className="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" name="featured" defaultChecked={p.featured} className="h-4 w-4 accent-brand-700" /> Featured on the home page</label>
@@ -64,6 +65,8 @@ export default async function EditProduct({ params, searchParams }: { params: { 
                   <img src={src} alt="" className="aspect-square w-full rounded object-contain" />
                   <div className="mt-1 flex gap-1">
                     {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="first" /><button className="text-xs text-brand-700 underline">Make main</button></form> : <span className="text-xs text-neutral-500">Main</span>}
+                    {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="up" /><button aria-label={`Move photo ${i + 1} up`} className="ml-2 text-xs text-neutral-600 underline">Move up</button></form> : null}
+                    {i < p.images.length - 1 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="down" /><button aria-label={`Move photo ${i + 1} down`} className="text-xs text-neutral-600 underline">Move down</button></form> : null}
                     <form action={imageOrderAction} className="ml-auto"><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="remove" /><button className="text-xs text-red-700 underline">Remove</button></form>
                   </div>
                 </div>
