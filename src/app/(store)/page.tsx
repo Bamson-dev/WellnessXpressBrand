@@ -19,25 +19,39 @@ export default function Home() {
   const categories = getCategories();
   const contact = getContact();
   const notice = getSetting<string>("productNotice");
+  const hero = {
+    eyebrow: getSetting<string>("homeHeroEyebrow"), title: getSetting<string>("homeHeroTitle"), accent: getSetting<string>("homeHeroAccent"),
+    description: getSetting<string>("homeHeroDescription"), primaryLabel: getSetting<string>("homeHeroPrimaryLabel"), primaryHref: getSetting<string>("homeHeroPrimaryHref"),
+    secondaryLabel: getSetting<string>("homeHeroSecondaryLabel"), secondaryHref: getSetting<string>("homeHeroSecondaryHref"),
+  };
+  const banner = {
+    enabled: getSetting<boolean>("homeBannerEnabled"), title: getSetting<string>("homeBannerTitle"), body: getSetting<string>("homeBannerBody"),
+    button: getSetting<string>("homeBannerButton"), href: getSetting<string>("homeBannerHref"), image: getSetting<string>("homeBannerImage"),
+  };
+  const storeHref = (value: string, fallback: string) => /^\/(?!\/)[^\\\s]*$/.test(value) ? value : fallback;
 
   return (
     <>
+      {banner.enabled && banner.title ? <section className="container-x pt-5"><div className="grid items-center gap-4 overflow-hidden rounded-2xl bg-brand-900 p-5 text-white sm:grid-cols-[1fr_auto] sm:p-7">
+        <div><h2 className="text-xl font-bold sm:text-2xl">{banner.title}</h2>{banner.body ? <p className="mt-2 max-w-3xl text-sm text-white/85 sm:text-base">{banner.body}</p> : null}</div>
+        <div className="flex items-center gap-3">{banner.image && (/^\/images\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:webp|png|jpe?g)$/i.test(banner.image) || /^\/media\/[a-f0-9]{24}\.(?:jpg|png|webp)$/.test(banner.image)) ? <div className="relative hidden h-16 w-16 overflow-hidden rounded-lg bg-white/10 sm:block"><Image src={banner.image} alt="" fill sizes="64px" className="object-contain" /></div> : null}{banner.button ? <Link href={storeHref(banner.href, "/shop")} className="btn bg-white px-5 text-brand-900 hover:bg-brand-50">{banner.button}</Link> : null}</div>
+      </div></section> : null}
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-neutral-100 bg-white">
         <div aria-hidden className="pointer-events-none absolute -right-24 top-0 h-full w-[62%] -skew-x-12 bg-gradient-to-br from-brand-50 to-brand-100/60 max-lg:hidden" />
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-brand-50 lg:hidden" />
         <div className="container-x relative grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-2 lg:gap-12 lg:py-20">
           <div className="max-w-xl">
-            <p className="eyebrow">WellnessXpressBrand</p>
+            <p className="eyebrow">{hero.eyebrow}</p>
             <h1 className="mt-3 text-[2.4rem] font-extrabold leading-[1.05] sm:text-5xl lg:text-[3.6rem]">
-              Your weightloss journey <span className="text-brand-700">starts here.</span>
+              {hero.title} <span className="text-brand-700">{hero.accent}</span>
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-neutral-700">
-              Explore WellnessXpressBrand products and practical wellness resources designed to support your everyday wellness journey.
+              {hero.description}
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link href="/shop" className="btn btn-primary px-8 text-base">Shop now</Link>
-              <Link href="#combos" className="btn btn-outline px-8 text-base">Explore our products</Link>
+              <Link href={storeHref(hero.primaryHref, "/shop")} className="btn btn-primary px-8 text-base">{hero.primaryLabel}</Link>
+              <Link href={storeHref(hero.secondaryHref, "/#combos")} className="btn btn-outline px-8 text-base">{hero.secondaryLabel}</Link>
             </div>
             <ul className="mt-8 grid grid-cols-1 gap-3 text-[15px] text-neutral-700 sm:grid-cols-3">
               <li className="flex items-center gap-2"><IconUser className="h-5 w-5 text-brand-700" /> No account needed</li>

@@ -64,13 +64,17 @@ export function createOrder(input: CheckoutInput) {
   if (Object.keys(errors).length) return { ok: false as const, errors };
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
-  // Product payment is collected first. Delivery is agreed and paid separately.
-  const fee = null;
-  const total = null;
+  // Product payment is collected first. A configured state fee is quoted and remains payable separately.
   const bank = getBank();
 
   return tx((d) => {
-    // Re-check stock inside the transaction, then reserve it.
+    const zone = d.prepare("SELECT fee,active,estimated_delivery FROM delivery_zones WHERE state=?").get(state);
+    if (zone && Number(zone.active) !== 1) throw new Error("delivery:disabled");
+    if (!zone || zone.fee == null) throw new Error("delivery:unconfigured");
+    const fee = Number(zone.fee);
+    const total = subtotal + fee;
+    const deliveryEstimate = String(zone?.estimated_delivery || "");
+    // Validate stock at checkout. Tracked stock is deducted only after an admin verifies payment.
     for (const l of lines) {
       const v = d.prepare("SELECT stock FROM variants WHERE id = ?").get(l.variantId);
       if (v && v.stock != null && Number(v.stock) < l.qty) throw new Error(`stock:${l.name}`);
@@ -80,18 +84,17 @@ export function createOrder(input: CheckoutInput) {
     const token = randomBytes(24).toString("base64url");
     const r = d
       .prepare(
-        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,bank_snapshot,tracking)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'not_set',?,?)`
+        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,delivery_estimate,bank_snapshot,tracking)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?,?)`
       )
-      .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, JSON.stringify(bank), JSON.stringify(trackingOf(input)));
+         .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, "pending", deliveryEstimate, JSON.stringify(bank), JSON.stringify(trackingOf(input)));
     const oid = Number(r.lastInsertRowid);
     const insI = d.prepare("INSERT INTO order_items (order_id,product_id,variant_id,name,variant_label,sku,unit_price,qty,line_total) VALUES (?,?,?,?,?,?,?,?,?)");
     for (const l of lines) {
       insI.run(oid, l.productId, l.variantId, l.name, l.label, l.sku, l.unitPrice, l.qty, l.lineTotal);
-      d.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL").run(l.qty, l.variantId);
     }
     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
-      oid, "customer", "order_placed", "Product payment due: ₦" + subtotal.toLocaleString("en-NG") + ". Delivery fee will be confirmed separately."
+      oid, "customer", "order_placed", "Product payment due: ₦" + subtotal.toLocaleString("en-NG") + ". Delivery fee of ₦" + fee.toLocaleString("en-NG") + " is payable separately."
     );
     return { ok: true as const, number, token, total, subtotal, fee };
   });
@@ -132,8 +135,26 @@ export function logEvent(orderId: number, actor: string, action: string, note = 
   db().prepare("UPDATE orders SET updated_at = datetime('now') WHERE id = ?").run(orderId);
 }
 
-export function restoreStock(orderId: number) {
-  for (const it of orderItems(orderId)) db().prepare("UPDATE variants SET stock = stock + ? WHERE id = ? AND stock IS NOT NULL").run(it.qty, it.variant_id);
+export function restoreStock(orderId: number, actor = "system") {
+  const order = db().prepare("SELECT number FROM orders WHERE id=?").get(orderId);
+  if (!order) return;
+  const number = String(order.number || orderId);
+  const items = db().prepare("SELECT * FROM order_items WHERE order_id=? AND stock_deducted=1").all(orderId) as (OrderItem & { stock_deducted: number })[];
+  for (const it of items) {
+    const current = db().prepare("SELECT stock FROM variants WHERE id = ?").get(it.variant_id);
+    if (!current || current.stock == null) {
+      db().prepare("UPDATE order_items SET stock_deducted=0 WHERE id=?").run(it.id);
+      continue;
+    }
+    const previous = Number(current.stock);
+    const next = previous + it.qty;
+    db().prepare("UPDATE variants SET stock = ? WHERE id = ?").run(next, it.variant_id);
+    db().prepare(`INSERT INTO inventory_movements
+      (product_id,variant_id,product_name,variant_label,sku,previous_qty,new_qty,qty_change,reason,actor)
+      VALUES (?,?,?,?,?,?,?,?,?,?)`).run(it.product_id,it.variant_id,it.name,it.variant_label,it.sku,previous,next,it.qty,
+        `Order ${number} cancelled; stock restored`,actor);
+    db().prepare("UPDATE order_items SET stock_deducted=0 WHERE id=?").run(it.id);
+  }
 }
 
 export type OrderFilter = { payment?: string; fulfilment?: string; q?: string; limit?: number; offset?: number };

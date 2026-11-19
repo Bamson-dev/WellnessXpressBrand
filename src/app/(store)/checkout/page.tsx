@@ -6,6 +6,6 @@ import { deliveryZones } from "@/lib/settings";
 export const metadata: Metadata = { title: "Checkout", robots: { index: false, follow: false } };
 
 export default function Checkout() {
-  const zones = deliveryZones().filter((z) => z.active && z.fee != null).map((z) => z.state);
-  return <CheckoutForm states={NIGERIAN_STATES} statesWithFee={zones} />;
+  const deliveryQuotes = Object.fromEntries(deliveryZones().map((z) => [z.state, { fee: z.fee, active: z.active, estimatedDelivery: z.estimatedDelivery }]));
+  return <CheckoutForm states={NIGERIAN_STATES} deliveryQuotes={deliveryQuotes} />;
 }

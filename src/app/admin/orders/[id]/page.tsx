@@ -60,6 +60,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
             <dl className="mt-3 border-t border-neutral-200 pt-2 text-sm">
               {row("Subtotal", naira(o.subtotal))}
               {row(`Delivery (${o.state})`, o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
+              {o.delivery_estimate ? row("Estimated delivery", String(o.delivery_estimate)) : null}
               {row("Total including delivery", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}
             </dl>
           </section>
@@ -108,6 +109,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
             <h2 className="text-lg">Delivery payment</h2>
             <dl className="mt-2 text-sm">
               {row("Delivery fee", o.delivery_fee == null ? "Not set" : naira(o.delivery_fee))}
+              {o.delivery_estimate ? row("Estimated delivery", String(o.delivery_estimate)) : null}
               {row("Status", DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)] || String(o.delivery_payment_status))}
               {row("Reference", String(o.delivery_payment_reference || "—"))}
               {row("Confirmed", String(o.delivery_paid_at || "Not confirmed"))}

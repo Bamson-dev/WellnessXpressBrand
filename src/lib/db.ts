@@ -175,6 +175,43 @@ const MIGRATIONS: string[] = [
   INSERT OR IGNORE INTO categories (slug,name,description,image,sort) VALUES
     ('individual','Individual Products','Each WellnessXpress product on its own.','/images/categories/category-individual.webp',0),
     ('combos','Combo Sets','WellnessXpress products packed together as a set.','/images/categories/category-combos.webp',1);`,
+  `ALTER TABLE variants ADD COLUMN low_stock_threshold INTEGER NOT NULL DEFAULT 0;
+   CREATE TABLE IF NOT EXISTS inventory_movements (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     product_id INTEGER NOT NULL,
+     variant_id INTEGER NOT NULL,
+     product_name TEXT NOT NULL,
+     variant_label TEXT NOT NULL,
+     sku TEXT NOT NULL,
+     previous_qty INTEGER NOT NULL,
+     new_qty INTEGER NOT NULL,
+     qty_change INTEGER NOT NULL,
+     reason TEXT NOT NULL,
+     actor TEXT NOT NULL,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX IF NOT EXISTS idx_inventory_movements_variant ON inventory_movements(variant_id, id DESC);
+   CREATE INDEX IF NOT EXISTS idx_inventory_movements_created ON inventory_movements(created_at DESC);`,
+  `ALTER TABLE order_items ADD COLUMN stock_tracked_at_payment INTEGER NOT NULL DEFAULT 0;
+   ALTER TABLE order_items ADD COLUMN stock_deducted INTEGER NOT NULL DEFAULT 0;`,
+  `ALTER TABLE delivery_zones ADD COLUMN estimated_delivery TEXT NOT NULL DEFAULT '';
+   ALTER TABLE orders ADD COLUMN delivery_estimate TEXT NOT NULL DEFAULT '';`,
+  `INSERT OR IGNORE INTO delivery_zones (state,fee,active,note) VALUES
+    ('Abia',NULL,1,''),('Adamawa',NULL,1,''),('Akwa Ibom',NULL,1,''),('Anambra',NULL,1,''),('Bauchi',NULL,1,''),('Bayelsa',NULL,1,''),
+    ('Benue',NULL,1,''),('Borno',NULL,1,''),('Cross River',NULL,1,''),('Delta',NULL,1,''),('Ebonyi',NULL,1,''),('Edo',NULL,1,''),
+    ('Ekiti',NULL,1,''),('Enugu',NULL,1,''),('FCT (Abuja)',NULL,1,''),('Gombe',NULL,1,''),('Imo',NULL,1,''),('Jigawa',NULL,1,''),
+    ('Kaduna',NULL,1,''),('Kano',NULL,1,''),('Katsina',NULL,1,''),('Kebbi',NULL,1,''),('Kogi',NULL,1,''),('Kwara',NULL,1,''),
+    ('Lagos',NULL,1,''),('Nasarawa',NULL,1,''),('Niger',NULL,1,''),('Ogun',NULL,1,''),('Ondo',NULL,1,''),('Osun',NULL,1,''),
+    ('Oyo',NULL,1,''),('Plateau',NULL,1,''),('Rivers',NULL,1,''),('Sokoto',NULL,1,''),('Taraba',NULL,1,''),('Yobe',NULL,1,''),('Zamfara',NULL,1,'');`,
+  `CREATE TABLE IF NOT EXISTS delivery_zone_history (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     state TEXT NOT NULL,
+     previous_config TEXT NOT NULL,
+     new_config TEXT NOT NULL,
+     actor TEXT NOT NULL,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX IF NOT EXISTS idx_delivery_zone_history_created ON delivery_zone_history(id DESC);`,
 ];
 
 function open(): DB {

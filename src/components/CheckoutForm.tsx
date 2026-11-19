@@ -11,7 +11,9 @@ import { naira } from "@/lib/site";
 
 type Errors = Record<string, string>;
 
-export default function CheckoutForm({ states }: { states: string[]; statesWithFee: string[] }) {
+type DeliveryQuote = { fee: number | null; active: boolean; estimatedDelivery: string };
+
+export default function CheckoutForm({ states, deliveryQuotes }: { states: string[]; deliveryQuotes: Record<string, DeliveryQuote> }) {
   const { lines, ready, clear } = useCart();
   const [state, setState] = useState("");
   const { quote } = useQuote(state);
@@ -41,6 +43,7 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
 
   const unavailable = quote?.lines.filter((l) => !l.available) || [];
   const missing = quote ? lines.length - quote.lines.length : 0;
+  const deliveryQuote = state ? deliveryQuotes[state] : undefined;
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -119,9 +122,13 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
                 <label htmlFor="state" className="label">State</label>
                 <select id="state" name="state" value={state} onChange={(e) => setState(e.target.value)} className={`field ${errors.state ? "border-red-500" : ""}`} aria-invalid={!!errors.state} autoComplete="address-level1">
                   <option value="">Choose your state</option>
-                  {states.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {states.map((s) => <option key={s} value={s} disabled={deliveryQuotes[s]?.active === false || deliveryQuotes[s]?.fee == null}>{s}{deliveryQuotes[s]?.active === false ? " — delivery unavailable" : deliveryQuotes[s]?.fee == null ? " — fee not set" : ""}</option>)}
                 </select>
                 {errors.state ? <p className="err">{errors.state}</p> : null}
+                {state && deliveryQuote?.active && deliveryQuote.fee != null ? <p className="hint">Delivery to {state}: {naira(deliveryQuote.fee)}{deliveryQuote.estimatedDelivery ? ` · ${deliveryQuote.estimatedDelivery}` : ""}. Paid separately.</p> : null}
+                {state && deliveryQuote?.active && deliveryQuote.fee == null ? <p className="err">Delivery pricing is not available for {state} yet. Choose another state or contact us.</p> : null}
+                {state && !deliveryQuote ? <p className="err">Delivery pricing is not available for {state} yet. Choose another state or contact us.</p> : null}
+                {state && deliveryQuote?.active === false ? <p className="err">Delivery is not currently available in {state}. Contact us for help.</p> : null}
               </div>
               {field("city", "City or local government area", { autoComplete: "address-level2" })}
               <div className="sm:col-span-2">
@@ -166,13 +173,14 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
             </ul>
             <dl className="mt-3 space-y-2 border-t border-neutral-200 pt-4 text-[15px]">
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
-              <div className="flex justify-between"><dt className="text-neutral-600">Delivery</dt><dd className="text-right font-medium text-amber-700">Confirmed separately</dd></div>
+              <div className="flex justify-between"><dt className="text-neutral-600">Delivery (paid separately)</dt><dd className="text-right font-medium">{deliveryQuote?.active && deliveryQuote.fee != null ? naira(deliveryQuote.fee) : "Select an available state"}</dd></div>
+              {deliveryQuote?.active && deliveryQuote.fee != null ? <div className="flex justify-between border-t border-neutral-100 pt-2"><dt className="text-neutral-600">Total including delivery</dt><dd className="font-semibold">{quote ? naira(quote.subtotal + deliveryQuote.fee) : "…"}</dd></div> : null}
               <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
             </dl>
-            <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> Delivery fee will be confirmed separately after your order. You can pay for your products now. We will contact you with the delivery charge.</p>
+            <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> {deliveryQuote?.active && deliveryQuote.fee != null ? "Pay for products now. The displayed delivery fee is paid separately before dispatch." : "Choose a state with an active configured delivery fee to continue."}</p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
-            <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0} className="btn btn-primary mt-5 w-full text-base">
+            <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0 || !deliveryQuote || deliveryQuote.active === false || deliveryQuote.fee == null} className="btn btn-primary mt-5 w-full text-base">
               {busy ? "Placing your order..." : "Place order"}
             </button>
             <p className="mt-3 flex gap-2 text-sm text-neutral-500"><IconShield className="h-4 w-4 shrink-0" /> No payment is taken on this page. You pay by bank transfer on the next page.</p>

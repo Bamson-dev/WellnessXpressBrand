@@ -25,6 +25,8 @@ export async function POST(req: Request) {
   } catch (e) {
     const m = (e as Error).message || "";
     if (m.startsWith("stock:")) return Response.json({ errors: { items: `${m.slice(6)} just went out of stock. Update your cart.` } }, { status: 409 });
+    if (m === "delivery:disabled") return Response.json({ errors: { state: "Delivery is not currently available in the selected state. Contact us for help." } }, { status: 400 });
+    if (m === "delivery:unconfigured") return Response.json({ errors: { state: "Delivery pricing is not available for the selected state yet. Please choose another state or contact us." } }, { status: 400 });
     console.error("order create failed", m);
     return Response.json({ error: "We could not place your order. Try again, or message us on WhatsApp." }, { status: 500 });
   }

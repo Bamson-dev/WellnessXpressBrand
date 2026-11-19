@@ -28,6 +28,15 @@ export function deliveryFeeFor(state: string): number | null {
   if (!r || Number(r.active) !== 1 || r.fee == null) return null;
   return Number(r.fee);
 }
+export function deliveryQuoteFor(state: string) {
+  const r = db().prepare("SELECT fee,active,estimated_delivery FROM delivery_zones WHERE state = ?").get(state);
+  if (!r) return null;
+  return {
+    fee: r.fee == null ? null : Number(r.fee),
+    active: Number(r.active) === 1,
+    estimatedDelivery: String(r.estimated_delivery || ""),
+  };
+}
 export function deliveryZones() {
-  return db().prepare("SELECT * FROM delivery_zones").all().map((r) => ({ state: String(r.state), fee: r.fee == null ? null : Number(r.fee), active: Number(r.active) === 1, note: String(r.note) }));
+  return db().prepare("SELECT * FROM delivery_zones").all().map((r) => ({ state: String(r.state), fee: r.fee == null ? null : Number(r.fee), active: Number(r.active) === 1, note: String(r.note), estimatedDelivery: String(r.estimated_delivery || "") }));
 }

@@ -54,7 +54,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
       {o.fulfilment_status !== "cancelled" ? (
         <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
           <h2 className="flex items-center gap-2 text-xl text-amber-950"><IconInfo className="h-6 w-6" /> Delivery is paid separately</h2>
-          <p className="mt-2 text-amber-950">Delivery fee will be confirmed separately after your order. You can pay for your products now. We will contact you with the delivery charge.</p>
+          <p className="mt-2 text-amber-950">{o.delivery_fee != null ? `The delivery fee for ${o.state} is ${naira(o.delivery_fee)} and is paid separately before dispatch. You can pay for your products now.` : "Delivery fee will be confirmed separately after your order. You can pay for your products now. We will contact you with the delivery charge."}</p>
         </section>
       ) : null}
 
@@ -72,7 +72,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Narration</dt><dd className="font-semibold">{o.number}</dd></div>
             </dl>
           ) : <p className="mt-4 rounded-lg bg-amber-50 p-3 text-amber-900">Our bank details are being updated. Message us on WhatsApp for payment details.</p>}
-          <p className="mt-4 text-neutral-700">After completing your product payment, submit your payment confirmation below. We will confirm the delivery fee separately.</p>
+          <p className="mt-4 text-neutral-700">After completing your product payment, submit your payment confirmation below. {o.delivery_fee != null ? "The delivery payment remains separate and must be confirmed before dispatch." : "We will confirm the delivery fee separately."}</p>
           <PaymentConfirmForm number={o.number} token={token} />
           {receiptWa ? <a href={receiptWa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#178a45] hover:underline"><IconWhatsApp /> Or send your receipt on WhatsApp</a> : null}
         </section>
@@ -101,7 +101,9 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
         <dl className="mt-2 space-y-2 border-t border-neutral-200 pt-3 text-[15px]">
           <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd>{naira(o.subtotal)}</dd></div>
           <div className="flex justify-between"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee != null ? naira(o.delivery_fee) : "To be confirmed"}</dd></div>
-          <div className="flex justify-between"><dt className="text-neutral-600">Delivery payment status</dt><dd>{o.delivery_payment_status === "paid" ? "Paid" : "Pending"}</dd></div>
+          {o.delivery_estimate ? <div className="flex justify-between"><dt className="text-neutral-600">Estimated delivery</dt><dd>{String(o.delivery_estimate)}</dd></div> : null}
+          {o.delivery_fee != null ? <div className="flex justify-between"><dt className="text-neutral-600">Total including delivery</dt><dd>{naira(o.subtotal + o.delivery_fee)}</dd></div> : null}
+          <div className="flex justify-between"><dt className="text-neutral-600">Delivery payment status</dt><dd>{o.delivery_payment_status === "paid" ? "Paid" : o.delivery_payment_status === "not_set" ? "Fee to be confirmed" : "Pending"}</dd></div>
           <div className="flex justify-between text-lg font-bold"><dt>Product payment</dt><dd>{naira(o.subtotal)}</dd></div>
         </dl>
         <div className="mt-5 rounded-xl bg-neutral-50 p-4 text-[15px]">
