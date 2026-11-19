@@ -6,6 +6,7 @@ import { listMedia } from "@/lib/media";
 import { saveBannerAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
 import UnsavedGuard from "@/components/admin/UnsavedGuard";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Banner" };
 
@@ -30,7 +31,7 @@ export default async function BannerEdit(
       <h1 className="mt-2 text-2xl">{isNew ? "New banner" : b!.heading || `Banner #${b!.id}`}</h1>
       {b ? <p className="text-sm text-neutral-500">{bannerStatus(b)} · <a href={`/?bannerPreview=${b.id}`} target="_blank" rel="noopener" className="text-brand-700 underline">Preview on the homepage</a></p> : null}
       <div className="mt-3"><Flash msg={searchParams.msg} /></div>
-      <form id="banner-form" action={saveBannerAction} className="mt-2 grid gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2">
+      <AdminForm id="banner-form" action={saveBannerAction} className="mt-2 grid gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2">
         <UnsavedGuard formId="banner-form" />
         {b ? <input type="hidden" name="id" value={b.id} /> : null}
         <label className="text-xs font-semibold text-neutral-600 sm:col-span-2">Heading<input name="heading" defaultValue={b?.heading} maxLength={120} className="admin-input mt-1" /></label>
@@ -47,7 +48,7 @@ export default async function BannerEdit(
         <label className="text-xs font-semibold text-neutral-600">Show from (optional)<input type="date" name="startsAt" defaultValue={b?.startsAt} className="admin-input mt-1" /></label>
         <label className="text-xs font-semibold text-neutral-600">Show until (optional)<input type="date" name="endsAt" defaultValue={b?.endsAt} className="admin-input mt-1" /></label>
         <button className="admin-btn w-fit">{isNew ? "Create banner" : "Save banner"}</button>
-      </form>
+      </AdminForm>
     </div>
   );
 }

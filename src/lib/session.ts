@@ -18,8 +18,20 @@ const unb64u = (s: string) => {
   return Uint8Array.from(b, (c) => c.charCodeAt(0));
 };
 
+let warned = false;
+/**
+ * Signing key for admin sessions. Use ADMIN_SESSION_SECRET (32+ random characters). Without it the key is derived
+ * from ADMIN_PASSWORD so the dashboard keeps working, and a warning is logged once (the secret itself is never logged).
+ * A configured secret that is too short is refused, which keeps admin sign-in closed rather than weakly protected.
+ */
 function secret() {
-  const s = process.env.ADMIN_SESSION_SECRET || (process.env.ADMIN_PASSWORD ? "wx-session:" + process.env.ADMIN_PASSWORD : "");
+  const own = process.env.ADMIN_SESSION_SECRET || "";
+  if (own) return own.length >= 32 ? own : "";
+  if (!warned && process.env.NODE_ENV === "production") {
+    warned = true;
+    console.warn("[admin] ADMIN_SESSION_SECRET is not set; sessions are signed with a key derived from ADMIN_PASSWORD. Set a 32+ character random secret.");
+  }
+  const s = process.env.ADMIN_PASSWORD ? "wx-session:" + process.env.ADMIN_PASSWORD : "";
   return s.length >= 12 ? s : "";
 }
 

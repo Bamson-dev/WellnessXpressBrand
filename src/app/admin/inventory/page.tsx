@@ -3,6 +3,7 @@ import { requirePerm } from "@/lib/auth";
 import { inventoryRows, movements, REASONS } from "@/lib/inventory";
 import { adjustStockAction, setThresholdAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Inventory" };
 const BADGE: Record<string, string> = { out: "bg-red-50 text-red-800", low: "bg-amber-100 text-amber-900", ok: "bg-brand-50 text-brand-900", untracked: "bg-neutral-100 text-neutral-600" };
@@ -39,10 +40,10 @@ export default async function Inventory(
                 <td className="p-3 text-lg font-bold tabular-nums">{r.stock ?? "—"}</td>
                 <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${BADGE[r.status]}`}>{LABEL[r.status]}</span><br /><Link href={`/admin/inventory?v=${r.variantId}`} className="text-xs text-brand-700 underline">History</Link></td>
                 <td className="p-3">
-                  <form action={setThresholdAction} className="flex gap-1"><input type="hidden" name="variantId" value={r.variantId} /><input name="threshold" inputMode="numeric" defaultValue={r.threshold ?? ""} placeholder="—" className="admin-input w-20" aria-label={`Low-stock level for ${r.product} ${r.label}`} /><button className="admin-btn-ghost px-2 py-1">Save</button></form>
+                  <AdminForm action={setThresholdAction} className="flex gap-1"><input type="hidden" name="variantId" value={r.variantId} /><input name="threshold" inputMode="numeric" defaultValue={r.threshold ?? ""} placeholder="—" className="admin-input w-20" aria-label={`Low-stock level for ${r.product} ${r.label}`} /><button className="admin-btn-ghost px-2 py-1">Save</button></AdminForm>
                 </td>
                 <td className="p-3">
-                  <form action={adjustStockAction} className="flex flex-wrap gap-1">
+                  <AdminForm action={adjustStockAction} className="flex flex-wrap gap-1">
                     <input type="hidden" name="variantId" value={r.variantId} />
                     <select name="kind" className="admin-input w-auto" aria-label="Stock action" defaultValue={r.stock == null ? "opening" : "increase"}>
                       {r.stock == null ? <option value="opening">Set opening stock</option> : <><option value="increase">Add received stock</option><option value="decrease">Remove stock</option><option value="correction">Correct count to</option><option value="untrack">Stop tracking</option></>}
@@ -50,7 +51,7 @@ export default async function Inventory(
                     <input name="qty" inputMode="numeric" placeholder="Qty" className="admin-input w-20" aria-label="Quantity" />
                     <input name="note" placeholder="Reason" className="admin-input w-36" aria-label="Reason" />
                     <button className="admin-btn px-3 py-1.5">Save</button>
-                  </form>
+                  </AdminForm>
                 </td>
               </tr>
             ))}

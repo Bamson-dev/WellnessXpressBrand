@@ -4,6 +4,7 @@ import { allBanners, bannerStatus } from "@/lib/banners";
 import { getSetting } from "@/lib/settings";
 import { bannerOpAction, saveHomeHeroAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Banners and homepage" };
 type Hero = { title: string; accent: string; text: string; primaryLabel: string; primaryUrl: string; secondaryLabel: string; secondaryUrl: string };
@@ -13,7 +14,7 @@ export default async function Banners(props: { searchParams: Promise<{ msg?: str
   await requirePerm("banners");
   const banners = allBanners();
   const hero = getSetting<Hero>("homeHero");
-  const op = (id: number, o: string, label: string, cls = "admin-btn-ghost py-1") => <form action={bannerOpAction}><input type="hidden" name="id" value={id} /><input type="hidden" name="op" value={o} /><button className={cls}>{label}</button></form>;
+  const op = (id: number, o: string, label: string, cls = "admin-btn-ghost py-1") => <AdminForm action={bannerOpAction}><input type="hidden" name="id" value={id} /><input type="hidden" name="op" value={o} /><button className={cls}>{label}</button></AdminForm>;
   return (
     <div>
       <Flash msg={searchParams.msg} />
@@ -39,7 +40,7 @@ export default async function Banners(props: { searchParams: Promise<{ msg?: str
                   {op(b.id, "toggle", b.active ? "Switch off" : "Switch on")}{op(b.id, "up", "↑")}{op(b.id, "down", "↓")}{op(b.id, "duplicate", "Duplicate")}
                   <a href={`/?bannerPreview=${b.id}`} target="_blank" rel="noopener" className="admin-btn-ghost py-1">Preview</a>
                   <details><summary className="cursor-pointer px-2 py-1 text-red-700 underline">Delete</summary>
-                    <form action={bannerOpAction} className="mt-1 space-y-1"><input type="hidden" name="id" value={b.id} /><input type="hidden" name="op" value="delete" /><label className="flex items-center gap-1 text-xs"><input type="checkbox" name="confirm" value="yes" required /> Yes, delete</label><button className="admin-btn-danger py-1">Delete banner</button></form>
+                    <AdminForm action={bannerOpAction} className="mt-1 space-y-1"><input type="hidden" name="id" value={b.id} /><input type="hidden" name="op" value="delete" /><label className="flex items-center gap-1 text-xs"><input type="checkbox" name="confirm" value="yes" required /> Yes, delete</label><button className="admin-btn-danger py-1">Delete banner</button></AdminForm>
                   </details>
                 </td>
               </tr>
@@ -48,7 +49,7 @@ export default async function Banners(props: { searchParams: Promise<{ msg?: str
         </table>
       </div>
 
-      <form action={saveHomeHeroAction} className="mt-6 grid gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2">
+      <AdminForm action={saveHomeHeroAction} className="mt-6 grid gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2">
         <h2 className="text-lg sm:col-span-2">Homepage hero text</h2>
         <label className="text-xs font-semibold text-neutral-600">Heading<input name="title" defaultValue={hero.title} maxLength={80} required className="admin-input mt-1" /></label>
         <label className="text-xs font-semibold text-neutral-600">Highlighted words (green)<input name="accent" defaultValue={hero.accent} maxLength={60} className="admin-input mt-1" /></label>
@@ -58,7 +59,7 @@ export default async function Banners(props: { searchParams: Promise<{ msg?: str
         <label className="text-xs font-semibold text-neutral-600">Second button text<input name="secondaryLabel" defaultValue={hero.secondaryLabel} maxLength={40} className="admin-input mt-1" /></label>
         <label className="text-xs font-semibold text-neutral-600">Second button link<input name="secondaryUrl" defaultValue={hero.secondaryUrl} maxLength={200} className="admin-input mt-1" /></label>
         <button className="admin-btn w-fit">Save homepage text</button>
-      </form>
+      </AdminForm>
     </div>
   );
 }

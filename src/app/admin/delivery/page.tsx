@@ -4,6 +4,7 @@ import { bulkDeliveryAction, saveDeliveryAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
 import DeliveryImport from "@/components/admin/DeliveryImport";
 import UnsavedGuard from "@/components/admin/UnsavedGuard";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Delivery" };
 
@@ -26,7 +27,7 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
         Free delivery is on for {covered} of 37 locations.{covered < 37 ? " Customers in switched-off states cannot check out." : ""}
       </p>
 
-      <form action={bulkDeliveryAction} id="bulk" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-[auto_1fr_auto]">
+      <AdminForm action={bulkDeliveryAction} id="bulk" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-[auto_1fr_auto]">
         <select name="op" className="admin-input w-auto" aria-label="Bulk action">
           <option value="eta">Set delivery time</option><option value="note">Set customer note</option>
           <option value="enable">Switch delivery on</option><option value="disable">Switch delivery off</option>
@@ -34,9 +35,9 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
         <input name="bulkEta" placeholder="Text, e.g. 2–4 working days" className="admin-input" aria-label="Bulk text" />
         <button className="admin-btn">Apply to ticked states</button>
         <p className="text-xs text-neutral-500 sm:col-span-3">Tick states in the first column of the table below, then choose an action here.</p>
-      </form>
+      </AdminForm>
 
-      <form action={saveDeliveryAction} className="mt-4 overflow-hidden rounded-xl border border-neutral-200 bg-white" id="zones">
+      <AdminForm action={saveDeliveryAction} className="mt-4 overflow-hidden rounded-xl border border-neutral-200 bg-white" id="zones">
         <UnsavedGuard formId="zones" />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
@@ -59,7 +60,7 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
           </table>
         </div>
         <div className="sticky bottom-0 border-t border-neutral-200 bg-white p-4"><button className="admin-btn">Save delivery settings</button></div>
-      </form>
+      </AdminForm>
 
       <DeliveryImport />
     </div>

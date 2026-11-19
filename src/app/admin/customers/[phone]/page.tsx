@@ -5,6 +5,7 @@ import { getCustomer } from "@/lib/customers";
 import { saveCustomerNoteAction } from "@/app/admin/actions";
 import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, displayPhone, naira } from "@/lib/site";
 import Flash from "@/components/admin/Flash";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Customer" };
 
@@ -63,11 +64,11 @@ export default async function CustomerPage(
           </section>
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 className="text-lg">Customer notes</h2>
-            <form action={saveCustomerNoteAction} className="mt-2 space-y-2">
+            <AdminForm action={saveCustomerNoteAction} className="mt-2 space-y-2">
               <input type="hidden" name="phone" value={c.phone} />
               <textarea name="note" defaultValue={String(c.note?.note || "")} rows={5} maxLength={4000} aria-label="Customer notes" className="admin-input" />
               <button className="admin-btn-ghost">Save notes</button>
-            </form>
+            </AdminForm>
             {c.note ? <p className="mt-1 text-xs text-neutral-500">Last edited {String(c.note.updated_at)} by {String(c.note.updated_by)}</p> : null}
           </section>
         </div>

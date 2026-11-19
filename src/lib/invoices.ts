@@ -75,17 +75,33 @@ export function listInvoices(f: { q?: string; status?: string; page?: number }) 
   return { rows, total, page, pages: Math.max(1, Math.ceil(total / 50)) };
 }
 
-const money = (n: number) => "NGN " + Math.round(n).toLocaleString("en-NG");
-const ascii = (s: string) => s.replace(/[₦]/g, "NGN ").replace(/[–—]/g, "-").replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[^\x20-\x7E]/g, "");
+const money = (n: number) => "₦" + Math.round(n).toLocaleString("en-NG");
+/** Characters the embedded font subset covers (Latin, ₦, common punctuation). Anything else becomes "?" so a PDF never fails. */
+const SAFE = /[\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\u20A6\u2212]/;
+const ascii = (s: string) => [...s.replace(/\s+/g, " ")].map((ch) => (SAFE.test(ch) ? ch : "?")).join("");
 
-/** PDF version of the invoice (A4). Uses the standard Helvetica font, so the naira sign is written as NGN. */
+/** Noto Sans (SIL Open Font License 1.1, see public/fonts/NotoSans-OFL.txt), subset to Latin + ₦. */
+let fontCache: { regular: Uint8Array; bold: Uint8Array } | null = null;
+async function fonts() {
+  if (fontCache) return fontCache;
+  const { readFile } = await import("fs/promises");
+  const path = await import("path");
+  const dir = path.join(process.cwd(), "public", "fonts");
+  fontCache = { regular: await readFile(path.join(dir, "NotoSans-Regular-subset.ttf")), bold: await readFile(path.join(dir, "NotoSans-Bold-subset.ttf")) };
+  return fontCache;
+}
+
+/** PDF version of the invoice (A4), with the naira sign rendered by the embedded Noto Sans font. */
 export async function invoicePdf(inv: Invoice): Promise<Uint8Array> {
-  const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
+  const { PDFDocument, rgb } = await import("pdf-lib");
+  const fontkit = (await import("@pdf-lib/fontkit")).default;
   const doc = await PDFDocument.create();
+  doc.registerFontkit(fontkit);
+  const f = await fonts();
   doc.setTitle(`Invoice ${inv.number}`); doc.setAuthor(site.name); doc.setCreator(site.name);
   const page = doc.addPage([595.28, 841.89]);
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const font = await doc.embedFont(f.regular, { subset: true });
+  const bold = await doc.embedFont(f.bold, { subset: true });
   const green = rgb(0.06, 0.4, 0.13), grey = rgb(0.4, 0.4, 0.4), ink = rgb(0.1, 0.1, 0.1);
   const W = 595.28, M = 48;
   let y = 790;
@@ -127,8 +143,8 @@ export async function invoicePdf(inv: Invoice): Promise<Uint8Array> {
   y -= 12;
   const row = (k: string, v: string, b = false) => { text(k, 380, y, { b, right: true, color: b ? ink : grey }); text(v, W - M - 8, y, { b, right: true }); y -= 16; };
   row("Products subtotal", money(inv.itemsSubtotal));
-  if (inv.discount) row(`Discount${inv.couponCode ? ` (${inv.couponCode})` : ""}`, "- " + money(inv.discount));
-  row("Delivery", inv.freeDelivery ? "FREE (NGN 0)" : inv.deliveryFee == null ? "To be confirmed" : money(inv.deliveryFee));
+  if (inv.discount) row(`Discount${inv.couponCode ? ` (${inv.couponCode})` : ""}`, "−" + money(inv.discount));
+  row("Delivery", inv.freeDelivery ? "FREE (₦0)" : inv.deliveryFee == null ? "To be confirmed" : money(inv.deliveryFee));
   row("Total", money(inv.total), true);
   row("Amount paid (verified)", money(inv.amountPaid));
   row("Balance due", money(inv.balance), true);

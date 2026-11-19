@@ -353,6 +353,11 @@ await step("coupons", async () => {
   ok(q1("SELECT product_ids p FROM coupons WHERE code='OILONLY'").p === `[${oilId}]`, "product picker saves the chosen product");
   await make({ code: "ONEUSE", discountType: "fixed", discountValue: 1000, usageLimit: 1, customerLimit: 5, active: true });
   ok(/percentage from 1 to 100/.test(await make({ code: "BAD150", discountType: "percent", discountValue: 150, active: true })), "percentage above 100 rejected");
+  {
+    const f = admin.locator("form").filter({ has: admin.locator("button:has-text('Create coupon')") });
+    ok(await f.locator('input[name="code"]').inputValue() === "BAD150" && await f.locator('input[name="discountValue"]').inputValue() === "150", "typed coupon values kept after a validation error");
+    ok(await f.locator('input[name="discountValue"][aria-invalid="true"]').count() === 1 && /percentage from 1 to 100/.test(await f.locator("[data-field-error]").innerText()), "error shown next to the field");
+  }
   ok(/already in use/.test(await make({ code: "SAVE10", discountType: "fixed", discountValue: 5, active: true })), "duplicate coupon code rejected");
   ok(q1("SELECT code FROM coupons WHERE code='SAVE10'") && !q1("SELECT 1 x FROM coupons WHERE code='BAD150'"), "coupons stored; invalid one not stored");
   const v = async (code, items = [{ variantId: coffee(), qty: 2 }]) => (await postJ("/api/coupons/validate", { code, phone: "08030000001", items })).json();
@@ -500,8 +505,18 @@ await step("staff permissions and customer privacy", async () => {
   ok(sp.url().endsWith(`/admin/orders/${target}`) && (await sp.locator("text=Confirm product payment").count()) === 0 && (await sp.locator("text=Payment verification permission").count()) === 1, "staff with Orders can view an order but sees no payment verification");
   // Forge the owner's payment form directly against the server as staff: the server must refuse.
   await admin.goto(B + `/admin/orders/${target}`);
-  const actionField = await admin.locator("form:has(button:has-text('Confirm product payment')) input[name^='$ACTION_ID_']").getAttribute("name");
-  const forged = await sp.request.post(B + `/admin/orders/${target}`, { headers: { origin: B }, multipart: { [actionField]: "", id: String(target), confirm: "yes", note: "forged" }, maxRedirects: 0 });
+  // Capture the owner's real server-action request (and stop it), then replay it with the staff session.
+  let captured = null;
+  await admin.route(`**/admin/orders/${target}`, async (route) => {
+    const req = route.request();
+    if (req.method() === "POST" && req.headers()["next-action"]) { captured = { headers: req.headers(), body: req.postDataBuffer() }; return route.abort(); }
+    return route.continue();
+  });
+  await admin.locator("form:has(button:has-text('Confirm product payment')) input[name=confirm]").check();
+  await admin.locator("button:has-text('Confirm product payment')").click();
+  await admin.waitForTimeout(1500); await admin.unroute(`**/admin/orders/${target}`);
+  ok(captured && q1("SELECT payment_status s FROM orders WHERE id=?", target).s !== "paid", "owner request captured without being sent");
+  const forged = await sp.request.post(B + `/admin/orders/${target}`, { headers: { origin: B, "next-action": captured.headers["next-action"], "content-type": captured.headers["content-type"], accept: "text/x-component" }, data: captured.body, maxRedirects: 0 });
   ok(q1("SELECT payment_status s FROM orders WHERE id=?", target).s !== "paid", `forged payment verification by staff is refused on the server (HTTP ${forged.status()})`);
   // Owner grants Payment verification and Invoices.
   await admin.goto(B + "/admin/users");
@@ -511,6 +526,8 @@ await step("staff permissions and customer privacy", async () => {
   ok(JSON.parse(q1("SELECT permissions p FROM users WHERE email='staff@test.local'").p).sort().join() === "dashboard,invoices,orders,payments", "owner grants permissions");
   await sp.goto(B + "/admin/invoices"); ok(sp.url().endsWith("/admin/invoices"), "granted permission works on the next page load");
   await sp.goto(B + `/admin/orders/${target}`); ok((await sp.locator("text=Confirm product payment").count()) === 1, "staff now sees payment verification");
+  await sp.request.post(B + `/admin/orders/${target}`, { headers: { origin: B, "next-action": captured.headers["next-action"], "content-type": captured.headers["content-type"], accept: "text/x-component" }, data: captured.body, maxRedirects: 0 });
+  ok(q1("SELECT payment_status s, verified_by v FROM orders WHERE id=?", target).v === "staff@test.local", "the same replayed request works once the permission is granted (control check)");
   ok((await sp.request.get(B + `/api/admin/invoices/${target}`)).headers()["content-type"] === "application/pdf", "staff with Invoices can download a PDF");
   await admin.goto(B + "/admin/users");
   for (const p of ["payments", "invoices"]) await admin.locator("article", { hasText: "staff@test.local" }).locator(`input[name="perms"][value="${p}"]`).uncheck();
@@ -560,6 +577,7 @@ await step("invoices", async () => {
   const body = await pdf.body();
   ok(pdf.headers()["content-type"] === "application/pdf" && body.slice(0, 5).toString() === "%PDF-" && body.length > 1500, `PDF download works (${body.length} bytes)`);
   fs.writeFileSync(path.join(SHOTS, "invoice.pdf"), body);
+  ok(body.includes(Buffer.from("NotoSans")), "PDF embeds the Noto Sans font (naira sign support)");
   const numbers = qa("SELECT number FROM invoices").map((r) => r.number);
   ok(new Set(numbers).size === numbers.length, `invoice numbers are unique (${numbers.length})`);
   await admin.goto(B + "/admin/invoices?q=" + encodeURIComponent(o.number));
@@ -600,6 +618,7 @@ await step("banners and homepage", async () => {
   await admin.setInputFiles('input[name="desktopFile"]', path.join(FIX, "fixture-product.png"));
   await go(admin, admin.locator("button:has-text('Create banner')"));
   ok(/must start with/.test(await flash(admin)) && !q1("SELECT 1 x FROM banners"), "unsafe banner link rejected");
+  ok(await admin.inputValue('input[name="heading"]') === "Test promo banner" && await admin.inputValue('textarea[name="description"]') === "Banner created by the automated test." && await admin.locator('input[name="buttonUrl"][aria-invalid="true"]').count() === 1, "banner form keeps typed values and marks the bad link");
   await admin.goto(B + "/admin/banners/new");
   await admin.fill('input[name="heading"]', "Test promo banner"); await admin.fill('textarea[name="description"]', "Banner created by the automated test.");
   await admin.fill('input[name="buttonText"]', "Shop combos"); await admin.fill('input[name="buttonUrl"]', "/category/combos");

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { PERMISSIONS, parsePermissions } from "@/lib/permissions";
 import { addUserAction, resetUserPasswordAction, setUserPermissionsAction, toggleUserAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Staff" };
 
@@ -37,25 +38,25 @@ export default async function Users(props: { searchParams: Promise<{ msg?: strin
                 <p className="font-semibold">{String(u.name)} <span className="font-normal text-neutral-500">· {String(u.email)}</span></p>
                 <p className="text-sm"><span className="rounded-full bg-neutral-100 px-2 py-0.5">{String(u.role)}</span> <span className={`ml-1 rounded-full px-2 py-0.5 ${Number(u.active) ? "bg-brand-50 text-brand-900" : "bg-red-50 text-red-800"}`}>{Number(u.active) ? "Active" : "Disabled"}</span></p>
               </div>
-              <form action={setUserPermissionsAction} className="mt-3 space-y-2">
+              <AdminForm action={setUserPermissionsAction} className="mt-3 space-y-2">
                 <input type="hidden" name="id" value={String(u.id)} />
                 <label className="flex items-center gap-2 text-sm font-semibold">Role
                   <select name="role" defaultValue={String(u.role)} className="admin-input w-auto py-1" disabled={self || locked}><option value="staff">Staff</option>{me.role === "owner" || u.role === "owner" ? <option value="owner">Owner (full access)</option> : null}</select>
                 </label>
                 <PermGrid checked={u.role === "owner" ? PERMISSIONS.map(([k]) => k) : perms} disabled={self || locked} />
                 {!self && !locked ? <button className="admin-btn">Save permissions</button> : <p className="text-xs text-neutral-500">{self ? "You cannot change your own access." : "Only an owner can change an owner account."}</p>}
-              </form>
+              </AdminForm>
               {!self && !locked ? (
                 <div className="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3">
-                  <form action={toggleUserAction}><input type="hidden" name="id" value={String(u.id)} /><button className="admin-btn-ghost py-1">{Number(u.active) ? "Disable account" : "Enable account"}</button></form>
-                  <form action={resetUserPasswordAction} className="flex gap-1"><input type="hidden" name="id" value={String(u.id)} /><input name="password" type="password" placeholder="New password" aria-label={`New password for ${String(u.email)}`} className="admin-input w-40 py-1" autoComplete="new-password" /><button className="admin-btn-ghost py-1">Set password</button></form>
+                  <AdminForm action={toggleUserAction}><input type="hidden" name="id" value={String(u.id)} /><button className="admin-btn-ghost py-1">{Number(u.active) ? "Disable account" : "Enable account"}</button></AdminForm>
+                  <AdminForm action={resetUserPasswordAction} className="flex gap-1"><input type="hidden" name="id" value={String(u.id)} /><input name="password" type="password" placeholder="New password" aria-label={`New password for ${String(u.email)}`} className="admin-input w-40 py-1" autoComplete="new-password" /><button className="admin-btn-ghost py-1">Set password</button></AdminForm>
                 </div>
               ) : null}
             </article>
           );
         }) : <p className="rounded-xl border border-neutral-200 bg-white p-4 text-neutral-500">No staff accounts yet.</p>}
       </div>
-      <form action={addUserAction} className="mt-6 space-y-3 rounded-xl border border-neutral-200 bg-white p-4">
+      <AdminForm action={addUserAction} className="mt-6 space-y-3 rounded-xl border border-neutral-200 bg-white p-4">
         <h2 className="text-lg">Add a staff account</h2>
         <div className="grid gap-2 sm:grid-cols-4">
           <input name="name" placeholder="Name" aria-label="Name" className="admin-input" required />
@@ -65,7 +66,7 @@ export default async function Users(props: { searchParams: Promise<{ msg?: strin
         </div>
         <PermGrid checked={["dashboard", "orders"]} />
         <button className="admin-btn">Add user</button>
-      </form>
+      </AdminForm>
     </div>
   );
 }

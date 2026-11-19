@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: { default: "Admin", template: "%s | A
 const outfit = localFont({ src: "../fonts/Outfit-latin.woff2", variable: "--font-outfit", display: "swap", weight: "300 800" });
 
 import { ADMIN_NAV } from "@/lib/admin-nav";
+import AdminForm from "@/components/admin/AdminForm";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const a = await currentAdmin();
@@ -23,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="hidden text-sm text-neutral-500 sm:inline">{a.email} · {a.role}</span>
             <div className="ml-auto flex items-center gap-2">
               <Link href="/" className="admin-btn-ghost" target="_blank">View store</Link>
-              <form action={logoutAction}><button className="admin-btn-ghost">Sign out</button></form>
+              <AdminForm action={logoutAction}><button className="admin-btn-ghost">Sign out</button></AdminForm>
             </div>
           </div>
           <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2" aria-label="Admin">

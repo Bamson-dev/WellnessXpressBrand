@@ -6,6 +6,7 @@ import { getContact } from "@/lib/settings";
 import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, displayPhone, naira } from "@/lib/site";
 import Flash from "@/components/admin/Flash";
 import { markDeliveryPaidAction, saveDispatchAction, markPaymentFailedAction, saveNotesAction, setDeliveryFeeAction, setFulfilmentAction, unverifyPaymentAction, verifyPaymentAction } from "@/app/admin/actions";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Order" };
 
@@ -47,11 +48,11 @@ export default async function OrderDetail(
             <section className="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
               <h2 className="text-lg">Set the delivery fee</h2>
               <p className="mt-1 text-sm text-amber-900">Agree the delivery charge with the customer, record it here, then send the separate delivery payment message.</p>
-              <form action={setDeliveryFeeAction} className="mt-3 flex flex-wrap gap-2">
+              <AdminForm action={setDeliveryFeeAction} className="mt-3 flex flex-wrap gap-2">
                 <input type="hidden" name="id" value={o.id} />
                 <input name="fee" inputMode="numeric" placeholder="Delivery fee in ₦" className="admin-input w-48" required />
                 <button className="admin-btn">Save fee</button>
-              </form>
+              </AdminForm>
             </section>
           ) : null}
 
@@ -91,26 +92,26 @@ export default async function OrderDetail(
               <div className="mt-4 rounded-lg bg-neutral-50 p-4">
                 <p className="text-sm font-semibold">Check your {bank.bank} account for the product payment of {naira(o.subtotal)} before you confirm.</p>
                 <p className="mt-1 text-xs text-neutral-500">A receipt or reference from the customer is not proof of payment. Confirm only when you see the money in the account.</p>
-                <form action={verifyPaymentAction} className="mt-3 space-y-2">
+                <AdminForm action={verifyPaymentAction} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={o.id} />
                   <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(o.subtotal)} arrive for the products in this order.</label>
                   <input name="note" placeholder="Note (optional), for example bank reference" className="admin-input" />
                   <button className="admin-btn">Confirm product payment</button>
-                </form>
+                </AdminForm>
                 {o.payment_status !== "payment_failed" ? (
-                  <form action={markPaymentFailedAction} className="mt-3 flex flex-wrap gap-2 border-t border-neutral-200 pt-3">
+                  <AdminForm action={markPaymentFailedAction} className="mt-3 flex flex-wrap gap-2 border-t border-neutral-200 pt-3">
                     <input type="hidden" name="id" value={o.id} />
                     <input name="note" placeholder="Reason (optional)" className="admin-input max-w-xs" />
                     <button className="admin-btn-danger">Mark payment failed</button>
-                  </form>
+                  </AdminForm>
                 ) : null}
               </div>
             ) : a.role === "owner" ? (
-              <form action={unverifyPaymentAction} className="mt-4 flex flex-wrap gap-2">
+              <AdminForm action={unverifyPaymentAction} className="mt-4 flex flex-wrap gap-2">
                 <input type="hidden" name="id" value={o.id} />
                 <input name="note" placeholder="Reason" className="admin-input max-w-xs" required />
                 <button className="admin-btn-danger">Undo payment confirmation</button>
-              </form>
+              </AdminForm>
             ) : null}
           </section>
 
@@ -123,13 +124,13 @@ export default async function OrderDetail(
                 {row("Estimated time", String(o.delivery_eta || "Not set"))}
                 {row("Dispatched", o.dispatched_at ? String(o.dispatched_at) : "Not yet")}
               </dl>
-              <form action={saveDispatchAction} className="mt-3 grid gap-2 sm:grid-cols-2">
+              <AdminForm action={saveDispatchAction} className="mt-3 grid gap-2 sm:grid-cols-2">
                 <input type="hidden" name="id" value={o.id} />
                 <label className="text-xs font-semibold text-neutral-600">Courier or rider<input name="courier" defaultValue={String(o.courier || "")} maxLength={80} className="admin-input mt-1" /></label>
                 <label className="text-xs font-semibold text-neutral-600">Tracking reference<input name="tracking" defaultValue={String(o.tracking_reference || "")} maxLength={80} className="admin-input mt-1" /></label>
                 <label className="text-xs font-semibold text-neutral-600 sm:col-span-2">Dispatch note (internal)<input name="dispatchNote" defaultValue={String(o.dispatch_note || "")} maxLength={300} className="admin-input mt-1" /></label>
                 <button className="admin-btn w-fit">Save dispatch details</button>
-              </form>
+              </AdminForm>
               <p className="mt-2 text-xs text-neutral-500">The customer sees the courier and tracking reference on their order page.</p>
             </section>
           ) : null}
@@ -144,43 +145,43 @@ export default async function OrderDetail(
               {row("Fee source", o.delivery_fee_source === "state_settings" ? `Delivery settings for ${o.state} at checkout${o.delivery_eta ? ` · ${String(o.delivery_eta)}` : ""}` : o.delivery_fee_source === "admin" ? "Set by admin on this order" : "—")}
             </dl>
             {o.delivery_fee != null && o.delivery_payment_status !== "paid" && o.fulfilment_status !== "cancelled" ? (
-              <form action={setDeliveryFeeAction} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+              <AdminForm action={setDeliveryFeeAction} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                 <input type="hidden" name="id" value={o.id} />
                 <label htmlFor="newfee" className="text-neutral-600">Change fee for this order</label>
                 <input id="newfee" name="fee" inputMode="numeric" defaultValue={o.delivery_fee} className="admin-input w-32" required />
                 <button className="admin-btn-ghost">Update fee</button>
-              </form>
+              </AdminForm>
             ) : null}
             {o.delivery_fee != null && o.delivery_payment_status !== "paid" ? (
-              <form action={markDeliveryPaidAction} className="mt-3 space-y-2 rounded-lg bg-neutral-50 p-4">
+              <AdminForm action={markDeliveryPaidAction} className="mt-3 space-y-2 rounded-lg bg-neutral-50 p-4">
                 <input type="hidden" name="id" value={o.id} />
                 <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(o.delivery_fee)} arrive for delivery.</label>
                 <input name="reference" placeholder="Delivery payment reference (optional)" className="admin-input" />
                 <button className="admin-btn">Confirm delivery payment</button>
-              </form>
+              </AdminForm>
             ) : null}
           </section> : null}
 
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 className="text-lg">Fulfilment</h2>
-            <form action={setFulfilmentAction} className="mt-3 flex flex-wrap gap-2">
+            <AdminForm action={setFulfilmentAction} className="mt-3 flex flex-wrap gap-2">
               <input type="hidden" name="id" value={o.id} />
               <select name="status" defaultValue={o.fulfilment_status} className="admin-input w-auto">
                 {Object.entries(FULFILMENT_STATUS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
               <input name="note" placeholder="Note (optional), for example rider name" className="admin-input max-w-xs" />
               <button className="admin-btn">Update status</button>
-            </form>
+            </AdminForm>
             <p className="mt-2 text-xs text-neutral-500">Processing, Shipped and Delivered need a confirmed payment. Cancelling puts tracked stock back.</p>
           </section>
 
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 className="text-lg">Admin notes</h2>
-            <form action={saveNotesAction} className="mt-3 space-y-2">
+            <AdminForm action={saveNotesAction} className="mt-3 space-y-2">
               <input type="hidden" name="id" value={o.id} />
               <textarea name="notes" defaultValue={o.admin_notes} rows={4} className="admin-input" />
               <button className="admin-btn-ghost">Save notes</button>
-            </form>
+            </AdminForm>
           </section>
         </div>
 

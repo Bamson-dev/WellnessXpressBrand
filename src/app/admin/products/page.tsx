@@ -4,6 +4,7 @@ import { allProductsAdmin, getCategories } from "@/lib/catalog";
 import { archiveProductAction, bulkProductsAction, createProductAction, duplicateProductAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
 import { naira } from "@/lib/site";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Products" };
 
@@ -45,11 +46,11 @@ export default async function Products(
     <div>
       <Flash msg={searchParams.msg} />
       <h1 className="text-2xl">Products and combo sets</h1>
-      <form action={createProductAction} className="mt-4 flex flex-wrap gap-2 rounded-xl border border-neutral-200 bg-white p-4">
+      <AdminForm action={createProductAction} className="mt-4 flex flex-wrap gap-2 rounded-xl border border-neutral-200 bg-white p-4">
         <input name="name" placeholder="New product name" className="admin-input max-w-xs" required />
         <select name="type" className="admin-input w-auto"><option value="single">Individual product</option><option value="combo">Combo set</option></select>
         <button className="admin-btn">Add product</button>
-      </form>
+      </AdminForm>
       <form method="get" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-7">
         <input name="q" defaultValue={searchParams.q} placeholder="Search name or SKU" className="admin-input" />
         <select name="status" defaultValue={status} className="admin-input"><option value="all">All statuses</option>{["published", "draft", "pending_confirmation", "archived"].map((x) => <option key={x} value={x}>{x.replaceAll("_", " ")}</option>)}</select>
@@ -60,11 +61,11 @@ export default async function Products(
         <select name="sort" defaultValue={sort} className="admin-input"><option value="default">Catalog order</option><option value="name">Name</option><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="price">Price</option><option value="stock">Stock quantity</option></select>
         <button className="admin-btn">Apply filters</button>
       </form>
-      <form action={bulkProductsAction} id="bulk-products" className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white p-3 text-sm">
+      <AdminForm action={bulkProductsAction} id="bulk-products" className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white p-3 text-sm">
         <span className="text-neutral-600">With ticked products:</span>
         <select name="op" className="admin-input w-auto" aria-label="Bulk action"><option value="publish">Publish</option><option value="draft">Move to draft</option><option value="feature">Feature on home page</option><option value="unfeature">Stop featuring</option><option value="archive">Archive</option></select>
         <button className="admin-btn">Apply</button>
-      </form>
+      </AdminForm>
       <p className="mt-3 text-sm text-neutral-500">{all.length} matching products · page {Math.min(page, pages)} of {pages}</p>
       <div className="mt-4 overflow-x-auto rounded-xl border border-neutral-200 bg-white">
         <table className="w-full text-sm">
@@ -86,8 +87,8 @@ export default async function Products(
                     {p.featured ? <span className="ml-2 rounded bg-brand-50 px-1.5 text-xs text-brand-900">Featured</span> : null}
                     {flags ? <p className="mt-1 text-xs font-semibold text-amber-700">{flags} price{flags === 1 ? "" : "s"} to confirm</p> : null}
                     <div className="mt-2 flex flex-wrap gap-3">
-                      <form action={duplicateProductAction}><input type="hidden" name="id" value={p.id} /><button className="text-xs font-semibold text-brand-700 underline">Duplicate</button></form>
-                      {p.status !== "archived" ? <details className="text-xs"><summary className="cursor-pointer text-red-700 underline">Archive</summary><form action={archiveProductAction} className="mt-1 rounded border border-red-200 bg-red-50 p-2"><input type="hidden" name="id" value={p.id} /><p className="mb-1 text-red-900">This hides the product. Existing order records remain.</p><button className="font-semibold text-red-800 underline">Confirm archive</button></form></details> : null}
+                      <AdminForm action={duplicateProductAction}><input type="hidden" name="id" value={p.id} /><button className="text-xs font-semibold text-brand-700 underline">Duplicate</button></AdminForm>
+                      {p.status !== "archived" ? <details className="text-xs"><summary className="cursor-pointer text-red-700 underline">Archive</summary><AdminForm action={archiveProductAction} className="mt-1 rounded border border-red-200 bg-red-50 p-2"><input type="hidden" name="id" value={p.id} /><p className="mb-1 text-red-900">This hides the product. Existing order records remain.</p><button className="font-semibold text-red-800 underline">Confirm archive</button></AdminForm></details> : null}
                     </div>
                       </div>
                     </div>

@@ -6,6 +6,7 @@ import Flash from "@/components/admin/Flash";
 import UnsavedGuard from "@/components/admin/UnsavedGuard";
 import { listMedia } from "@/lib/media";
 import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOrderAction, replaceImageAction, saveMediaMetaAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Edit product" };
 
@@ -35,7 +36,7 @@ export default async function EditProduct(
       {p.reviewNote ? <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>Needs confirmation:</strong> {p.reviewNote}</p> : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
-        <form action={saveProductAction} id="product-form" className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5">
+        <AdminForm action={saveProductAction} id="product-form" className="space-y-4 rounded-xl border border-neutral-200 bg-white p-5">
           <UnsavedGuard formId="product-form" />
           <input type="hidden" name="id" value={p.id} />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -62,7 +63,7 @@ export default async function EditProduct(
           <label className="block"><L>Related products (slugs, comma separated)</L><input name="related" defaultValue={p.related.join(", ")} className="admin-input" /></label>
           <label className="block"><L>Internal note: what still needs confirmation</L><textarea name="review" defaultValue={p.reviewNote} rows={2} className="admin-input" /></label>
           <button className="admin-btn">Save product</button>
-        </form>
+        </AdminForm>
 
         <div className="space-y-5">
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
@@ -77,43 +78,43 @@ export default async function EditProduct(
                     <img src={src} alt={m?.alt || ""} className="h-24 w-24 shrink-0 rounded bg-brand-50 object-contain" />
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                        {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="first" /><button className="text-brand-700 underline">Make main</button></form> : <span className="font-semibold text-brand-700">Main photo</span>}
-                        {i > 0 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="up" /><button aria-label={`Move photo ${i + 1} up`} className="text-neutral-600 underline">Move up</button></form> : null}
-                        {i < p.images.length - 1 ? <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="down" /><button aria-label={`Move photo ${i + 1} down`} className="text-neutral-600 underline">Move down</button></form> : null}
-                        <form action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="remove" /><button className="text-red-700 underline">Remove from product</button></form>
+                        {i > 0 ? <AdminForm action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="first" /><button className="text-brand-700 underline">Make main</button></AdminForm> : <span className="font-semibold text-brand-700">Main photo</span>}
+                        {i > 0 ? <AdminForm action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="up" /><button aria-label={`Move photo ${i + 1} up`} className="text-neutral-600 underline">Move up</button></AdminForm> : null}
+                        {i < p.images.length - 1 ? <AdminForm action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="down" /><button aria-label={`Move photo ${i + 1} down`} className="text-neutral-600 underline">Move down</button></AdminForm> : null}
+                        <AdminForm action={imageOrderAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} /><input type="hidden" name="op" value="remove" /><button className="text-red-700 underline">Remove from product</button></AdminForm>
                       </div>
                       {m ? (
-                        <form action={saveMediaMetaAction} className="flex flex-wrap gap-1">
+                        <AdminForm action={saveMediaMetaAction} className="flex flex-wrap gap-1">
                           <input type="hidden" name="id" value={m.id} /><input type="hidden" name="back" value={`/admin/products/${p.id}`} />
                           <input name="alt" defaultValue={m.alt} placeholder="Alt text" className="admin-input min-w-0 flex-1 py-1" aria-label={`Alt text for photo ${i + 1}`} />
                           <input name="caption" defaultValue={m.caption} placeholder="Caption" className="admin-input min-w-0 flex-1 py-1" aria-label={`Caption for photo ${i + 1}`} />
                           <button className="admin-btn-ghost px-2 py-1 text-xs">Save</button>
-                        </form>
+                        </AdminForm>
                       ) : null}
-                      <form action={replaceImageAction} className="flex flex-wrap items-center gap-1 text-xs">
+                      <AdminForm action={replaceImageAction} className="flex flex-wrap items-center gap-1 text-xs">
                         <input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} />
                         <input type="file" name="image" accept="image/jpeg,image/png,image/webp" className="max-w-[180px] text-xs" aria-label={`Replacement for photo ${i + 1}`} required />
                         <button className="text-brand-700 underline">Replace</button>
-                      </form>
+                      </AdminForm>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <form action={uploadImageAction} className="mt-3 space-y-2">
+            <AdminForm action={uploadImageAction} className="mt-3 space-y-2">
               <input type="hidden" name="productId" value={p.id} />
               <input type="file" name="image" multiple accept="image/jpeg,image/png,image/webp" className="block w-full text-sm" required aria-label="Upload photos" />
               <button className="admin-btn-ghost">Upload photos</button>
-            </form>
+            </AdminForm>
             {library.length ? (
-              <form action={addFromLibraryAction} className="mt-3 flex gap-2">
+              <AdminForm action={addFromLibraryAction} className="mt-3 flex gap-2">
                 <input type="hidden" name="productId" value={p.id} />
                 <select name="mediaId" className="admin-input" aria-label="Image from library" required defaultValue="">
                   <option value="" disabled>Add from media library…</option>
                   {library.map((m) => <option key={m.id} value={m.id}>{m.originalName || m.url.split("/").pop()}{m.alt ? ` — ${m.alt}` : ""}</option>)}
                 </select>
                 <button className="admin-btn-ghost">Add</button>
-              </form>
+              </AdminForm>
             ) : null}
             <p className="mt-2 text-xs text-neutral-500">Use real photos of the actual packaging. Square images on a light background look best.</p>
           </section>
@@ -125,7 +126,7 @@ export default async function EditProduct(
         <p className="text-sm text-neutral-500">Each option (size or duration) has its own price, SKU and stock. Leave stock empty to sell without tracking stock.</p>
         <div className="mt-3 space-y-3">
           {[...p.variants, null].map((v, i) => (
-            <form key={v?.id ?? "new"} action={saveVariantAction} className={`grid gap-2 rounded-lg border p-3 sm:grid-cols-6 lg:grid-cols-12 ${v?.needsConfirmation ? "border-amber-300 bg-amber-50/50" : "border-neutral-200"}`}>
+            <AdminForm key={v?.id ?? "new"} action={saveVariantAction} className={`grid gap-2 rounded-lg border p-3 sm:grid-cols-6 lg:grid-cols-12 ${v?.needsConfirmation ? "border-amber-300 bg-amber-50/50" : "border-neutral-200"}`}>
               <input type="hidden" name="productId" value={p.id} />
               {v ? <input type="hidden" name="variantId" value={v.id} /> : null}
               <label className="lg:col-span-2"><L>{v ? "Option" : "New option"}</L><input name="label" defaultValue={v?.label} placeholder="e.g. Big" className="admin-input" required /></label>
@@ -142,13 +143,13 @@ export default async function EditProduct(
                 <button className="admin-btn py-1.5">{v ? "Save" : "Add option"}</button>
               </div>
               {v?.priceSource ? <p className="text-xs text-neutral-500 sm:col-span-6 lg:col-span-12">Source: {v.priceSource}</p> : null}
-            </form>
+            </AdminForm>
           ))}
         </div>
         {p.variants.length ? (
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             {p.variants.map((v) => (
-              <form key={v.id} action={deleteVariantAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="variantId" value={v.id} /><button className="text-red-700 underline">Delete “{v.label}”</button></form>
+              <AdminForm key={v.id} action={deleteVariantAction}><input type="hidden" name="productId" value={p.id} /><input type="hidden" name="variantId" value={v.id} /><button className="text-red-700 underline">Delete “{v.label}”</button></AdminForm>
             ))}
           </div>
         ) : null}
@@ -158,11 +159,11 @@ export default async function EditProduct(
         <details className="mt-5 rounded-xl border border-red-200 bg-red-50 p-5 text-sm">
           <summary className="cursor-pointer font-semibold text-red-800">Delete this product permanently</summary>
           <p className="mt-2 text-red-900">Only possible if the product was never ordered and is not part of a combo. Otherwise it stays archived for your records.</p>
-          <form action={deleteProductAction} className="mt-2 flex flex-wrap gap-2">
+          <AdminForm action={deleteProductAction} className="mt-2 flex flex-wrap gap-2">
             <input type="hidden" name="id" value={p.id} />
             <input name="confirm" placeholder={`Type: ${p.name}`} className="admin-input max-w-xs" aria-label="Type the product name to confirm" />
             <button className="admin-btn-danger">Delete permanently</button>
-          </form>
+          </AdminForm>
         </details>
       ) : null}
 
@@ -170,7 +171,7 @@ export default async function EditProduct(
         <section className="mt-5 rounded-xl border border-neutral-200 bg-white p-5">
           <h2 className="text-lg">What is in this set</h2>
           <p className="text-sm text-neutral-500">Choose each product and record its size and quantity. Leave size empty if not yet confirmed; the store then asks customers to check on WhatsApp.</p>
-          <form action={saveComboItemsAction} className="mt-3 space-y-2">
+          <AdminForm action={saveComboItemsAction} className="mt-3 space-y-2">
             <input type="hidden" name="productId" value={p.id} />
             {comboRows.map((it, i) => (
               <div key={i} className="grid gap-2 sm:grid-cols-4">
@@ -184,7 +185,7 @@ export default async function EditProduct(
               </div>
             ))}
             <button className="admin-btn">Save set contents</button>
-          </form>
+          </AdminForm>
         </section>
       ) : null}
     </div>

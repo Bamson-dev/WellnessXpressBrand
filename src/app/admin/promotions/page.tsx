@@ -4,6 +4,7 @@ import { allProductsAdmin, getCategories } from "@/lib/catalog";
 import { deleteCouponAction, saveCouponAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
 import ProductPicker from "@/components/admin/ProductPicker";
+import AdminForm from "@/components/admin/AdminForm";
 
 export const metadata = { title: "Promotions and coupons" };
 const Field = ({ label, name, ...props }: { label: string; name: string } & React.InputHTMLAttributes<HTMLInputElement>) => <label className="block text-xs font-semibold text-neutral-600">{label}<input name={name} className="admin-input mt-1" {...props} /></label>;
@@ -23,7 +24,7 @@ export default async function Promotions(props: { searchParams: Promise<{ msg?: 
   const coupons = db().prepare("SELECT c.*, (SELECT COUNT(*) FROM coupon_redemptions r WHERE r.coupon_id=c.id) uses FROM coupons c ORDER BY c.id DESC").all();
   const products = allProductsAdmin();
   const categories = getCategories(true);
-  const editor = (coupon?: Record<string, unknown>) => <form action={saveCouponAction} className="grid gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+  const editor = (coupon?: Record<string, unknown>) => <AdminForm action={saveCouponAction} className="grid gap-3 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
     {coupon ? <input type="hidden" name="id" value={String(coupon.id)} /> : null}
     <Field label="Code" name="code" defaultValue={String(coupon?.code || "")} placeholder="WELCOME10" required maxLength={40} />
     <label className="block text-xs font-semibold text-neutral-600">Discount type<select name="discountType" defaultValue={String(coupon?.discount_type || "percent")} className="admin-input mt-1"><option value="percent">Percentage</option><option value="fixed">Fixed amount (₦)</option></select></label>
@@ -37,12 +38,12 @@ export default async function Promotions(props: { searchParams: Promise<{ msg?: 
     <ProductPicker name="categorySlugs" label="Or limit to these categories (optional)" emptyText="All categories" initial={csvValues(coupon?.category_slugs).split(", ").filter(Boolean)} items={categories.map((c) => ({ id: c.slug, label: c.name }))} />
     <label className="flex min-h-10 items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={coupon ? Number(coupon.active) === 1 : false} className="h-4 w-4 accent-brand-700" /> Active</label>
     <button className="admin-btn w-fit">{coupon ? "Save coupon" : "Create coupon"}</button>
-  </form>;
+  </AdminForm>;
   return <div>
     <Flash msg={searchParams.msg} />
     <h1 className="text-2xl">Promotions and coupons</h1>
     <p className="mt-1 max-w-3xl text-sm text-neutral-600">A coupon discounts eligible product lines only; delivery stays separate. Checkout validates the code and limits again on the server. Product IDs and category slugs define optional eligible items; when both are set, either restriction can qualify a line.</p>
     <section className="mt-4"><h2 className="mb-2 text-lg font-semibold">Create coupon</h2>{editor()}</section>
-    <section className="mt-6"><h2 className="mb-2 text-lg font-semibold">Existing coupons ({coupons.length})</h2><div className="space-y-4">{coupons.map((coupon) => <article key={String(coupon.id)} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3"><div className="mb-2 flex flex-wrap justify-between gap-2 text-sm"><p className="font-semibold">{String(coupon.code)} · {Number(coupon.active) ? "Active" : "Inactive"} · {Number(coupon.uses)} redemption{Number(coupon.uses) === 1 ? "" : "s"}</p><form action={deleteCouponAction}><input type="hidden" name="id" value={String(coupon.id)} /><button className="text-red-700 underline">{Number(coupon.uses) ? "Deactivate and preserve history" : "Delete coupon"}</button></form></div>{editor(coupon)}<CouponUsage id={Number(coupon.id)} code={String(coupon.code)} /></article>)}</div></section>
+    <section className="mt-6"><h2 className="mb-2 text-lg font-semibold">Existing coupons ({coupons.length})</h2><div className="space-y-4">{coupons.map((coupon) => <article key={String(coupon.id)} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3"><div className="mb-2 flex flex-wrap justify-between gap-2 text-sm"><p className="font-semibold">{String(coupon.code)} · {Number(coupon.active) ? "Active" : "Inactive"} · {Number(coupon.uses)} redemption{Number(coupon.uses) === 1 ? "" : "s"}</p><AdminForm action={deleteCouponAction}><input type="hidden" name="id" value={String(coupon.id)} /><button className="text-red-700 underline">{Number(coupon.uses) ? "Deactivate and preserve history" : "Delete coupon"}</button></AdminForm></div>{editor(coupon)}<CouponUsage id={Number(coupon.id)} code={String(coupon.code)} /></article>)}</div></section>
   </div>;
 }
