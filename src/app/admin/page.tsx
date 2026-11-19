@@ -15,11 +15,11 @@ export default async function Dashboard({ searchParams }: { searchParams: { deni
   const recent = listOrders({ limit: 8 }).rows;
   const products = allProductsAdmin();
   const flagged = products.flatMap((p) => p.variants.filter((v) => v.needsConfirmation && v.status === "active").map((v) => `${p.name}: ${v.label}`));
-  const zones = deliveryZones().filter((z) => z.active && z.fee != null).length;
+  const zones = deliveryZones().filter((z) => z.active).length;
   const persistent = storageIsPersistent();
   const checks = [
     { ok: bankIsComplete(getBank()), t: "Bank details set", href: "/admin/settings" },
-    { ok: zones > 0, t: zones ? `Checkout open for ${zones} of 37 locations` : "No delivery fees set. Customers cannot check out until you add fees for their state.", href: "/admin/delivery" },
+    { ok: zones > 0, t: zones ? `Free delivery on for ${zones} of 37 locations` : "Delivery is switched off for every state. Customers cannot check out.", href: "/admin/delivery" },
     { ok: flagged.length === 0, t: flagged.length ? `${flagged.length} price option${flagged.length === 1 ? "" : "s"} still need confirmation` : "All prices confirmed", href: "/admin/products" },
     { ok: persistent !== false, t: persistent ? "Order data is on a persistent volume" : persistent === null ? "Could not check the data volume" : "DATA_DIR is NOT on a persistent volume. Orders would be lost on redeploy.", href: "" },
     { ok: process.env.COMING_SOON !== "true", t: process.env.COMING_SOON !== "true" ? "Store is live" : "Store is hidden behind Coming Soon (COMING_SOON=true is set in Coolify)", href: "" },

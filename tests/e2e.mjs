@@ -77,49 +77,37 @@ await step("admin login", async () => {
 // ---------------- delivery settings ----------------
 await step("delivery admin", async () => {
   await admin.goto(B + "/admin/delivery");
-  ok((await admin.locator('input[name^="fee_"]').count()) === 37, "delivery page lists all 36 states + FCT (37 rows)");
-  ok(q1("SELECT COUNT(*) c FROM delivery_zones").c === 37, "37 delivery records exist in the database");
-  ok(q1("SELECT COUNT(*) c FROM delivery_zones WHERE fee IS NOT NULL").c === 0, "no delivery fee invented on a fresh install");
-  const set = async (st, fee, on, eta) => {
-    await admin.fill(`input[name="fee_${st}"]`, fee);
-    const cb = admin.locator(`input[name="active_${st}"]`); if ((await cb.isChecked()) !== on) await cb.click();
-    if (eta) await admin.fill(`input[name="eta_${st}"]`, eta);
-  };
-  await set("Lagos", "3500", true, "1–2 working days");
-  await set("Ogun", "4000", true, "2–3 working days");
-  await set("FCT (Abuja)", "6000", true, "");
-  await set("Kano", "7000", false, "");
-  await set("Abia", "", true, "");
+  ok((await admin.locator('input[name^="active_"]').count()) === 37 && (await admin.locator('input[name^="fee_"]').count()) === 0, "delivery page lists all 37 locations and asks for no fees");
+  ok(q1("SELECT COUNT(*) c FROM delivery_zones").c === 37 && q1("SELECT COUNT(*) c FROM delivery_zones WHERE active=1").c === 37, "all 37 locations covered by default");
+  ok(q1("SELECT COUNT(*) c FROM delivery_zones WHERE fee IS NOT NULL").c === 0, "no delivery fee stored");
+  await admin.fill('input[name="eta_Lagos"]', "1–2 working days");
+  await admin.fill('input[name="internal_Lagos"]', "Rider pickup at 10am");
+  await admin.locator('input[name="active_Kano"]').uncheck();
   await go(admin, admin.locator("button:has-text('Save delivery settings')").first());
-  const m = await flash(admin); ok(/Abia/.test(m), "switched-on state without a fee is reported and stays unavailable");
+  ok(/switched off for: Kano/.test(await flash(admin)), "switching a state off is confirmed");
   const lag = q1("SELECT * FROM delivery_zones WHERE state='Lagos'");
-  ok(lag.fee === 3500 && lag.active === 1 && lag.eta === "1–2 working days", "Lagos fee, status and delivery time saved");
-  ok(q1("SELECT active FROM delivery_zones WHERE state='Abia'").active === 0, "Abia without fee is stored as unavailable");
-  // bulk
+  ok(lag.active === 1 && lag.eta === "1–2 working days" && lag.internal_note === "Rider pickup at 10am" && lag.fee === null, "delivery time and internal note saved, no fee");
   await admin.goto(B + "/admin/delivery");
   for (const st of ["Oyo", "Osun"]) await admin.check(`input[name="states"][value="${st}"]`);
-  await admin.selectOption('select[name="op"]', "fee"); await admin.fill('input[name="bulkFee"]', "4500");
+  await admin.selectOption('select[name="op"]', "eta"); await admin.fill('input[name="bulkEta"]', "2–4 working days");
   await go(admin, admin.locator("button:has-text('Apply to ticked states')").first());
-  ok(qa("SELECT fee, active FROM delivery_zones WHERE state IN ('Oyo','Osun')").every((r) => r.fee === 4500 && r.active === 1), "bulk update sets fee for several states");
-  // export
+  ok(qa("SELECT eta FROM delivery_zones WHERE state IN ('Oyo','Osun')").every((r) => r.eta === "2–4 working days"), "bulk update sets delivery time");
   const csv = await (await admin.request.get(B + "/api/admin/delivery-export")).text();
-  const lines = csv.trim().split(/\r?\n/);
-  ok(lines.length === 38 && /Lagos,3500,yes/.test(csv), "delivery CSV export has header + 37 rows");
-  // import: bad file shows problems, saves nothing
-  const bad = path.join(SHOTS, "bad.csv"); fs.writeFileSync(bad, "State,Fee,Enabled,ETA,Note\nEkiti,abc,yes,,\nAtlantis,100,yes,,\n");
+  ok(csv.trim().split(/\r?\n/).length === 38 && /State,Enabled,ETA,Note,Internal note/.test(csv) && /Kano,no/.test(csv), "delivery CSV export has header + 37 rows");
+  const bad = path.join(SHOTS, "bad.csv"); fs.writeFileSync(bad, "State,Enabled,ETA,Note,Internal note\nEkiti,maybe,,,\nAtlantis,yes,,,\n");
   await admin.setInputFiles('input[name="file"]', bad); await go(admin, admin.locator("button:has-text('Preview import')").first());
   ok(await admin.locator("text=Fix these problems").waitFor({ timeout: 8000 }).then(() => true, () => false), "import preview reports invalid rows");
-  ok(q1("SELECT fee FROM delivery_zones WHERE state='Ekiti'").fee === null, "invalid import saves nothing");
-  const good = path.join(SHOTS, "good.csv"); fs.writeFileSync(good, "State,Fee,Enabled,ETA,Note\nEkiti,5000,yes,3–5 working days,via park\n");
+  ok(q1("SELECT eta FROM delivery_zones WHERE state='Ekiti'").eta === "", "invalid import saves nothing");
+  const good = path.join(SHOTS, "good.csv"); fs.writeFileSync(good, "State,Fee,Enabled,ETA,Note\nEkiti,5000,yes,3–5 working days,Pickup at the park\n");
   await admin.goto(B + "/admin/delivery");
   await admin.setInputFiles('input[name="file"]', good); await go(admin, admin.locator("button:has-text('Preview import')").first());
   await go(admin, admin.locator("button:has-text('Save these 1 states')").first());
-  ok(q1("SELECT fee FROM delivery_zones WHERE state='Ekiti'").fee === 5000, "valid import applied after preview");
-  ok(q1("SELECT fee FROM delivery_zones WHERE state='Lagos'").fee === 3500, "states missing from the import are unchanged");
+  const ek = q1("SELECT * FROM delivery_zones WHERE state='Ekiti'");
+  ok(ek.eta === "3–5 working days" && ek.note === "Pickup at the park" && ek.fee === null, "old-format import applied, fee column ignored");
+  ok(q1("SELECT eta FROM delivery_zones WHERE state='Lagos'").eta === "1–2 working days", "states missing from the import are unchanged");
   await admin.screenshot({ path: path.join(SHOTS, "admin-delivery.png"), fullPage: true });
 });
 
-// ---------------- inventory ----------------
 const oil = q1("SELECT id FROM variants WHERE sku='WX-GET-SNATCHED-OIL-1MONTH'").id;
 await step("inventory", async () => {
   await admin.goto(B + "/admin/inventory?q=GET-SNATCHED");
@@ -227,15 +215,14 @@ await step("checkout", async () => {
   await p.getByRole("dialog", { name: "Your cart" }).waitFor();
   await p.goto(B + "/cart"); await p.locator("button[aria-label='Increase quantity']").first().click(); await p.waitForTimeout(600);
   ok((await p.locator("aside").innerText()).includes("30,000"), "cart quantity change updates subtotal (2 × ₦15,000)");
+  ok(/Delivery\s*FREE/.test(await p.locator("aside").innerText()), "cart shows delivery as FREE");
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
-  ok((await p.locator("#state option").count()) === 38, "checkout state list: 36 states + FCT + placeholder");
+  ok((await p.locator("#state option").count()) === 37 && !(await p.locator('#state option[value="Kano"]').count()), "checkout lists the 36 covered locations (Kano switched off)");
   const pick = async (st) => { await p.selectOption("#state", st); await p.waitForTimeout(700); return p.locator("aside").innerText(); };
-  let t = await pick("Lagos"); ok(t.includes("3,500") && t.includes("1–2 working days") && t.includes("33,500"), "Lagos: fee ₦3,500 and delivery time shown; order total ₦33,500");
-  ok(/Pay now for products\s*₦30,000/.test(t), "amount to pay now is the product subtotal only");
-  t = await pick("Ogun"); ok(t.includes("4,000"), "changing state updates fee (Ogun ₦4,000)");
-  t = await pick("FCT (Abuja)"); ok(t.includes("6,000"), "FCT fee ₦6,000");
-  t = await pick("Kano"); ok(/Not available/.test(t) && await p.getByRole("button", { name: "Place order" }).isDisabled(), "disabled state (Kano) blocks checkout");
-  t = await pick("Abia"); ok(/Not available/.test(t) && await p.getByRole("button", { name: "Place order" }).isDisabled(), "unconfigured state (Abia) blocks checkout");
+  let t = await pick("Lagos");
+  ok(/Delivery fee \(Lagos\)\s*FREE/.test(t) && /Total delivery charge\s*₦0/.test(t) && t.includes("1–2 working days"), "Lagos: delivery FREE, ₦0 charge, delivery time shown");
+  ok(/Total to pay\s*₦30,000/.test(t), "total to pay equals the product subtotal");
+  for (const st of ["Ogun", "Oyo", "Rivers", "FCT (Abuja)", "Zamfara"]) { t = await pick(st); ok(/FREE/.test(t) && /Total to pay\s*₦30,000/.test(t) && await p.getByRole("button", { name: "Place order" }).isEnabled(), `${st}: free delivery, checkout open`); }
   await pick("Lagos");
   await p.fill("#name", "Ada Test"); await p.fill("#phone", "0803 123 4567"); await p.fill("#city", ""); await p.fill("#address", "12 Test Street, Allen Avenue");
   await p.getByRole("button", { name: "Place order" }).click();
@@ -247,11 +234,12 @@ await step("checkout", async () => {
   orderNumber = p.url().match(/WX\d{6}-[A-Z0-9]{5}/)[0];
   order.url = p.url().replace(B, "").replace("&new=1", "");
   const body = await p.locator("main").innerText();
-  ok(body.includes("2930024274") && /Product payment\s*₦30,000/.test(body), "bank transfer instructions show the product amount");
-  ok(/Delivery to Lagos: ₦3,500/.test(body) && /separate payment/i.test(body), "order page shows delivery fee as a separate payment");
+  ok(body.includes("2930024274") && /Product payment\s*₦30,000/.test(body), "bank transfer instructions show the amount to pay");
+  ok(/Free delivery to Lagos/.test(body) && /Delivery charge: ₦0/.test(body) && /Delivery \(Lagos\)\s*FREE/.test(body) && /Total\s*₦30,000/.test(body), "order confirmation shows free delivery and ₦30,000 total");
+  ok(!/paid separately|separate payment/i.test(body), "no separate delivery payment mentioned on a free-delivery order");
   const o = q1("SELECT * FROM orders WHERE number=?", orderNumber);
-  ok(o.subtotal === 30000 && o.delivery_fee === 3500 && o.total === 33500 && o.delivery_fee_source === "state_settings" && o.delivery_eta === "1–2 working days", "order stores delivery fee snapshot from settings");
-  ok(o.payment_status === "pending_payment" && o.delivery_payment_status === "pending", "product payment pending, delivery payment pending (separate)");
+  ok(o.subtotal === 30000 && o.delivery_fee === 0 && o.total === 30000 && o.delivery_fee_source === "free_delivery" && o.delivery_eta === "1–2 working days", "order stores a ₦0 free-delivery snapshot");
+  ok(o.payment_status === "pending_payment" && o.delivery_payment_status === "not_required", "product payment pending; delivery payment not required");
   ok(q1("SELECT stock FROM variants WHERE id=?", oil).stock === 3, "stock reserved by order (5 → 3)");
   ok(q1("SELECT COUNT(*) c FROM stock_movements WHERE order_id=? AND reason='order_reserved'", o.id).c === 1, "reservation recorded in stock history");
   await p.screenshot({ path: path.join(SHOTS, "mobile-order.png"), fullPage: true });
@@ -267,12 +255,23 @@ await step("checkout API manipulation", async () => {
   let ipn = 10; // each call from a different test address so the per-IP order limit does not interfere
   const api = (data) => anon.request.post(B + "/api/orders", { headers: { origin: B, "x-forwarded-for": `10.9.0.${ipn++}` }, data });
   const base = { name: "Api Test", phone: "08035556666", city: "Ikeja", address: "5 Example Street, Ikeja", items: [{ variantId: q1("SELECT id FROM variants WHERE sku='WX-TRIM-DOWN-COFFEE-1MONTH'").id, qty: 1 }] };
-  const r1 = await (await api({ ...base, state: "Lagos", deliveryFee: 1, delivery_fee: 1, total: 1, subtotal: 1 })).json();
-  const o1 = q1("SELECT subtotal, delivery_fee FROM orders WHERE number=?", r1.number);
-  ok(o1.subtotal === 12500 && o1.delivery_fee === 3500, "browser-supplied prices/fees ignored; server fee used");
-  const r2 = await api({ ...base, state: "Kano" }); ok(r2.status() === 400 && /not delivering|not available/i.test(JSON.stringify(await r2.json())), "API rejects disabled state");
-  const r3 = await api({ ...base, state: "Abia" }); ok(r3.status() === 400, "API rejects unconfigured state");
-  const r4 = await api({ ...base, state: "Atlantis" }); ok(r4.status() === 400, "API rejects unknown state");
+  const r1 = await (await api({ ...base, state: "Lagos", deliveryFee: 5000, delivery_fee: 5000, total: 1, subtotal: 1 })).json();
+  const o1 = q1("SELECT subtotal, delivery_fee, total FROM orders WHERE number=?", r1.number);
+  ok(o1.subtotal === 12500 && o1.delivery_fee === 0 && o1.total === 12500 && r1.deliveryFee === 0, "browser-supplied prices and delivery fees ignored; ₦0 delivery stored");
+  const quotes = [];
+  for (const st of q1("SELECT group_concat(state, '|') s FROM delivery_zones").s.split("|")) {
+    const q = await (await anon.request.post(B + "/api/cart/quote", { headers: { origin: B, "x-forwarded-for": "10.7.7.7" }, data: { items: base.items, state: st } })).json();
+    quotes.push([st, q.delivery?.available, q.delivery?.fee]);
+  }
+  ok(quotes.length === 37 && quotes.filter(([st]) => st !== "Kano").every(([, av, fee]) => av === true && fee === 0), "all 36 covered locations quote ₦0 delivery on the server");
+  ok(quotes.find(([st]) => st === "Kano")[1] === false, "switched-off state (Kano) is not available");
+  for (const st of ["Ogun", "Oyo", "Rivers", "FCT (Abuja)"]) {
+    const r = await (await api({ ...base, phone: "0803555" + String(ipn).padStart(4, "0"), state: st, deliveryFee: 9000 })).json();
+    const o = q1("SELECT delivery_fee, total, delivery_payment_status d FROM orders WHERE number=?", r.number);
+    ok(o && o.delivery_fee === 0 && o.total === 12500 && o.d === "not_required", `${st}: order created with free delivery`);
+  }
+  const r2 = await api({ ...base, state: "Kano" }); ok(r2.status() === 400 && /not delivering/i.test(JSON.stringify(await r2.json())), "API rejects a switched-off state");
+  const r4 = await api({ ...base, state: "Atlantis" }); ok(r4.status() === 400, "API rejects a location outside Nigeria");
   const key = "e2eDuplicateKey" + Date.now();
   const [a, b2] = await Promise.all([api({ ...base, state: "Ogun", clientKey: key }), api({ ...base, state: "Ogun", clientKey: key })]);
   const ja = await a.json(), jb = await b2.json();
@@ -282,18 +281,18 @@ await step("checkout API manipulation", async () => {
 // ---------------- admin order lifecycle ----------------
 await step("admin order lifecycle", async () => {
   const o = q1("SELECT * FROM orders WHERE number=?", orderNumber);
-  // fee change in settings must not change existing order
-  await admin.goto(B + "/admin/delivery"); await admin.fill('input[name="fee_Lagos"]', "9999"); await go(admin, admin.locator("button:has-text('Save delivery settings')").first());
-  ok(q1("SELECT delivery_fee f FROM orders WHERE id=?", o.id).f === 3500, "changing Lagos fee later does not change the existing order");
   await admin.goto(B + `/admin/orders/${o.id}`);
   const txt = await admin.locator("main").innerText();
-  ok(txt.includes("3,500") && /Delivery settings for Lagos/.test(txt), "admin order shows fee and its source");
+  ok(/Delivery charge\s*FREE \(₦0\)/.test(txt) && !/Confirm delivery payment/.test(txt) && !/Set the delivery fee/.test(txt), "admin order shows free delivery and no delivery payment step");
   await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm product payment')").first());
-  ok(q1("SELECT payment_status s, delivery_payment_status d FROM orders WHERE id=?", o.id).s === "paid" && q1("SELECT delivery_payment_status d FROM orders WHERE id=?", o.id).d === "pending", "confirming product payment leaves delivery unpaid");
+  ok(q1("SELECT payment_status s FROM orders WHERE id=?", o.id).s === "paid", "admin confirms product payment");
   await admin.selectOption('select[name="status"]', "processing"); await go(admin, admin.locator("button:has-text('Update status')").first());
-  ok(/delivery payment/i.test(await flash(admin)) && q1("SELECT fulfilment_status f FROM orders WHERE id=?", o.id).f !== "processing", "cannot process until delivery payment is confirmed");
-  await admin.locator("form:has(button:has-text('Confirm delivery payment')) input[name=confirm]").check(); await go(admin, admin.locator("button:has-text('Confirm delivery payment')").first());
-  ok(q1("SELECT delivery_payment_status d FROM orders WHERE id=?", o.id).d === "paid", "delivery payment recorded separately");
+  ok(q1("SELECT fulfilment_status f FROM orders WHERE id=?", o.id).f === "processing", "paid free-delivery order can be processed straight away");
+  await admin.fill('input[name="courier"]', "GIG Logistics"); await admin.fill('input[name="tracking"]', "GIG-TEST-123");
+  await go(admin, admin.locator("button:has-text('Save dispatch details')"));
+  const od = q1("SELECT courier, tracking_reference, dispatched_at FROM orders WHERE id=?", o.id);
+  ok(od.courier === "GIG Logistics" && od.tracking_reference === "GIG-TEST-123" && od.dispatched_at, "dispatch details saved");
+  ok((await (await (await browser.newContext()).request.get(B + `/order/${o.number}?t=${o.access_token}`)).text()).includes("GIG-TEST-123"), "customer order page shows the tracking reference");
   await admin.selectOption('select[name="status"]', "cancelled"); await go(admin, admin.locator("button:has-text('Update status')").first());
   ok(q1("SELECT stock FROM variants WHERE id=?", oil).stock === 5, "cancel releases reserved stock (3 → 5)");
   await admin.selectOption('select[name="status"]', "unfulfilled"); await go(admin, admin.locator("button:has-text('Update status')").first());
@@ -303,6 +302,22 @@ await step("admin order lifecycle", async () => {
   const csv = await (await admin.request.get(B + "/api/admin/export")).text();
   ok(csv.includes(orderNumber), "order appears in CSV export");
   await admin.screenshot({ path: path.join(SHOTS, "admin-order.png"), fullPage: true });
+});
+
+// ---------------- historical order kept as it was ----------------
+await step("historical delivery fee order", async () => {
+  const d = new DatabaseSync(path.join(DATA, "store.db"));
+  d.prepare(`INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,
+    delivery_payment_status,delivery_fee_source,bank_snapshot,tracking,payment_status,created_at) VALUES ('WX200101-OLD01','legacytoken000000000000000000000','Legacy Buyer','2348031112222','','','Ogun','Abeokuta','1 Legacy Road, Abeokuta','',20000,4000,24000,'pending','state_settings','{}','{}','paid','2019-06-01 10:00:00')`).run();
+  const id = Number(d.prepare("SELECT id FROM orders WHERE number='WX200101-OLD01'").get().id); d.close();
+  const page = await (await anon.request.get(B + "/order/WX200101-OLD01?t=legacytoken000000000000000000000")).text();
+  ok(page.includes("Delivery is paid separately") && page.includes("₦4,000") && page.includes("₦24,000"), "pre-policy order still shows its ₦4,000 delivery fee and ₦24,000 total");
+  await admin.goto(B + `/admin/orders/${id}`);
+  ok((await admin.locator("text=Confirm delivery payment").count()) === 1, "pre-policy order keeps its delivery payment step");
+  await admin.selectOption('select[name="status"]', "processing"); await go(admin, admin.locator("button:has-text('Update status')").first());
+  ok(/delivery payment/i.test(await flash(admin)), "pre-policy order still needs its delivery payment before processing");
+  const o = q1("SELECT delivery_fee, total FROM orders WHERE id=?", id);
+  ok(o.delivery_fee === 4000 && o.total === 24000, "historical totals unchanged");
 });
 
 // ---------------- coupons ----------------
@@ -341,7 +356,7 @@ await step("coupons", async () => {
   // order with coupon; browser-supplied discount fields are ignored
   const r = await (await postJ("/api/orders", { ...orderBase("08030000001"), couponCode: "save10", discountAmount: 20000, subtotal: 1, total: 1 })).json();
   const o = q1("SELECT * FROM orders WHERE number=?", r.number);
-  ok(o && o.subtotal === 22500 && o.discount_amount === 2500 && o.coupon_code === "SAVE10" && o.delivery_fee === 9999 && o.total === 22500 + 9999, "order: ₦25,000 − ₦2,500 = ₦22,500 product payment; current Lagos fee ₦9,999 kept separate (manipulated fields ignored)");
+  ok(o && o.subtotal === 22500 && o.discount_amount === 2500 && o.coupon_code === "SAVE10" && o.delivery_fee === 0 && o.total === 22500, "order: ₦25,000 − ₦2,500 = ₦22,500 total; delivery free; manipulated fields ignored");
   ok(q1("SELECT SUM(discount_amount) s FROM order_items WHERE order_id=?", o.id).s === 2500, "discount allocated to order lines");
   ok(q1("SELECT COUNT(*) c FROM coupon_redemptions WHERE order_id=?", o.id).c === 1, "redemption recorded");
   const again = await postJ("/api/orders", { ...orderBase("0803 000 0001"), couponCode: "SAVE10" });
@@ -353,7 +368,7 @@ await step("coupons", async () => {
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
   await p.fill("#couponCode", "save10"); await p.getByRole("button", { name: "Apply" }).click(); await p.locator("text=Coupon applied").waitFor();
   const aside = await p.locator("aside").innerText();
-  ok(/Coupon \(SAVE10\)\s*−₦1,250/.test(aside) && /Pay now for products\s*₦11,250/.test(aside), "checkout shows coupon discount and reduced product payment");
+  ok(/Coupon \(SAVE10\)\s*−₦1,250/.test(aside) && /Total to pay\s*₦11,250/.test(aside), "checkout shows coupon discount and reduced product payment");
   await p.screenshot({ path: path.join(SHOTS, "mobile-checkout-coupon.png"), fullPage: true });
   await ctx.close();
   order.couponOrder = r.number;
@@ -395,7 +410,7 @@ await step("reviews", async () => {
 
 // ---------------- notifications, activity, analytics ----------------
 await step("notifications and activity", async () => {
-  const orders = q1("SELECT COUNT(*) c FROM orders").c;
+  const orders = q1("SELECT COUNT(*) c FROM orders WHERE number != 'WX200101-OLD01'").c;
   ok(q1("SELECT COUNT(*) c FROM admin_notifications WHERE type='new_order'").c === orders, "one new-order notification per order (duplicate submission did not add another)");
   ok(q1("SELECT COUNT(*) c FROM admin_notifications WHERE type='payment_update'").c >= 1, "payment confirmation notification created");
   // low stock: threshold 2 on the oil, stock 5 now
@@ -424,8 +439,8 @@ await step("notifications and activity", async () => {
 
 await step("analytics", async () => {
   const today = new Date().toISOString().slice(0, 10);
-  const exp = q1(`SELECT COALESCE(SUM(subtotal),0) r, COUNT(*) n, COALESCE(SUM(discount_amount),0) disc FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled'`);
-  const del = q1(`SELECT COALESCE(SUM(delivery_fee),0) d FROM orders WHERE delivery_payment_status='paid' AND fulfilment_status!='cancelled'`).d;
+  const exp = q1(`SELECT COALESCE(SUM(subtotal),0) r, COUNT(*) n, COALESCE(SUM(discount_amount),0) disc FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled' AND created_at >= '${today}'`);
+  const del = q1(`SELECT COALESCE(SUM(delivery_fee),0) d FROM orders WHERE delivery_payment_status='paid' AND fulfilment_status!='cancelled' AND created_at >= '${today}'`).d;
   await admin.goto(B + `/admin/analytics?from=${today}&to=${today}`);
   const t = await admin.locator("main, body").first().innerText();
   const n = (x) => "₦" + Number(x).toLocaleString("en-NG");
@@ -468,7 +483,8 @@ await step("staff permissions and customer privacy", async () => {
   ok(!/Coupons|Analytics|Activity log/.test(nav), "owner-only links hidden from staff");
   ok(q1("SELECT COUNT(*) c FROM admin_activity WHERE action='add_user' AND entity_id='staff@test.local'").c === 1, "user creation logged");
   const any = q1("SELECT number FROM orders LIMIT 1").number;
-  const pub = await (await anon.request.get(B + `/order/${any}`)).text();
+  const fresh = (await browser.newContext()).request; // a visitor without the private order link
+  const pub = await (await fresh.get(B + `/order/${any}`)).text();
   ok(pub.includes("Order not found") && !pub.includes("Coupon Street") && !pub.includes("Allen Avenue"), "order page without the private link shows no customer data");
   ok((await anon.request.get(B + `/order/${any}?t=wrong-token-value`)).status() === 200 && !(await (await anon.request.get(B + `/order/${any}?t=wrong-token-value`)).text()).includes("Ikeja"), "wrong order token reveals nothing");
 });

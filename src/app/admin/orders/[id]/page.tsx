@@ -5,7 +5,7 @@ import { bankOf, getOrderById, orderEvents, orderItems } from "@/lib/orders";
 import { getContact } from "@/lib/settings";
 import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, displayPhone, naira } from "@/lib/site";
 import Flash from "@/components/admin/Flash";
-import { markDeliveryPaidAction, markPaymentFailedAction, saveNotesAction, setDeliveryFeeAction, setFulfilmentAction, unverifyPaymentAction, verifyPaymentAction } from "@/app/admin/actions";
+import { markDeliveryPaidAction, saveDispatchAction, markPaymentFailedAction, saveNotesAction, setDeliveryFeeAction, setFulfilmentAction, unverifyPaymentAction, verifyPaymentAction } from "@/app/admin/actions";
 
 export const metadata = { title: "Order" };
 
@@ -20,7 +20,8 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
   const waNumber = o.whatsapp || o.phone;
   const waMsg = (m: string) => `https://wa.me/${waNumber}?text=${encodeURIComponent(m)}`;
   const storeName = "WellnessXpressBrand";
-  const feeMsg = o.delivery_fee != null ? waMsg(`Hello ${o.customer_name}. This is ${storeName}. The delivery fee for your order ${o.number} is ${naira(o.delivery_fee)}. Please pay the delivery fee separately and reply with your transfer confirmation. Thank you.`) : null;
+  const freeDelivery = o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required";
+  const feeMsg = o.delivery_fee != null && !freeDelivery ? waMsg(`Hello ${o.customer_name}. This is ${storeName}. The delivery fee for your order ${o.number} is ${naira(o.delivery_fee)}. Please pay the delivery fee separately and reply with your transfer confirmation. Thank you.`) : null;
   const paidMsg = waMsg(`Hello ${o.customer_name}. This is ${storeName}. We have confirmed your payment for order ${o.number}. We will update you when it is on the way. Thank you.`);
   const row = (k: string, v: React.ReactNode) => <div className="flex justify-between gap-4 py-1.5"><dt className="text-neutral-500">{k}</dt><dd className="text-right font-medium">{v}</dd></div>;
 
@@ -37,7 +38,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
 
       <div className="mt-2 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-5">
-          {o.delivery_fee == null && o.fulfilment_status !== "cancelled" ? (
+          {o.delivery_fee == null && !freeDelivery && o.fulfilment_status !== "cancelled" ? (
             <section className="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
               <h2 className="text-lg">Set the delivery fee</h2>
               <p className="mt-1 text-sm text-amber-900">Agree the delivery charge with the customer, record it here, then send the separate delivery payment message.</p>
@@ -61,8 +62,8 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
               {row("Product subtotal", naira(items.reduce((sum, item) => sum + item.line_total, 0)))}
               {Number(o.discount_amount || 0) ? row(`Coupon (${String(o.coupon_code || "")})`, `−${naira(Number(o.discount_amount))}`) : null}
               {Number(o.discount_amount || 0) ? row("Product payment after discount", naira(o.subtotal)) : null}
-              {row(`Delivery (${o.state})`, o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
-              {row("Total including delivery", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}
+              {row(`Delivery (${o.state})`, freeDelivery ? <span className="font-bold text-brand-700">FREE</span> : o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
+              {row(freeDelivery ? "Order total" : "Total including delivery", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}
             </dl>
           </section>
 
@@ -106,8 +107,28 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
             ) : null}
           </section>
 
-          <section className="rounded-xl border border-neutral-200 bg-white p-5">
-            <h2 className="text-lg">Delivery payment</h2>
+          {freeDelivery ? (
+            <section className="rounded-xl border border-brand-100 bg-brand-50 p-5">
+              <h2 className="text-lg">Delivery</h2>
+              <dl className="mt-2 text-sm">
+                {row("Delivery charge", <span className="font-bold text-brand-700">FREE (₦0)</span>)}
+                {row("Delivery payment", "Not required")}
+                {row("Estimated time", String(o.delivery_eta || "Not set"))}
+                {row("Dispatched", o.dispatched_at ? String(o.dispatched_at) : "Not yet")}
+              </dl>
+              <form action={saveDispatchAction} className="mt-3 grid gap-2 sm:grid-cols-2">
+                <input type="hidden" name="id" value={o.id} />
+                <label className="text-xs font-semibold text-neutral-600">Courier or rider<input name="courier" defaultValue={String(o.courier || "")} maxLength={80} className="admin-input mt-1" /></label>
+                <label className="text-xs font-semibold text-neutral-600">Tracking reference<input name="tracking" defaultValue={String(o.tracking_reference || "")} maxLength={80} className="admin-input mt-1" /></label>
+                <label className="text-xs font-semibold text-neutral-600 sm:col-span-2">Dispatch note (internal)<input name="dispatchNote" defaultValue={String(o.dispatch_note || "")} maxLength={300} className="admin-input mt-1" /></label>
+                <button className="admin-btn w-fit">Save dispatch details</button>
+              </form>
+              <p className="mt-2 text-xs text-neutral-500">The customer sees the courier and tracking reference on their order page.</p>
+            </section>
+          ) : null}
+
+          {!freeDelivery ? <section className="rounded-xl border border-neutral-200 bg-white p-5">
+            <h2 className="text-lg">Delivery payment (order placed before free delivery)</h2>
             <dl className="mt-2 text-sm">
               {row("Delivery fee", o.delivery_fee == null ? "Not set" : naira(o.delivery_fee))}
               {row("Status", DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)] || String(o.delivery_payment_status))}
@@ -131,7 +152,7 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
                 <button className="admin-btn">Confirm delivery payment</button>
               </form>
             ) : null}
-          </section>
+          </section> : null}
 
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 className="text-lg">Fulfilment</h2>

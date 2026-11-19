@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { getContact, getSetting } from "@/lib/settings";
 import HeaderClient from "@/components/HeaderClient";
+import { IconTruck } from "@/components/icons";
+import { FREE_DELIVERY_TITLE } from "@/lib/site";
 
 export const NAV = [
   { href: "/", label: "Home" },
@@ -17,11 +19,13 @@ export default function Header() {
   const contact = getContact();
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85">
-      {announcement ? (
-        <div className="bg-brand-900 text-white">
-          <p className="container-x py-2 text-center text-[13px] font-medium leading-snug sm:text-sm">{announcement}</p>
-        </div>
-      ) : null}
+      <div className="bg-brand-900 text-white">
+        <p className="container-x flex items-center justify-center gap-2 py-2 text-center text-[13px] leading-snug sm:text-sm">
+          <IconTruck className="h-4 w-4 shrink-0" />
+          <Link href="/shipping" className="font-bold tracking-wide hover:underline">{FREE_DELIVERY_TITLE}</Link>
+          {announcement ? <span className="hidden font-medium text-white/85 md:inline">· {announcement}</span> : null}
+        </p>
+      </div>
       <div className="border-b border-neutral-200">
         <div className="container-x flex h-16 items-center gap-3 sm:h-[72px]">
           <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="WellnessXpressBrand home">

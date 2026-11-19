@@ -6,7 +6,7 @@ import { bankIsComplete, getBank, getContact } from "@/lib/settings";
 import { naira, orderStatusLabel } from "@/lib/site";
 import CopyButton from "@/components/CopyButton";
 import PaymentConfirmForm from "@/components/PaymentConfirmForm";
-import { IconCheck, IconInfo, IconWhatsApp } from "@/components/icons";
+import { IconCheck, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Your order", robots: { index: false, follow: false } };
 
@@ -26,6 +26,8 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
   const items = orderItems(o.id);
   const itemsSubtotal = items.reduce((sum, item) => sum + item.line_total, 0);
   const discountAmount = Number(o.discount_amount || 0);
+  // Orders placed under the free delivery policy. Older orders keep their own delivery fee and payment record.
+  const freeDelivery = o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required";
   const bank = getBank();
   const status = orderStatusLabel(o);
   const isNew = searchParams.new === "1";
@@ -53,7 +55,16 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
         <div className="card p-4"><p className="text-sm text-neutral-500">Product payment</p><p className="mt-1 text-lg font-bold">{naira(o.subtotal)}</p></div>
       </div>
 
-      {o.fulfilment_status !== "cancelled" ? (
+      {o.fulfilment_status !== "cancelled" && freeDelivery ? (
+        <section className="mt-6 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 p-5 sm:p-6">
+          <IconTruck className="h-6 w-6 shrink-0 text-brand-700" />
+          <div>
+            <h2 className="text-xl text-brand-900">Free delivery to {o.state}</h2>
+            <p className="mt-1 text-neutral-700">Delivery charge: ₦0. You pay only for your products.{o.delivery_eta ? ` Estimated delivery time: ${String(o.delivery_eta)}.` : ""}</p>
+            {o.tracking_reference ? <p className="mt-2 text-neutral-700">Dispatched{o.courier ? ` with ${String(o.courier)}` : ""}. Tracking reference: <strong>{String(o.tracking_reference)}</strong></p> : null}
+          </div>
+        </section>
+      ) : o.fulfilment_status !== "cancelled" ? (
         <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
           <h2 className="flex items-center gap-2 text-xl text-amber-950"><IconInfo className="h-6 w-6" /> Delivery is paid separately</h2>
           {o.delivery_fee == null ? (
@@ -70,7 +81,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
         <section className="mt-6 rounded-2xl border-2 border-brand-700 bg-white p-5 shadow-card sm:p-6" aria-labelledby="pay-h">
           <h2 id="pay-h" className="text-xl sm:text-2xl">Pay by bank transfer</h2>
           {o.payment_status === "payment_failed" ? <p className="mt-2 rounded-lg bg-red-50 p-3 text-red-800">We could not confirm your last payment. Check the amount and account, then send a new confirmation, or message us on WhatsApp.</p> : null}
-          <p className="mt-2 text-neutral-700">Please transfer the exact product amount below. Delivery is paid separately.</p>
+          <p className="mt-2 text-neutral-700">Please transfer the exact amount below.{freeDelivery ? " Delivery is free." : " Delivery is paid separately."}</p>
           {bankIsComplete(bank) ? (
             <dl className="mt-5 divide-y divide-neutral-200 rounded-xl border border-neutral-200 text-[16px]">
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Product payment</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(o.subtotal)}<CopyButton text={String(o.subtotal)} label="Copy amount" small /></dd></div>
@@ -80,7 +91,7 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Narration</dt><dd className="font-semibold">{o.number}</dd></div>
             </dl>
           ) : <p className="mt-4 rounded-lg bg-amber-50 p-3 text-amber-900">Our bank details are being updated. Message us on WhatsApp for payment details.</p>}
-          <p className="mt-4 text-neutral-700">After completing your product payment, submit your payment confirmation below. We will confirm the delivery fee separately.</p>
+          <p className="mt-4 text-neutral-700">After you transfer, submit your payment confirmation below. We check our bank account before we confirm your payment.</p>
           <PaymentConfirmForm number={o.number} token={token} />
           {receiptWa ? <a href={receiptWa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#178a45] hover:underline"><IconWhatsApp /> Or send your receipt on WhatsApp</a> : null}
         </section>
@@ -110,10 +121,20 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
           <div className="flex justify-between"><dt className="text-neutral-600">Product subtotal</dt><dd>{naira(itemsSubtotal)}</dd></div>
           {discountAmount ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Coupon{o.coupon_code ? ` (${String(o.coupon_code)})` : ""}</dt><dd>−{naira(discountAmount)}</dd></div> : null}
           {discountAmount ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Product payment after discount</dt><dd>{naira(o.subtotal)}</dd></div> : null}
-          <div className="flex justify-between"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee != null ? naira(o.delivery_fee) : "To be confirmed"}</dd></div>
-          <div className="flex justify-between"><dt className="text-neutral-600">Delivery payment</dt><dd>{o.delivery_fee == null ? "Not set yet" : o.delivery_payment_status === "paid" ? (o.delivery_fee > 0 ? "Paid" : "Not needed") : "Not paid yet (separate)"}</dd></div>
-          <div className="flex justify-between"><dt className="text-neutral-600">Product payment</dt><dd>{o.payment_status === "paid" ? "Paid" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
-          <div className="flex justify-between text-lg font-bold"><dt>Order total</dt><dd>{naira(o.subtotal + (o.delivery_fee || 0))}</dd></div>
+          {freeDelivery ? (
+            <>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd className="font-bold text-brand-700">FREE</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Product payment</dt><dd>{o.payment_status === "paid" ? "Confirmed" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
+              <div className="flex justify-between text-lg font-bold"><dt>Total</dt><dd>{naira(o.subtotal)}</dd></div>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee != null ? naira(o.delivery_fee) : "To be confirmed"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery payment</dt><dd>{o.delivery_fee == null ? "Not set yet" : o.delivery_payment_status === "paid" ? (o.delivery_fee > 0 ? "Paid" : "Not needed") : "Not paid yet (separate)"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Product payment</dt><dd>{o.payment_status === "paid" ? "Confirmed" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
+              <div className="flex justify-between text-lg font-bold"><dt>Order total</dt><dd>{naira(o.subtotal + (o.delivery_fee || 0))}</dd></div>
+            </>
+          )}
         </dl>
         <div className="mt-5 rounded-xl bg-neutral-50 p-4 text-[15px]">
           <p className="font-semibold">Delivering to</p>

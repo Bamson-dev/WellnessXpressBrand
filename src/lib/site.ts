@@ -39,6 +39,10 @@ export function normalisePhone(raw: string) {
   return /^234[789][01]\d{8}$/.test(d) ? d : "";
 }
 
+/** Customer-facing free delivery copy, used everywhere the offer appears. */
+export const FREE_DELIVERY_TITLE = "FREE DELIVERY ACROSS NIGERIA";
+export const FREE_DELIVERY_TEXT = "Shop your favourite products and enjoy free delivery to all 36 states and Abuja.";
+
 export const PAYMENT_STATUS: Record<string, string> = {
   pending_payment: "Pending Payment",
   awaiting_verification: "Awaiting Verification",
@@ -49,6 +53,7 @@ export const DELIVERY_PAYMENT_STATUS: Record<string, string> = {
   not_set: "Delivery Fee Pending",
   pending: "Delivery Fee Pending",
   paid: "Delivery Fee Paid",
+  not_required: "Free delivery",
 };
 export const FULFILMENT_STATUS: Record<string, string> = {
   unfulfilled: "Not started",
@@ -67,6 +72,5 @@ export function orderStatusLabel(o: { payment_status: string; fulfilment_status:
   if (o.payment_status === "paid") return "Paid";
   if (o.payment_status === "payment_failed") return "Payment Failed";
   if (o.payment_status === "awaiting_verification") return "Awaiting Verification";
-  if (o.payment_status !== "paid") return "Pending Payment";
-  return o.delivery_payment_status === "paid" ? "Delivery Fee Paid" : "Delivery Fee Pending";
+  return "Pending Payment";
 }

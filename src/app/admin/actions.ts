@@ -57,6 +57,7 @@ export async function setDeliveryFeeAction(f: FormData) {
   const o = getOrderById(id);
   if (!o || fee == null) return back(`/admin/orders/${id}`, "Enter a valid delivery fee.");
   if (o.delivery_payment_status === "paid") return back(`/admin/orders/${id}`, "Delivery payment is already confirmed.");
+  if (o.delivery_payment_status === "not_required") return back(`/admin/orders/${id}`, "This order has free delivery. There is no delivery fee to set.");
   db().prepare("UPDATE orders SET delivery_fee = ?, total = subtotal + ?, delivery_payment_status = ?, delivery_fee_source = 'admin', updated_at = datetime('now') WHERE id = ?").run(fee, fee, fee > 0 ? "pending" : "paid", id);
   logEvent(id, a.email, "delivery_fee_set", `₦${fee.toLocaleString()}${o.delivery_fee != null ? ` (was ₦${Number(o.delivery_fee).toLocaleString()})` : ""}`);
   revalidatePath(`/admin/orders/${id}`);
@@ -86,6 +87,7 @@ export async function markDeliveryPaidAction(f: FormData) {
   if (!o || o.delivery_fee == null) return back(`/admin/orders/${id}`, "Set the delivery fee before recording payment.");
   if (f.get("confirm") !== "yes") return back(`/admin/orders/${id}`, "Confirm you have seen the delivery payment in the account.");
   if (o.delivery_payment_status === "paid") return back(`/admin/orders/${id}`, "Delivery payment is already confirmed.");
+  if (o.delivery_payment_status === "not_required") return back(`/admin/orders/${id}`, "This order has free delivery. There is no delivery payment.");
   const reference = s(f, "reference", 120);
   db().prepare("UPDATE orders SET delivery_payment_status = 'paid', delivery_paid_at = datetime('now'), delivery_payment_reference = ?, updated_at = datetime('now') WHERE id = ?").run(reference, id);
   logEvent(id, a.email, "delivery_payment_verified", reference || `₦${Number(o.delivery_fee).toLocaleString("en-NG")}`);
@@ -118,7 +120,7 @@ export async function setFulfilmentAction(f: FormData) {
   const o = getOrderById(id);
   if (!o || !["unfulfilled", "processing", "shipped", "delivered", "cancelled"].includes(st)) return back(`/admin/orders/${id}`);
   if (["processing", "shipped", "delivered"].includes(st) && o.payment_status !== "paid") return back(`/admin/orders/${id}`, "Confirm the product payment before you process or ship this order.");
-  if (["processing", "shipped", "delivered"].includes(st) && o.delivery_payment_status !== "paid") return back(`/admin/orders/${id}`, "Confirm the delivery payment before you process or ship this order.");
+  if (["processing", "shipped", "delivered"].includes(st) && !["paid", "not_required"].includes(String(o.delivery_payment_status))) return back(`/admin/orders/${id}`, "Confirm the delivery payment before you process or ship this order.");
   if (st === o.fulfilment_status) return back(`/admin/orders/${id}`);
   const err = tx((d) => {
     if (o.fulfilment_status === "cancelled" && st !== "cancelled") {
@@ -142,6 +144,19 @@ export async function setFulfilmentAction(f: FormData) {
   if (err) return back(`/admin/orders/${id}`, `Cannot reopen this order: ${err}`);
   logEvent(id, a.email, "fulfilment_" + st, s(f, "note", 300));
   back(`/admin/orders/${id}`, "Order status updated.");
+}
+
+export async function saveDispatchAction(f: FormData) {
+  const a = await requireAdmin();
+  const id = Number(f.get("id"));
+  const o = getOrderById(id);
+  if (!o) return back("/admin/orders", "Order not found.");
+  const courier = s(f, "courier", 80), tracking = s(f, "tracking", 80), note = s(f, "dispatchNote", 300);
+  db().prepare(`UPDATE orders SET courier = ?, tracking_reference = ?, dispatch_note = ?,
+    dispatched_at = CASE WHEN (? != '' OR ? != '') THEN COALESCE(dispatched_at, datetime('now')) ELSE dispatched_at END, updated_at = datetime('now') WHERE id = ?`)
+    .run(courier, tracking, note, courier, tracking, id);
+  logEvent(id, a.email, "dispatch_updated", [courier && `Courier: ${courier}`, tracking && `Tracking: ${tracking}`].filter(Boolean).join(" · "));
+  back(`/admin/orders/${id}`, "Dispatch details saved.");
 }
 
 export async function saveNotesAction(f: FormData) {
@@ -529,33 +544,28 @@ export async function setThresholdAction(f: FormData) {
 }
 
 /* ---------- delivery ---------- */
-type ZoneInput = { state: string; fee: number | null; active: boolean; eta: string; note: string };
+type ZoneInput = { state: string; active: boolean; eta: string; note: string; internalNote: string };
+/** Delivery is free nationwide; these settings control coverage, delivery times and notes. Fees are not used. */
 function writeZones(rows: ZoneInput[]) {
   tx((d) => {
     for (const z of rows) {
-      d.prepare(`INSERT INTO delivery_zones (state, fee, active, eta, note, updated_at) VALUES (?,?,?,?,?, datetime('now'))
-        ON CONFLICT(state) DO UPDATE SET fee=excluded.fee, active=excluded.active, eta=excluded.eta, note=excluded.note, updated_at=datetime('now')`)
-        .run(z.state, z.fee, z.fee == null ? 0 : z.active ? 1 : 0, z.eta, z.note);
+      d.prepare(`INSERT INTO delivery_zones (state, fee, active, eta, note, internal_note, updated_at) VALUES (?, NULL, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(state) DO UPDATE SET active=excluded.active, eta=excluded.eta, note=excluded.note, internal_note=excluded.internal_note, updated_at=datetime('now')`)
+        .run(z.state, z.active ? 1 : 0, z.eta, z.note, z.internalNote);
     }
   });
 }
 
 export async function saveDeliveryAction(f: FormData) {
   const a = await requireAdmin("owner");
-  const rows: ZoneInput[] = [];
-  const bad: string[] = [];
-  for (const st of NIGERIAN_STATES) {
-    const raw = String(f.get(`fee_${st}`) ?? "").trim();
-    const fee = raw === "" ? null : money(raw);
-    if (raw !== "" && fee == null) { bad.push(st); continue; }
-    rows.push({ state: st, fee, active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160) });
-  }
-  if (bad.length) return back("/admin/delivery", `Fix the fee for: ${bad.join(", ")}. Use numbers only, for example 3500.`);
+  const rows: ZoneInput[] = NIGERIAN_STATES.map((st) => ({
+    state: st, active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160), internalNote: s(f, `internal_${st}`, 300),
+  }));
   writeZones(rows);
   revalidatePath("/checkout");
-  const off = rows.filter((r) => r.fee == null && r.active).map((r) => r.state);
-  audit(a, "saveDeliveryAction", f, "");
-  back("/admin/delivery", off.length ? `Saved. ${off.length} state(s) are switched on but have no fee, so they stay unavailable: ${off.join(", ")}.` : "Delivery settings saved.");
+  const off = rows.filter((r) => !r.active).map((r) => r.state);
+  audit(a, "saveDeliveryAction", f, `${37 - off.length} of 37 covered`);
+  back("/admin/delivery", off.length ? `Saved. Delivery is switched off for: ${off.join(", ")}.` : "Saved. Free delivery is on for all 37 locations.");
 }
 
 export async function bulkDeliveryAction(f: FormData) {
@@ -563,27 +573,23 @@ export async function bulkDeliveryAction(f: FormData) {
   const states = f.getAll("states").map(String).filter((x) => NIGERIAN_STATES.includes(x));
   if (!states.length) return back("/admin/delivery", "Tick at least one state for the bulk update.");
   const op = s(f, "op", 20);
+  if (!["eta", "enable", "disable", "note"].includes(op)) return back("/admin/delivery", "Choose a bulk action.");
   const current = new Map(db().prepare("SELECT * FROM delivery_zones").all().map((r) => [String(r.state), r]));
-  const feeRaw = String(f.get("bulkFee") ?? "").trim();
-  const fee = feeRaw === "" ? undefined : money(feeRaw);
-  if (op === "fee" && (fee == null)) return back("/admin/delivery", "Enter a valid fee for the selected states.");
   const rows: ZoneInput[] = states.map((st) => {
     const c = current.get(st);
-    const base: ZoneInput = { state: st, fee: c?.fee == null ? null : Number(c.fee), active: c ? Number(c.active) === 1 : false, eta: String(c?.eta || ""), note: String(c?.note || "") };
-    if (op === "fee") return { ...base, fee: fee as number, active: true };
+    const base: ZoneInput = { state: st, active: c ? Number(c.active) === 1 : true, eta: String(c?.eta || ""), note: String(c?.note || ""), internalNote: String(c?.internal_note || "") };
     if (op === "eta") return { ...base, eta: s(f, "bulkEta", 80) };
+    if (op === "note") return { ...base, note: s(f, "bulkEta", 160) };
     if (op === "enable") return { ...base, active: true };
-    if (op === "disable") return { ...base, active: false };
-    if (op === "clear") return { ...base, fee: null, active: false };
-    return base;
+    return { ...base, active: false };
   });
   writeZones(rows);
   revalidatePath("/checkout");
-  audit(a, "bulkDeliveryAction", f, `${rows.length} state(s)`);
+  audit(a, "bulkDeliveryAction", f, `${op} · ${rows.length} state(s)`);
   back("/admin/delivery", `Updated ${rows.length} state(s).`);
 }
 
-/** Parses a delivery CSV (State,Fee,Enabled,ETA,Note). Returns rows plus per-line problems. Nothing is saved here. */
+/** Parses a delivery CSV with a header row (State, Enabled, ETA, Note, Internal note). Older exports with a Fee column are accepted; the fee is ignored. */
 function parseDeliveryCsv(text: string) {
   const lines = text.replace(/^\ufeff/, "").split(/\r?\n/).filter((l) => l.trim());
   const rows: ZoneInput[] = [];
@@ -598,19 +604,20 @@ function parseDeliveryCsv(text: string) {
     }
     out.push(cur); return out.map((x) => x.trim());
   };
-  lines.forEach((l, n) => {
+  const head = split(lines[0] || "").map((h) => h.toLowerCase());
+  if (head[0] !== "state") return { rows, problems: ["The first line must be the header: State, Enabled, ETA, Note, Internal note. Export a template first."] };
+  const col = (name: string) => head.indexOf(name);
+  const iEn = col("enabled"), iEta = col("eta"), iNote = col("note"), iInt = col("internal note");
+  lines.slice(1).forEach((l, i) => {
+    const n = i + 2;
     const c = split(l);
-    if (n === 0 && /^state$/i.test(c[0])) return;
     const st = NIGERIAN_STATES.find((x) => x.toLowerCase() === (c[0] || "").toLowerCase() || (/^fct|abuja/i.test(c[0] || "") && x.startsWith("FCT")));
-    if (!st) { problems.push(`Line ${n + 1}: "${(c[0] || "").slice(0, 40)}" is not a Nigerian state.`); return; }
-    if (seen.has(st)) { problems.push(`Line ${n + 1}: ${st} appears more than once.`); return; }
+    if (!st) { problems.push(`Line ${n}: "${(c[0] || "").slice(0, 40)}" is not a Nigerian state.`); return; }
+    if (seen.has(st)) { problems.push(`Line ${n}: ${st} appears more than once.`); return; }
     seen.add(st);
-    const feeRaw = (c[1] || "").replace(/[₦,\s]/g, "");
-    const fee = feeRaw === "" ? null : /^\d+$/.test(feeRaw) && Number(feeRaw) <= 10_000_000 ? Number(feeRaw) : NaN;
-    if (Number.isNaN(fee)) { problems.push(`Line ${n + 1}: fee "${(c[1] || "").slice(0, 20)}" for ${st} is not a number.`); return; }
-    const en = (c[2] || "").toLowerCase();
-    if (en && !["yes", "no", "true", "false", "1", "0", "y", "n"].includes(en)) { problems.push(`Line ${n + 1}: Enabled must be yes or no.`); return; }
-    rows.push({ state: st, fee, active: ["yes", "true", "1", "y"].includes(en) || (en === "" && fee != null), eta: clean(c[3] || "", 80), note: clean(c[4] || "", 160) });
+    const en = iEn >= 0 ? (c[iEn] || "").toLowerCase() : "yes";
+    if (en && !["yes", "no", "true", "false", "1", "0", "y", "n"].includes(en)) { problems.push(`Line ${n}: Enabled must be yes or no.`); return; }
+    rows.push({ state: st, active: en === "" || ["yes", "true", "1", "y"].includes(en), eta: iEta >= 0 ? clean(c[iEta] || "", 80) : "", note: iNote >= 0 ? clean(c[iNote] || "", 160) : "", internalNote: iInt >= 0 ? clean(c[iInt] || "", 300) : "" });
   });
   return { rows, problems };
 }

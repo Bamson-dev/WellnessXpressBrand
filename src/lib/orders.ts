@@ -77,10 +77,10 @@ export function createOrder(input: CheckoutInput) {
   if (Object.keys(errors).length) return { ok: false as const, errors };
 
   const itemsSubtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
-  // Product payment is collected first. The delivery fee comes from the admin's state settings (server-side only),
-  // is stored on the order as a snapshot, and is paid separately. It is never taken from the browser.
-  const fee = delivery.fee as number;
-  const deliveryStatus = fee > 0 ? "pending" : "paid";
+  // Delivery is free across Nigeria. The fee is fixed on the server (never taken from the browser) and stored
+  // on the order as a ₦0 snapshot. There is no delivery payment to collect, so its status is "not_required".
+  const fee = 0;
+  const deliveryStatus = "not_required";
   const bank = getBank();
 
   const couponCode = String(input.couponCode || "").trim();
@@ -123,7 +123,7 @@ export function createOrder(input: CheckoutInput) {
       .prepare(
         `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,
            delivery_eta,delivery_fee_source,client_key,bank_snapshot,tracking,discount_amount,coupon_code)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'state_settings',?,?,?,?,?)`
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'free_delivery',?,?,?,?,?)`
       )
       .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, deliveryStatus,
         delivery.eta, clientKey, JSON.stringify(bank), JSON.stringify(trackingOf(input)), discountAmount, coupon?.ok ? coupon.code : "");
@@ -141,7 +141,7 @@ export function createOrder(input: CheckoutInput) {
       if (tracked) recordMovement(d, l.variantId, -l.qty, "order_reserved", `Order ${number}`, "customer", oid);
     }
     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
-      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Product payment due: ₦${subtotal.toLocaleString("en-NG")}. Delivery fee for ${state}: ₦${fee.toLocaleString("en-NG")} (paid separately).`
+      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Product payment due: ₦${subtotal.toLocaleString("en-NG")}. Free delivery to ${state}.`
     );
     notifyAdmin(`order:${oid}:created`, "new_order", "New order received", `${number} · ${name} · ${state}`, `/admin/orders/${oid}`);
     return { ok: true as const, duplicate: false, number, token, total, subtotal, itemsSubtotal, discountAmount, couponCode: coupon?.ok ? coupon.code : "", fee };

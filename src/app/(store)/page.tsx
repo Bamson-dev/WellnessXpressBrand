@@ -5,7 +5,7 @@ import { getCategories, listProducts } from "@/lib/catalog";
 import { getContact, getSetting } from "@/lib/settings";
 import ProductCard from "@/components/ProductCard";
 import { IconBank, IconChevron, IconInfo, IconShield, IconTruck, IconUser, IconWhatsApp } from "@/components/icons";
-import { site } from "@/lib/site";
+import { FREE_DELIVERY_TEXT, FREE_DELIVERY_TITLE, site } from "@/lib/site";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export default function Home() {
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-brand-50 lg:hidden" />
         <div className="container-x relative grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-2 lg:gap-12 lg:py-20">
           <div className="max-w-xl">
-            <p className="eyebrow">WellnessXpressBrand</p>
+            <p className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-3 py-1.5 text-xs font-bold tracking-wide text-white sm:text-sm"><IconTruck className="h-4 w-4" /> {FREE_DELIVERY_TITLE}</p>
             <h1 className="mt-3 text-[2.4rem] font-extrabold leading-[1.05] sm:text-5xl lg:text-[3.6rem]">
               Your weightloss journey <span className="text-brand-700">starts here.</span>
             </h1>
@@ -44,12 +44,26 @@ export default function Home() {
             <ul className="mt-8 grid grid-cols-1 gap-3 text-[15px] text-neutral-700 sm:grid-cols-3">
               <li className="flex items-center gap-2"><IconUser className="h-5 w-5 text-brand-700" /> No account needed</li>
               <li className="flex items-center gap-2"><IconBank className="h-5 w-5 text-brand-700" /> Pay by bank transfer</li>
-              <li className="flex items-center gap-2"><IconTruck className="h-5 w-5 text-brand-700" /> Delivery in Nigeria</li>
+              <li className="flex items-center gap-2"><IconTruck className="h-5 w-5 text-brand-700" /> Free delivery nationwide</li>
             </ul>
           </div>
           <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
             <Image src="/images/banners/hero-products.webp" alt="WellnessXpress Tummy Balance, Get Snatched Oil, Appetite Suppressant, Trim Down Coffee and Metabolic Reset" width={1400} height={1200} priority sizes="(max-width: 1024px) 100vw, 50vw" className="h-auto w-full rounded-3xl" />
           </div>
+        </div>
+      </section>
+
+      {/* Free delivery promotion */}
+      <section className="bg-brand-50" aria-labelledby="free-delivery-h">
+        <div className="container-x flex flex-col items-start gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-700 text-white"><IconTruck className="h-6 w-6" /></span>
+            <div>
+              <h2 id="free-delivery-h" className="text-xl font-extrabold text-brand-900 sm:text-2xl">{FREE_DELIVERY_TITLE}</h2>
+              <p className="mt-1 text-neutral-700">{FREE_DELIVERY_TEXT} No minimum order.</p>
+            </div>
+          </div>
+          <Link href="/shop" className="btn btn-primary shrink-0 px-8">Shop now</Link>
         </div>
       </section>
 

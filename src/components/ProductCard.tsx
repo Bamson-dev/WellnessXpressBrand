@@ -25,6 +25,7 @@ export default function ProductCard({ p, priority }: { p: Product; priority?: bo
         <p className="mt-2 text-base font-bold text-ink sm:text-lg">
           {range ? (range.min === range.max ? naira(range.min) : <>From {naira(range.min)}</>) : "—"}
         </p>
+        <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-brand-700 sm:text-xs">Free delivery</p>
         <div className="mt-auto grid gap-2 pt-3">
           {single ? (
             <QuickAdd product={{ slug: p.slug, name: p.name, image: img }} variant={{ id: single.id, label: single.label, price: effective(single), compareAt: null, inStock: inStock(single), detail: "" }} />

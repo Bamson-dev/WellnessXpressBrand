@@ -17,7 +17,7 @@ const NAV = [
   { href: "/admin/categories", label: "Categories", owner: true },
   { href: "/admin/media", label: "Media", owner: true },
   { href: "/admin/inventory", label: "Inventory", owner: true },
-  { href: "/admin/delivery", label: "Delivery fees", owner: true },
+  { href: "/admin/delivery", label: "Delivery", owner: true },
   { href: "/admin/promotions", label: "Coupons", owner: true },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/customers", label: "Customers" },

@@ -178,13 +178,13 @@ export const DEFAULT_SETTINGS: Record<string, unknown> = {
   productNotice:
     "Read the product label before use.\nFor directions for use, message us on WhatsApp before you order.\nIf you are pregnant, breastfeeding, taking medication or have a medical condition, speak to a healthcare professional before using any supplement.",
   shippingPolicy:
-    "We deliver to addresses in Nigeria.\n\nYou can pay for your products when you place your order. The delivery fee is confirmed separately afterward, and must be paid as a separate amount before dispatch.\n\nWe start processing your order after we confirm your product payment and delivery payment.",
+    "Delivery is free to all 36 states and the FCT (Abuja). There is no delivery charge and no minimum order.\n\nYou pay only for your products, by bank transfer. We start processing your order after we confirm your product payment.\n\nOrders placed before free delivery started keep the delivery fee shown on their order page.",
   returnsPolicy:
     "If there is a problem with your order, contact us on WhatsApp or by email with your order number and a short description of the problem. We will review it and tell you the next steps.\n\nKeep your order number and payment receipt until your order has been delivered.",
   privacyPolicy:
     "We collect the details you enter at checkout: your name, phone number, WhatsApp number, email address (if you give one), delivery address and any delivery instructions. If you submit a payment confirmation, we also keep the transfer reference and the receipt you upload.\n\nWe use these details only to process, deliver and support your order. We do not sell your details.\n\nWe do not take card payments on this website and we do not store card details.\n\nTo ask about your data or to have it removed, contact us on WhatsApp or by email.",
   termsPolicy:
-    "All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Product payment and delivery payment are collected separately. Your order advances only after an admin verifies the relevant payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.",
+    "All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Delivery within Nigeria is free. Your order advances only after an admin verifies your product payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.",
 };
 
 export function seedSettings(db: DB) {

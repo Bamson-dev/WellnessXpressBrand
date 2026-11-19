@@ -56,7 +56,7 @@ export default function Footer() {
       <div className="border-t border-neutral-200">
         <div className="container-x flex flex-col gap-2 py-5 text-sm text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} WellnessXpressBrand. All rights reserved.</p>
-          <p>Prices in Nigerian Naira (₦). Payment by bank transfer.</p>
+          <p>Prices in Nigerian Naira (₦). Payment by bank transfer. <Link href="/shipping" className="font-semibold text-brand-700 hover:underline">Free delivery across Nigeria.</Link></p>
         </div>
       </div>
     </footer>

@@ -47,7 +47,7 @@ export default async function Orders({ searchParams }: { searchParams: { payment
                 <td className="p-3">{o.state}</td>
                 <td className="whitespace-nowrap p-3">{naira(o.subtotal)}</td>
                 <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${o.payment_status === "paid" ? "bg-brand-50 text-brand-900" : o.payment_status === "awaiting_verification" ? "bg-amber-100 text-amber-900" : o.payment_status === "payment_failed" ? "bg-red-50 text-red-800" : "bg-neutral-100"}`}>{PAYMENT_STATUS[o.payment_status]}</span></td>
-                <td className="p-3">{o.delivery_fee == null ? "To be confirmed" : naira(o.delivery_fee)}<br /><span className="text-xs text-neutral-500">{DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)]}</span></td>
+                <td className="p-3">{o.delivery_payment_status === "not_required" ? "Free" : o.delivery_fee == null ? "To be confirmed" : naira(o.delivery_fee)}<br /><span className="text-xs text-neutral-500">{DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)]}</span></td>
                 <td className="p-3">{FULFILMENT_STATUS[o.fulfilment_status]}</td>
               </tr>
             )) : <tr><td colSpan={8} className="p-6 text-neutral-500">No orders match.</td></tr>}

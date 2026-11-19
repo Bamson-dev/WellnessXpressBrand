@@ -305,6 +305,17 @@ const MIGRATIONS: string[] = [
      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
    );
    CREATE INDEX IF NOT EXISTS idx_testimonials_approved ON testimonials(approved,id DESC);`,
+  // v12: free delivery across Nigeria. Coverage is the "active" flag; fees are no longer required.
+  // States switched off only because they had no fee are switched back on. Old orders are not touched.
+  `ALTER TABLE delivery_zones ADD COLUMN internal_note TEXT NOT NULL DEFAULT '';
+   UPDATE delivery_zones SET active = 1 WHERE fee IS NULL;
+   ALTER TABLE orders ADD COLUMN courier TEXT NOT NULL DEFAULT '';
+   ALTER TABLE orders ADD COLUMN tracking_reference TEXT NOT NULL DEFAULT '';
+   ALTER TABLE orders ADD COLUMN dispatched_at TEXT;
+   ALTER TABLE orders ADD COLUMN dispatch_note TEXT NOT NULL DEFAULT '';
+   INSERT OR IGNORE INTO settings (key, value) VALUES ('deliveryPolicy', '"free_nigeria"');
+   UPDATE settings SET value = json_quote('Delivery is free to all 36 states and the FCT (Abuja). There is no delivery charge and no minimum order.\n\nYou pay only for your products, by bank transfer. We start processing your order after we confirm your product payment.\n\nOrders placed before free delivery started keep the delivery fee shown on their order page.') WHERE key = 'shippingPolicy' AND value = json_quote('We deliver to addresses in Nigeria.\n\nYou can pay for your products when you place your order. The delivery fee is confirmed separately afterward, and must be paid as a separate amount before dispatch.\n\nWe start processing your order after we confirm your product payment and delivery payment.');
+   UPDATE settings SET value = json_quote('All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Delivery within Nigeria is free. Your order advances only after an admin verifies your product payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.') WHERE key = 'termsPolicy' AND value = json_quote('All prices are in Nigerian Naira (₦).\n\nPayment is by bank transfer to the account shown after checkout. Product payment and delivery payment are collected separately. Your order advances only after an admin verifies the relevant payment in the bank account. Uploading a receipt or entering a transfer reference does not confirm payment by itself.\n\nProduct availability can change. If an item you ordered is not available, we will contact you before processing your order.');`,
 ];
 
 function open(): DB {

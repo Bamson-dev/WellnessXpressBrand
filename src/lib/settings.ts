@@ -24,7 +24,7 @@ export function waLink(message: string, contact = getContact()) {
   return n ? `https://wa.me/${n}?text=${encodeURIComponent(message)}` : null;
 }
 
-export type DeliveryZone = { state: string; fee: number | null; active: boolean; note: string; eta: string; updatedAt: string | null };
+export type DeliveryZone = { state: string; fee: number | null; active: boolean; note: string; eta: string; internalNote: string; updatedAt: string | null };
 
 /** All 36 states and FCT, in the official list order. Missing rows are reported as unavailable. */
 export function deliveryZones(): DeliveryZone[] {
@@ -33,20 +33,26 @@ export function deliveryZones(): DeliveryZone[] {
     const r = rows.get(st);
     return {
       state: st, fee: r?.fee == null ? null : Number(r.fee), active: r ? Number(r.active) === 1 : false,
-      note: r ? String(r.note || "") : "", eta: r ? String(r.eta || "") : "", updatedAt: r?.updated_at ? String(r.updated_at) : null,
+      note: r ? String(r.note || "") : "", eta: r ? String(r.eta || "") : "", internalNote: r ? String(r.internal_note || "") : "", updatedAt: r?.updated_at ? String(r.updated_at) : null,
     };
   });
 }
 
-export type DeliveryQuote = { state: string; available: boolean; fee: number | null; eta: string; message: string };
+export type DeliveryQuote = { state: string; available: boolean; free: boolean; fee: number | null; eta: string; note: string; message: string };
 
-/** Server-side delivery quote. The browser never supplies the fee. */
+/** Store policy: free delivery to every covered Nigerian state (36 states and FCT). */
+export const FREE_DELIVERY = true;
+
+/**
+ * Server-side delivery quote. The browser never supplies the fee.
+ * Delivery is free to every Nigerian state that is switched on (coverage). Fees entered before the policy are ignored.
+ */
 export function deliveryQuote(state: string): DeliveryQuote {
-  if (!NIGERIAN_STATES.includes(state)) return { state, available: false, fee: null, eta: "", message: "Choose your state." };
-  const r = db().prepare("SELECT fee, active, eta FROM delivery_zones WHERE state = ?").get(state);
-  if (!r || r.fee == null) return { state, available: false, fee: null, eta: "", message: `Delivery to ${state} is not available yet. Message us on WhatsApp and we will help.` };
-  if (Number(r.active) !== 1) return { state, available: false, fee: null, eta: "", message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
-  return { state, available: true, fee: Number(r.fee), eta: String(r.eta || ""), message: "" };
+  const none = { state, available: false, free: false, fee: null, eta: "", note: "" };
+  if (!NIGERIAN_STATES.includes(state)) return { ...none, message: "Choose your state. We deliver within Nigeria only." };
+  const r = db().prepare("SELECT active, eta, note FROM delivery_zones WHERE state = ?").get(state);
+  if (r && Number(r.active) !== 1) return { ...none, message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
+  return { state, available: true, free: true, fee: 0, eta: r ? String(r.eta || "") : "", note: r ? String(r.note || "") : "", message: "" };
 }
 
 export function deliveryFeeFor(state: string): number | null {

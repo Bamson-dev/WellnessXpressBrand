@@ -53,7 +53,7 @@ export default function CartDrawer() {
             </ul>
             <div className="border-t border-neutral-200 p-5">
               <div className="flex items-center justify-between text-base"><span className="text-neutral-600">Subtotal</span><span className="text-lg font-bold">{naira(subtotal)}</span></div>
-              <p className="mt-1 text-sm text-neutral-500">Delivery fee is added at checkout.</p>
+              <p className="mt-1 text-sm font-semibold text-brand-700">Free delivery across Nigeria. No delivery charge.</p>
               <Link href="/checkout" onClick={() => setOpen(false)} className="btn btn-primary mt-4 w-full">Checkout</Link>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <Link href="/cart" onClick={() => setOpen(false)} className="btn btn-outline w-full">View cart</Link>

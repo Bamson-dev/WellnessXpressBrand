@@ -6,13 +6,13 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 import { useQuote } from "@/components/useQuote";
 import { track } from "@/components/pixel";
-import { IconBank, IconInfo, IconShield } from "@/components/icons";
+import { IconBank, IconShield, IconTruck } from "@/components/icons";
 import { naira } from "@/lib/site";
 
 type Errors = Record<string, string>;
 type AppliedCoupon = { code: string; discountAmount: number; eligibleSubtotal: number };
 
-export default function CheckoutForm({ states }: { states: string[]; statesWithFee: string[] }) {
+export default function CheckoutForm({ states }: { states: string[] }) {
   const { lines, ready, clear } = useCart();
   const [state, setState] = useState("");
   const { quote, loading } = useQuote(state);
@@ -155,7 +155,7 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
                   {states.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 {errors.state ? <p className="err" role="alert">{errors.state}</p> : deliveryBlocked ? <p className="err" role="alert">{delivery!.message}</p> : delivery?.available ? (
-                  <p className="hint">Delivery to {state}: <strong className="text-ink">{naira(delivery.fee || 0)}</strong>{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
+                  <p className="hint">Delivery to {state}: <strong className="text-brand-700">FREE</strong>{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
                 ) : null}
               </div>
               {field("city", "City or local government area", { autoComplete: "address-level2" })}
@@ -208,14 +208,14 @@ export default function CheckoutForm({ states }: { states: string[]; statesWithF
             <dl className="mt-3 space-y-2 border-t border-neutral-200 pt-4 text-[15px]">
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
               {activeCoupon ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Coupon ({activeCoupon.code})</dt><dd className="font-semibold text-brand-800">−{naira(discount)}</dd></div> : null}
-              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery{state ? ` (${state})` : ""}</dt>
-                <dd className="text-right">{!state ? <span className="text-neutral-500">Choose your state</span> : loading || !delivery ? "…" : delivery.available ? <span className="font-semibold">{naira(delivery.fee || 0)}</span> : <span className="font-medium text-red-700">Not available</span>}</dd>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery fee{state ? ` (${state})` : ""}</dt>
+                <dd className="text-right">{deliveryBlocked ? <span className="font-medium text-red-700">Not available</span> : <span className="font-bold text-brand-700">FREE</span>}</dd>
               </div>
               {delivery?.available && delivery.eta ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery time</dt><dd className="text-right">{delivery.eta}</dd></div> : null}
-              {delivery?.available && quote ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Order total</dt><dd className="text-right font-semibold">{naira(payNow + (delivery.fee || 0))}</dd></div> : null}
-              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(payNow) : "…"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Total delivery charge</dt><dd className="text-right font-semibold">₦0</dd></div>
+              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Total to pay</dt><dd className="font-bold">{quote ? naira(payNow) : "…"}</dd></div>
             </dl>
-            <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> {delivery?.available ? `You pay for your products now. The delivery fee of ${naira(delivery.fee || 0)} is paid separately; we send delivery payment details before dispatch.` : "You pay for your products now. The delivery fee for your state is shown here and paid separately before dispatch."}</p>
+            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>Free delivery across Nigeria.</strong> You pay only for your products, by bank transfer.</span></p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
             <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0 || deliveryBlocked} className="btn btn-primary mt-5 w-full text-base">
