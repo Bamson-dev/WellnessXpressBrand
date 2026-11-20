@@ -31,3 +31,12 @@ Do not push a production-triggering change until its build, migration, and data-
 ## Key environment settings
 
 See `.env.example`. Important settings include `DATA_DIR`, `COMING_SOON`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SESSION_SECRET`, `NEXT_PUBLIC_SITE_URL`, and `NEXT_PUBLIC_WHATSAPP_NUMBER`. Keep credentials and production data out of Git.
+
+
+## Production deployment stability (Server Actions)
+
+The app uses Next.js Server Actions in the admin. Avoid version-skew during redeploys:
+- Set a unique `NEXT_DEPLOYMENT_ID` for every production build (use the source commit SHA).
+- Keep the app on one active production build at a time unless the deployment platform routes requests consistently.
+- Do not reuse old browser HTML or static assets across releases. After a deploy, refresh clients if the deployment ID changes.
+- Optionally set a stable, secure `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` as a Coolify build-time variable, generated once and kept private. Never commit it.
