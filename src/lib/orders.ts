@@ -79,8 +79,6 @@ export function createOrder(input: CheckoutInput) {
   const itemsSubtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
   // Delivery is free across Nigeria. The fee is fixed on the server (never taken from the browser) and stored
   // on the order as a ₦0 snapshot. There is no delivery payment to collect, so its status is "not_required".
-  const fee = 0;
-  const deliveryStatus = "not_required";
   const bank = getBank();
 
   const couponCode = String(input.couponCode || "").trim();
