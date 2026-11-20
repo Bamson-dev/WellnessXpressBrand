@@ -4,7 +4,7 @@
  * or is derived from ADMIN_PASSWORD when no separate secret is set. Nothing secret is sent to the browser.
  */
 export const SESSION_COOKIE = "wx_admin";
-export type Session = { uid: string; email: string; name: string; role: "owner" | "staff"; exp: number; perms?: string[] };
+export type Session = { uid: string; email: string; name: string; role: "owner" | "staff"; exp: number; perms?: string[]; sid?: string };
 
 const enc = new TextEncoder();
 const b64u = (buf: ArrayBuffer | Uint8Array) => {
@@ -45,7 +45,8 @@ async function key() {
 export async function signSession(p: Omit<Session, "exp">, hours = 12) {
   const k = await key();
   if (!k) throw new Error("Admin access is not configured");
-  const body = b64u(enc.encode(JSON.stringify({ ...p, exp: Date.now() + hours * 3600_000 })));
+  const sid = b64u(crypto.getRandomValues(new Uint8Array(18)));
+  const body = b64u(enc.encode(JSON.stringify({ ...p, sid, exp: Date.now() + hours * 3600_000 })));
   const sig = b64u(await crypto.subtle.sign("HMAC", k, enc.encode(body)));
   return body + "." + sig;
 }

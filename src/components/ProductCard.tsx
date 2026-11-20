@@ -28,7 +28,7 @@ export default function ProductCard({ p, priority }: { p: Product; priority?: bo
         <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-brand-700 sm:text-xs">Free delivery</p>
         <div className="mt-auto grid gap-2 pt-3">
           {single ? (
-            <QuickAdd product={{ slug: p.slug, name: p.name, image: img }} variant={{ id: single.id, label: single.label, price: effective(single), compareAt: null, inStock: inStock(single), detail: "" }} />
+            <QuickAdd product={{ slug: p.slug, name: p.name, image: img }} variant={{ id: single.id, sku: single.sku, label: single.label, price: effective(single), compareAt: null, inStock: inStock(single), detail: "" }} />
           ) : (
             <Link href={`/product/${p.slug}`} className="btn btn-primary min-h-[44px] w-full px-4 text-sm">Choose option</Link>
           )}

@@ -406,6 +406,16 @@ await step("reviews", async () => {
   await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm product payment')").first());
   ok(q1("SELECT payment_status s FROM orders WHERE id=?", o.id).s === "paid", "admin confirms product payment for the coupon order");
   ok(q1("SELECT purchase_event_status s FROM orders WHERE id=?", o.id).s === "not_configured", "Purchase event path runs only on confirmation (no Meta credentials in tests)");
+  {
+    // Regression: undo + re-confirm must not send a second Purchase once one reached Meta.
+    const w = new DatabaseSync(path.join(DATA, "store.db")); w.prepare("UPDATE orders SET purchase_event_status='sent', purchase_event_id='pu_1700000000000_keepme01' WHERE id=?").run(o.id); w.close();
+    await admin.goto(B + `/admin/orders/${o.id}`);
+    await admin.fill("input[name=note][required]", "Testing undo"); await go(admin, admin.locator("button:has-text('Undo payment confirmation')"));
+    ok(q1("SELECT payment_status s FROM orders WHERE id=?", o.id).s === "awaiting_verification", "owner can undo a payment confirmation");
+    await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm product payment')").first());
+    const pe = q1("SELECT payment_status s, purchase_event_status st, purchase_event_id id FROM orders WHERE id=?", o.id);
+    ok(pe.s === "paid" && pe.st === "sent" && pe.id === "pu_1700000000000_keepme01", "re-confirming a payment keeps the original Purchase event (no duplicate)");
+  }
   ok((await review({ phone: "08039999999" })).status() === 400, "review rejected with a phone that does not match the order");
   ok((await review({ product: "tummy-balance" })).status() === 400, "review rejected for a product not in the order");
   ok((await review({})).status() === 200, "verified buyer review accepted");
@@ -746,8 +756,19 @@ await step("crawl", async () => {
 });
 
 // ---------------- responsive ----------------
+await step("untracked stock history", async () => {
+  const uv = q1("SELECT v.id FROM variants v JOIN products p ON p.id=v.product_id WHERE v.stock IS NULL AND v.status='active' AND p.status='published' ORDER BY v.id LIMIT 1").id;
+  const r = await (await postJ("/api/orders", { name: "Untracked Tester", phone: "08030000777", city: "Ikeja", address: "9 Stock Road, Ikeja", state: "Lagos", items: [{ variantId: uv, qty: 1 }] })).json();
+  const oid = q1("SELECT id FROM orders WHERE number=?", r.number).id;
+  await admin.goto(B + `/admin/orders/${oid}`);
+  await admin.selectOption('select[name="status"]', "cancelled"); await go(admin, admin.locator("button:has-text('Update status')").first());
+  ok(q1("SELECT fulfilment_status s FROM orders WHERE id=?", oid).s === "cancelled" && q1("SELECT COUNT(*) n FROM stock_movements WHERE order_id=?", oid).n === 0, "cancelling an order for an untracked product writes no stock history");
+  await admin.selectOption('select[name="status"]', "unfulfilled"); await go(admin, admin.locator("button:has-text('Update status')").first());
+  ok(q1("SELECT COUNT(*) n FROM stock_movements WHERE order_id=?", oid).n === 0 && q1("SELECT stock FROM variants WHERE id=?", uv).stock === null, "reopening it writes no stock history and keeps stock untracked");
+});
+
 await step("responsive", async () => {
-  const widths = [320, 360, 375, 390, 430, 768, 1024, 1280, 1440, 1920];
+  const widths = [320, 360, 375, 390, 414, 430, 768, 1024, 1280, 1440, 1920];
   const pub = ["/", "/shop", "/category/combos", "/category/individual", "/product/tummy-balance", "/product/1-month-combo-set", "/shipping", "/cart", "/checkout", "/faq", "/contact", "/about", ...(order.url ? [order.url] : [])];
   const adm = ["/admin", "/admin/products", "/admin/inventory", "/admin/delivery", "/admin/media", "/admin/orders", "/admin/categories", "/admin/promotions", "/admin/reviews", "/admin/analytics", "/admin/notifications", "/admin/activity"];
   const cookies = await admin.context().cookies();
@@ -772,8 +793,49 @@ await step("responsive", async () => {
     if (w <= 430) ok(small.length === 0, `${w}px: store tap targets at least 36px tall${small.length ? " — " + small.slice(0, 4).join("; ") : ""}`);
     ok(bad.length === 0, `${w}px: no horizontal page overflow on ${pub.length + adm.length} pages${bad.length ? " — " + bad.join(", ") : ""}`);
     if ([320, 768, 1440].includes(w)) { await pg.goto(B + "/"); await pg.screenshot({ path: path.join(SHOTS, `home-${w}.png`) }); }
+    {
+      // Regression: a cart with several items, long names and large amounts must not scroll sideways, and its controls stay on screen.
+      const vs = qa("SELECT v.id, v.price, v.label, p.slug, p.name FROM variants v JOIN products p ON p.id = v.product_id WHERE v.status = 'active' AND p.status = 'published' ORDER BY v.price DESC LIMIT 3");
+      const lines = vs.map((v, i) => ({ variantId: v.id, qty: 9 + i, slug: v.slug, name: i === 0 ? `${v.name} Extra Long Product Name For Layout Testing Purposes` : v.name, label: v.label, price: v.price, image: null }));
+      await pg.evaluate((l) => localStorage.setItem("wx_cart_v2", JSON.stringify(l)), lines);
+      for (const u of ["/cart", "/checkout"]) {
+        await pg.goto(B + u, { waitUntil: "networkidle" });
+        const [csw, ciw, rows, off] = await pg.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth, document.querySelectorAll("main li, main [data-line]").length,
+          [...document.querySelectorAll("main button, main a, main input, main select")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.left < -1 || r.right > window.innerWidth + 1); }).length]);
+        ok((u !== "/cart" || rows >= 3) && csw <= ciw + 1 && off === 0, `${w}px: ${u} with 3 items and a long name has no sideways scroll (${csw}/${ciw}, ${off} controls off screen)`);
+      }
+      await pg.evaluate(() => localStorage.removeItem("wx_cart_v2"));
+    }
     await ctx.close();
   }
+});
+
+// ---------------- server-side logout ----------------
+await step("logout revokes the session", async () => {
+  const ctx = await browser.newContext(); const p = await ctx.newPage();
+  await p.goto(B + "/admin/login");
+  await p.fill("#email", process.env.ADMIN_EMAIL || "owner@test.local");
+  await p.fill("#password", process.env.ADMIN_PASSWORD || "test-password-123"); await p.click("button:has-text('Sign in')");
+  await p.waitForURL(B + "/admin");
+  const cookie = (await ctx.cookies()).find((c) => c.name === "wx_admin");
+  ok(!!cookie && cookie.httpOnly, "sign-in sets an httpOnly session cookie");
+  ok((await ctx.request.get(B + "/api/admin/export")).status() === 200, "session works before sign-out");
+  await go(p, p.locator("button:has-text('Sign out')"));
+  ok(/\/admin\/login/.test(p.url()), "sign-out returns to the login page");
+  // Replay the copied cookie in a fresh browser: it must no longer work.
+  const thief = await browser.newContext(); await thief.addCookies([{ ...cookie }]);
+  const tp = await thief.newPage(); await tp.goto(B + "/admin/orders");
+  ok(/\/admin\/login/.test(tp.url()), "copied cookie after sign-out cannot open admin pages");
+  ok((await thief.request.get(B + "/api/admin/export")).status() === 404, "copied cookie after sign-out cannot export data");
+  ok(q1("SELECT COUNT(*) c FROM revoked_sessions").c >= 1, "signed-out session id is recorded server-side");
+  await thief.close(); await ctx.close();
+});
+
+await step("cart page metadata and tracking ids", async () => {
+  const html = await (await anon.request.get(B + "/cart")).text();
+  ok(/<title>Your cart[^<]*<\/title>/.test(html) && /<meta name="robots" content="noindex/.test(html), "cart page has its own title and noindex");
+  const src = (f) => fs.readFileSync(path.join(FIX, "..", f), "utf8");
+  ok(/content_ids: \[contentId\(l\)\]/.test(src("src/components/CartProvider.tsx")) && /content_ids: lines\.map\(contentId\)/.test(src("src/components/CheckoutForm.tsx")), "AddToCart and InitiateCheckout use the SKU as content_ids, like ViewContent and Purchase");
 });
 
 await browser.close();

@@ -48,7 +48,7 @@ export default async function ProductPage(
   const reviews = db().prepare("SELECT customer_name,rating,review_text,created_at FROM product_reviews WHERE product_id=? AND status='approved' AND verified_purchase=1 ORDER BY created_at DESC LIMIT 20").all(p.id);
   const r = priceRange(p);
   const variants = p.variants.map((v) => ({
-    id: v.id, label: v.label, price: effective(v), compareAt: v.salePrice != null && v.salePrice < v.price ? v.price : null, inStock: inStock(v),
+    id: v.id, sku: v.sku, label: v.label, price: effective(v), compareAt: v.salePrice != null && v.salePrice < v.price ? v.price : null, inStock: inStock(v),
     detail: [v.size && v.size !== v.label ? v.size : "", v.duration && v.duration.toLowerCase() !== v.label.toLowerCase() ? v.duration : ""].filter(Boolean).join(" · "),
   }));
   const ld = {

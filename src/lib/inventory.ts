@@ -65,7 +65,9 @@ export function releaseOrderStock(d: DB, orderId: number, actor: string, note: s
     // Orders placed before movement tracking have no rows: treat their quantity as still held once.
     if (!byVariant.has(vid)) {
       // Record the implicit reservation once, without touching stock, so later reopen/cancel maths stays exact.
+      // Variants without stock tracking have nothing to reserve or release, so no history row is written for them.
       const cur = d.prepare("SELECT stock FROM variants WHERE id = ?").get(vid);
+      if (cur?.stock == null) continue;
       d.prepare("INSERT INTO stock_movements (variant_id, order_id, delta, stock_after, reason, note, actor) VALUES (?,?,?,?, 'order_reserved', 'Reserved before stock history began', 'system')")
         .run(vid, orderId, -Number(it.qty), cur?.stock == null ? null : Number(cur.stock));
       byVariant.set(vid, -Number(it.qty));
@@ -87,8 +89,8 @@ export function reserveOrderStock(d: DB, orderId: number, actor: string, note: s
     if (need <= 0) continue;
     const v = d.prepare("SELECT stock FROM variants WHERE id = ?").get(vid);
     if (v && v.stock != null && Number(v.stock) < need) return `${it.name}: only ${v.stock} in stock.`;
-    d.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL").run(need, vid);
-    recordMovement(d, vid, -need, "order_reserved", note, actor, orderId);
+    const r = d.prepare("UPDATE variants SET stock = stock - ? WHERE id = ? AND stock IS NOT NULL").run(need, vid);
+    if (Number(r.changes) > 0) recordMovement(d, vid, -need, "order_reserved", note, actor, orderId);
   }
   return null;
 }

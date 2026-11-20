@@ -177,8 +177,8 @@ export const DEFAULT_SETTINGS: Record<string, unknown> = {
   },
   seo: {
     titleTemplate: "%s | WellnessXpressBrand", homeTitle: "WellnessXpressBrand | Your Weightloss Journey Starts Here.",
-    homeDescription: "Shop WellnessXpress weight-management and wellness products in Nigeria. Order without an account, pay by bank transfer and enjoy free delivery to all 36 states and Abuja.",
-    defaultDescription: "Shop WellnessXpress weight-management and wellness products in Nigeria. Order without an account, pay by bank transfer and enjoy free delivery to all 36 states and Abuja.",
+    homeDescription: "Shop WellnessXpress weight-management and wellness products in Nigeria. No account needed, pay by bank transfer, free delivery to all 36 states and Abuja.",
+    defaultDescription: "Shop WellnessXpress weight-management and wellness products in Nigeria. No account needed, pay by bank transfer, free delivery to all 36 states and Abuja.",
     ogImage: "/og.jpg", noindexSite: false,
   },
   bank: { bank: "Ecobank", accountName: "Edith Ofili", accountNumber: "2930024274" },
