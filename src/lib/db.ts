@@ -378,6 +378,88 @@ const MIGRATIONS: string[] = [
      expires_at INTEGER NOT NULL
    );
    UPDATE settings SET value = REPLACE(value, 'Shop WellnessXpress weight-management and wellness products in Nigeria. Order without an account, pay by bank transfer and enjoy free delivery to all 36 states and Abuja.', 'Shop WellnessXpress weight-management and wellness products in Nigeria. No account needed, pay by bank transfer, free delivery to all 36 states and Abuja.') WHERE key = 'seo';`,
+  // v15: apply WellnessXpress November 20 flyer prices, names and combo catalogue.
+  `UPDATE products SET name='Tummy Tea', short_description='WellnessXpress Tummy Tea in a resealable pouch.', description='Tummy Tea from WellnessXpress, supplied in a resealable pouch with the WellnessXpress label.', review_note='' WHERE slug='tummy-balance';
+   UPDATE products SET name='Flat Tummy Seed', short_description='Flat Tummy Seed from WellnessXpress.', description='Flat Tummy Seed from WellnessXpress.', status='published', review_note='' WHERE slug='detox-seed';
+   UPDATE products SET name='General Fat Loss (2 Weeks)', short_description='Appetite Suppressant, Metabolic Reset, Tummy Balance and Flat Tummy Seed.', description='General Fat Loss (2 Weeks) contains Appetite Suppressant, Metabolic Reset, Tummy Balance and Flat Tummy Seed.', review_note='' WHERE slug='2-weeks-combo-set';
+   UPDATE products SET name='General Fat Loss (1 Month)', short_description='Appetite Suppressant, Metabolic Reset, Tummy Balance and Flat Tummy Seed.', description='General Fat Loss (1 Month) contains Appetite Suppressant, Metabolic Reset, Tummy Balance and Flat Tummy Seed.', review_note='' WHERE slug='1-month-combo-set';
+   UPDATE products SET name='Basic Tummy Blast', short_description='Tummy Balance (Big) and Flat Tummy Seed.', description='Basic Tummy Blast contains Tummy Balance (Big) and Flat Tummy Seed.', review_note='' WHERE slug='tummy-set';
+   UPDATE products SET name='1 Month Full Kit', short_description='Metabolic Reset, Appetite Suppressant, Tummy Balance, Trim Down Coffee, Get Snatched Oil and Flat Tummy Seed.', description='The 1 Month Full Kit contains Metabolic Reset, Appetite Suppressant, Tummy Balance, Trim Down Coffee, Get Snatched Oil and Flat Tummy Seed.', review_note='' WHERE slug='1-month-full-kit';
+   UPDATE products SET status='archived', featured=0, review_note='Archived because the November 20 flyer replaces this combo.' WHERE slug IN ('mini-combo-set','maxi-combo-set');
+   UPDATE variants SET label='2 Weeks', size='', duration='2 weeks', price=9500, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='appetite-suppressant') AND sort=0;
+   UPDATE variants SET label='1 Month', size='', duration='1 month', price=18000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=1 WHERE product_id=(SELECT id FROM products WHERE slug='appetite-suppressant') AND sort=1;
+   UPDATE variants SET status='inactive', needs_confirmation=0 WHERE product_id=(SELECT id FROM products WHERE slug='appetite-suppressant') AND sort>=2;
+   UPDATE variants SET label='2 Weeks', size='', duration='2 weeks', price=10500, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='metabolic-reset') AND sort=0;
+   UPDATE variants SET label='1 Month', size='', duration='1 month', price=19500, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=1 WHERE product_id=(SELECT id FROM products WHERE slug='metabolic-reset') AND sort=1;
+   UPDATE variants SET status='inactive', needs_confirmation=0 WHERE product_id=(SELECT id FROM products WHERE slug='metabolic-reset') AND sort>=2;
+   UPDATE variants SET label='2 Weeks', size='', duration='2 weeks', price=13000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='tummy-balance') AND sort=0;
+   UPDATE variants SET label='1 Month', size='', duration='1 month', price=25000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=1 WHERE product_id=(SELECT id FROM products WHERE slug='tummy-balance') AND sort=1;
+   UPDATE variants SET status='inactive', needs_confirmation=0 WHERE product_id=(SELECT id FROM products WHERE slug='tummy-balance') AND sort>=2;
+   UPDATE variants SET label='Flat Tummy Seed', size='', duration='', price=4000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='detox-seed');
+   UPDATE variants SET label='Single', size='', duration='', price=10000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='trim-down-coffee') AND sort=0;
+   UPDATE variants SET status='inactive', needs_confirmation=0 WHERE product_id=(SELECT id FROM products WHERE slug='trim-down-coffee') AND sort>=1;
+   UPDATE variants SET label='Single', size='', duration='', price=15000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='get-snatched-oil');
+   UPDATE variants SET label='2 Weeks', size='', duration='2 weeks', price=35500, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='2-weeks-combo-set') AND sort=0;
+   UPDATE variants SET status='inactive' WHERE product_id=(SELECT id FROM products WHERE slug='2-weeks-combo-set') AND sort>=1;
+   UPDATE variants SET label='Set', size='', duration='1 month', price=64500, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='1-month-combo-set') AND sort=0;
+   UPDATE variants SET status='inactive' WHERE product_id=(SELECT id FROM products WHERE slug='1-month-combo-set') AND sort>=1;
+   UPDATE variants SET label='Set', size='', duration='', price=26000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='tummy-set');
+   UPDATE variants SET status='inactive' WHERE product_id=(SELECT id FROM products WHERE slug='tummy-set') AND sort>=1;
+   UPDATE variants SET label='Kit', size='', duration='1 month', price=87000, sale_price=NULL, needs_confirmation=0, price_source='WellnessXpress flyer 2026-11-20', status='active', sort=0 WHERE product_id=(SELECT id FROM products WHERE slug='1-month-full-kit');
+   UPDATE variants SET status='inactive' WHERE product_id=(SELECT id FROM products WHERE slug='1-month-full-kit') AND sort>=1;
+   DELETE FROM combo_items WHERE combo_id IN (SELECT id FROM products WHERE slug IN ('2-weeks-combo-set','1-month-combo-set','tummy-set','1-month-full-kit'));
+   INSERT INTO combo_items (combo_id,item_product_id,item_name,size_note,quantity_note,sort) VALUES
+   ((SELECT id FROM products WHERE slug='2-weeks-combo-set'),(SELECT id FROM products WHERE slug='appetite-suppressant'),'Appetite Suppressant','2 Weeks','',0),
+   ((SELECT id FROM products WHERE slug='2-weeks-combo-set'),(SELECT id FROM products WHERE slug='metabolic-reset'),'Metabolic Reset','2 Weeks','',1),
+   ((SELECT id FROM products WHERE slug='2-weeks-combo-set'),(SELECT id FROM products WHERE slug='tummy-balance'),'Tummy Balance','2 Weeks','',2),
+   ((SELECT id FROM products WHERE slug='2-weeks-combo-set'),(SELECT id FROM products WHERE slug='detox-seed'),'Flat Tummy Seed','','',3),
+   ((SELECT id FROM products WHERE slug='1-month-combo-set'),(SELECT id FROM products WHERE slug='metabolic-reset'),'Metabolic Reset','1 Month','',0),
+   ((SELECT id FROM products WHERE slug='1-month-combo-set'),(SELECT id FROM products WHERE slug='appetite-suppressant'),'Appetite Suppressant','1 Month','',1),
+   ((SELECT id FROM products WHERE slug='1-month-combo-set'),(SELECT id FROM products WHERE slug='tummy-balance'),'Tummy Balance','1 Month','',2),
+   ((SELECT id FROM products WHERE slug='1-month-combo-set'),(SELECT id FROM products WHERE slug='detox-seed'),'Flat Tummy Seed','','',3),
+   ((SELECT id FROM products WHERE slug='tummy-set'),(SELECT id FROM products WHERE slug='tummy-balance'),'Tummy Balance','Big','',0),
+   ((SELECT id FROM products WHERE slug='tummy-set'),(SELECT id FROM products WHERE slug='detox-seed'),'Flat Tummy Seed','','',1),
+   ((SELECT id FROM products WHERE slug='1-month-full-kit'),(SELECT id FROM products WHERE slug='metabolic-reset'),'Metabolic Reset','1 Month','',0),
+   ((SELECT id FROM products WHERE slug='1-month-full-kit'),(SELECT id FROM products WHERE slug='appetite-suppressant'),'Appetite Suppressant','1 Month','',1),
+   ((SELECT id FROM products WHERE slug='1-month-full-kit'),(SELECT id FROM products WHERE slug='tummy-balance'),'Tummy Balance','1 Month','',2),
+   ((SELECT id FROM products WHERE slug='1-month-full-kit'),(SELECT id FROM products WHERE slug='trim-down-coffee'),'Trim Down Coffee','','',3),
+   ((SELECT id FROM products WHERE slug='1-month-full-kit'),(SELECT id FROM products WHERE slug='get-snatched-oil'),'Get Snatched Oil','','',4),
+   ((SELECT id FROM products WHERE slug='1-month-full-kit'),(SELECT id FROM products WHERE slug='detox-seed'),'Flat Tummy Seed','','',5);
+   INSERT OR IGNORE INTO products (slug,name,type,category,short_description,description,status,featured,sort,review_note)
+     VALUES ('mega-tummy-blast','Mega Tummy Blast','combo','combos','Tummy Balance (Big), Flat Tummy Seed and Get Snatched Oil.','Mega Tummy Blast contains Tummy Balance (Big), Flat Tummy Seed and Get Snatched Oil.','published',1,15,'');
+   INSERT OR IGNORE INTO variants (product_id,label,sku,price,status,needs_confirmation,price_source,sort)
+     VALUES ((SELECT id FROM products WHERE slug='mega-tummy-blast'),'Set','WX-MEGA-TUMMY-BLAST-SET',40000,'active',0,'WellnessXpress flyer 2026-11-20',0);
+   DELETE FROM combo_items WHERE combo_id=(SELECT id FROM products WHERE slug='mega-tummy-blast');
+   INSERT INTO combo_items (combo_id,item_product_id,item_name,size_note,sort) VALUES
+     ((SELECT id FROM products WHERE slug='mega-tummy-blast'),(SELECT id FROM products WHERE slug='tummy-balance'),'Tummy Balance','Big',0),
+     ((SELECT id FROM products WHERE slug='mega-tummy-blast'),(SELECT id FROM products WHERE slug='detox-seed'),'Flat Tummy Seed','',1),
+     ((SELECT id FROM products WHERE slug='mega-tummy-blast'),(SELECT id FROM products WHERE slug='get-snatched-oil'),'Get Snatched Oil','',2);
+   INSERT OR IGNORE INTO products (slug,name,type,category,short_description,description,status,featured,sort,review_note)
+     VALUES ('body-reset-combo','Body Reset Combo','combo','combos','Metabolic Reset, Trim Down Coffee and Tummy Balance (Small).','Body Reset Combo contains Metabolic Reset, Trim Down Coffee and Tummy Balance (Small).','published',1,16,'');
+   INSERT OR IGNORE INTO variants (product_id,label,sku,price,status,needs_confirmation,price_source,sort)
+     VALUES ((SELECT id FROM products WHERE slug='body-reset-combo'),'Set','WX-BODY-RESET-COMBO-SET',31000,'active',0,'WellnessXpress flyer 2026-11-20',0);
+   DELETE FROM combo_items WHERE combo_id=(SELECT id FROM products WHERE slug='body-reset-combo');
+   INSERT INTO combo_items (combo_id,item_product_id,item_name,size_note,sort) VALUES
+     ((SELECT id FROM products WHERE slug='body-reset-combo'),(SELECT id FROM products WHERE slug='metabolic-reset'),'Metabolic Reset','',0),
+     ((SELECT id FROM products WHERE slug='body-reset-combo'),(SELECT id FROM products WHERE slug='trim-down-coffee'),'Trim Down Coffee','',1),
+     ((SELECT id FROM products WHERE slug='body-reset-combo'),(SELECT id FROM products WHERE slug='tummy-balance'),'Tummy Balance','Small',2);
+   UPDATE products SET name='Body Reset Combo', status='published', featured=1 WHERE slug='body-reset-combo';
+   UPDATE products SET name='Mega Tummy Blast', status='published', featured=1 WHERE slug='mega-tummy-blast';
+   UPDATE products SET review_note='' WHERE slug IN ('mega-tummy-blast','body-reset-combo');
+   UPDATE products SET sort=0 WHERE slug='2-weeks-combo-set';
+   UPDATE products SET sort=1 WHERE slug='1-month-combo-set';
+   UPDATE products SET sort=2 WHERE slug='tummy-set';
+   UPDATE products SET sort=3 WHERE slug='mega-tummy-blast';
+   UPDATE products SET sort=4 WHERE slug='body-reset-combo';
+   UPDATE products SET sort=5 WHERE slug='1-month-full-kit';
+   UPDATE products SET sort=6 WHERE slug='appetite-suppressant';
+   UPDATE products SET sort=7 WHERE slug='metabolic-reset';
+   UPDATE products SET sort=8 WHERE slug='tummy-balance';
+   UPDATE products SET sort=9 WHERE slug='detox-seed';
+   UPDATE products SET sort=10 WHERE slug='trim-down-coffee';
+   UPDATE products SET sort=11 WHERE slug='get-snatched-oil';
+   `,
+
 ];
 
 function open(): DB {
