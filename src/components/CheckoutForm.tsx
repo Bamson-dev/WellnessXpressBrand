@@ -12,6 +12,7 @@ import { naira } from "@/lib/site";
 type Errors = Record<string, string>;
 
 type DeliveryQuote = { fee: number | null; active: boolean; estimatedDelivery: string };
+type AppliedCoupon = { code: string; discountAmount: number; eligibleSubtotal: number };
 
 export default function CheckoutForm({ states, deliveryQuotes }: { states: string[]; deliveryQuotes: Record<string, DeliveryQuote> }) {
   const { lines, ready, clear } = useCart();
@@ -21,9 +22,21 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState("");
   const [diffWa, setDiffWa] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponPreview, setCouponPreview] = useState<AppliedCoupon | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponCartKey, setCouponCartKey] = useState("");
   const router = useRouter();
   const tracked = useRef(false);
   const placed = useRef(false);
+
+  const cartKey = JSON.stringify(lines.map((line) => [line.variantId, line.qty]));
+  useEffect(() => {
+    setCouponPreview(null);
+    setCouponCartKey("");
+    setCouponMessage("");
+  }, [cartKey]);
 
   useEffect(() => {
     if (ready && lines.length && !tracked.current) {
@@ -43,7 +56,22 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
 
   const unavailable = quote?.lines.filter((l) => !l.available) || [];
   const missing = quote ? lines.length - quote.lines.length : 0;
+  const activeCoupon = couponCartKey === cartKey ? couponPreview : null;
+  const discount = activeCoupon?.discountAmount || 0;
   const deliveryQuote = state ? deliveryQuotes[state] : undefined;
+
+  async function applyCoupon() {
+    setCouponMessage(""); setCouponPreview(null); setCouponBusy(true);
+    const form = document.querySelector<HTMLFormElement>("form[data-checkout-form]");
+    const fd = form ? new FormData(form) : new FormData();
+    try {
+      const r = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: couponInput, phone: fd.get("phone"), items: lines.map((line) => ({ variantId: line.variantId, qty: line.qty })) }) });
+      const result = await r.json().catch(() => ({}));
+      if (r.ok && result.code) { setCouponPreview(result); setCouponCartKey(cartKey); setCouponInput(result.code); setCouponMessage(`Coupon applied. You save ${naira(result.discountAmount)} on eligible products.`); }
+      else setCouponMessage(result.error || "We could not validate that coupon.");
+    } catch { setCouponMessage("We could not check the coupon. Check your connection and try again."); }
+    setCouponBusy(false);
+  }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,6 +80,7 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
     const body = {
       name: fd.get("name"), phone: fd.get("phone"), whatsapp: diffWa ? fd.get("whatsapp") : "", email: fd.get("email"),
       state: fd.get("state"), city: fd.get("city"), address: fd.get("address"), instructions: fd.get("instructions"), company: fd.get("company"),
+      couponCode: activeCoupon?.code || "",
       items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
     };
     const local: Errors = {};
@@ -71,7 +100,7 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
         window.location.assign(`/order/${j.number}?t=${encodeURIComponent(j.token)}&new=1`);
         return;
       }
-      if (j.errors) { setErrors(j.errors); focusFirst(j.errors); }
+      if (j.errors) { setErrors(j.errors); if (j.errors.coupon) { setCouponMessage(j.errors.coupon); setCouponPreview(null); } focusFirst(j.errors); }
       setFail(j.error || (j.errors?.items ? j.errors.items : "Check the highlighted fields."));
     } catch {
       setFail("We could not reach the server. Check your connection and try again.");
@@ -97,7 +126,7 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
       <ol className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-neutral-500" aria-label="Checkout steps">
         <li className="text-brand-700">1. Your details</li><li>2. Bank transfer</li><li>3. Confirm payment</li>
       </ol>
-      <form onSubmit={submit} noValidate className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
+      <form data-checkout-form onSubmit={submit} noValidate className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
         <div className="space-y-8">
           <section className="card p-5 sm:p-6" aria-labelledby="c-h">
             <h2 id="c-h" className="text-xl">Contact details</h2>
@@ -159,6 +188,8 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
         <aside className="h-fit space-y-4 lg:sticky lg:top-28">
           <section className="card p-5 sm:p-6" aria-labelledby="s-h">
             <h2 id="s-h" className="text-xl">Your order</h2>
+            <div className="mt-4 flex flex-wrap gap-2"><label htmlFor="couponCode" className="sr-only">Coupon code</label><input id="couponCode" value={couponInput} onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponPreview(null); setCouponMessage(""); }} placeholder="Coupon code" className="field min-w-0 flex-1 uppercase" maxLength={40} /><button type="button" onClick={applyCoupon} disabled={couponBusy || !couponInput.trim()} className="btn btn-outline min-h-11">{couponBusy ? "Checking…" : activeCoupon ? "Recheck code" : "Apply coupon"}</button></div>
+            {couponMessage ? <p className={`mt-2 text-sm ${activeCoupon ? "text-brand-800" : "text-red-700"}`} role="status">{couponMessage}</p> : null}
             <ul className="mt-4 divide-y divide-neutral-100">
               {lines.map((l) => {
                 const s = quote?.lines.find((x) => x.variantId === l.variantId);
@@ -173,9 +204,10 @@ export default function CheckoutForm({ states, deliveryQuotes }: { states: strin
             </ul>
             <dl className="mt-3 space-y-2 border-t border-neutral-200 pt-4 text-[15px]">
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
+              {activeCoupon ? <><div className="flex justify-between"><dt className="text-neutral-600">Coupon ({activeCoupon.code})</dt><dd className="font-semibold text-brand-800">−{naira(discount)}</dd></div><div className="flex justify-between"><dt className="text-neutral-600">Product payment after discount</dt><dd className="font-semibold">{quote ? naira(Math.max(0, quote.subtotal - discount)) : "…"}</dd></div></> : null}
               <div className="flex justify-between"><dt className="text-neutral-600">Delivery (paid separately)</dt><dd className="text-right font-medium">{deliveryQuote?.active && deliveryQuote.fee != null ? naira(deliveryQuote.fee) : "Select an available state"}</dd></div>
-              {deliveryQuote?.active && deliveryQuote.fee != null ? <div className="flex justify-between border-t border-neutral-100 pt-2"><dt className="text-neutral-600">Total including delivery</dt><dd className="font-semibold">{quote ? naira(quote.subtotal + deliveryQuote.fee) : "…"}</dd></div> : null}
-              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
+              {deliveryQuote?.active && deliveryQuote.fee != null ? <div className="flex justify-between border-t border-neutral-100 pt-2"><dt className="text-neutral-600">Total including delivery</dt><dd className="font-semibold">{quote ? naira(quote.subtotal - discount + deliveryQuote.fee) : "…"}</dd></div> : null}
+              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Pay now for products</dt><dd className="font-bold">{quote ? naira(quote.subtotal - discount) : "…"}</dd></div>
             </dl>
             <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><IconInfo className="h-5 w-5 shrink-0" /> {deliveryQuote?.active && deliveryQuote.fee != null ? "Pay for products now. The displayed delivery fee is paid separately before dispatch." : "Choose a state with an active configured delivery fee to continue."}</p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}

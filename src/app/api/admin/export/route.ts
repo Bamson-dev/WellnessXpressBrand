@@ -11,7 +11,9 @@ const cell = (v: unknown) => {
 };
 
 export async function GET() {
-  if (!(await currentAdmin())) return new Response("Not found", { status: 404 });
+  const admin = await currentAdmin();
+  if (!admin) return new Response("Not found", { status: 404 });
+  if (admin.role !== "owner") return new Response("Forbidden", { status: 403 });
   const orders = db().prepare("SELECT * FROM orders ORDER BY id DESC").all();
   const items = db().prepare("SELECT order_id, name, variant_label, qty, unit_price FROM order_items ORDER BY id").all();
   const byOrder = new Map<number, string[]>();
@@ -19,10 +21,10 @@ export async function GET() {
     const k = Number(i.order_id);
     byOrder.set(k, [...(byOrder.get(k) || []), `${i.qty} x ${i.name} (${i.variant_label}) @ ${i.unit_price}`]);
   }
-  const head = ["Order number", "Date", "Customer", "Phone", "WhatsApp", "Email", "State", "City/LGA", "Address", "Items", "Subtotal", "Delivery fee", "Total",
+  const head = ["Order number", "Date", "Customer", "Phone", "WhatsApp", "Email", "State", "City/LGA", "Address", "Items", "Product payment", "Coupon code", "Discount", "Delivery fee", "Total",
     "Product payment status", "Delivery payment status", "Delivery payment reference", "Delivery paid at", "Fulfilment status", "Product payment reference", "Payer name", "Product paid at", "Verified by", "Admin notes"];
   const rows = orders.map((o) => [o.number, o.created_at, o.customer_name, o.phone, o.whatsapp, o.email, o.state, o.city, o.address,
-    (byOrder.get(Number(o.id)) || []).join("; "), o.subtotal, o.delivery_fee ?? "To be confirmed", o.total ?? "",
+    (byOrder.get(Number(o.id)) || []).join("; "), o.subtotal, o.coupon_code, o.discount_amount, o.delivery_fee ?? "To be confirmed", o.total ?? "",
     PAYMENT_STATUS[String(o.payment_status)] || o.payment_status, String(o.delivery_payment_status), o.delivery_payment_reference, o.delivery_paid_at || "",
     FULFILMENT_STATUS[String(o.fulfilment_status)] || o.fulfilment_status, o.payment_reference, o.payer_name, o.paid_at || "", o.verified_by, o.admin_notes]);
   const csv = "﻿" + [head, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");

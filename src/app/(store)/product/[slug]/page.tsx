@@ -7,10 +7,12 @@ import { getContact } from "@/lib/settings";
 import { PurchaseBox } from "@/components/AddToCart";
 import ProductCard from "@/components/ProductCard";
 import Gallery from "@/components/Gallery";
+import ReviewForm from "@/components/ReviewForm";
 import RichText from "@/components/RichText";
 import { TrackView } from "@/components/pixel";
 import { IconBank, IconChevron, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 import { naira, site } from "@/lib/site";
+import { db } from "@/lib/db";
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const p = getProduct(params.slug);
@@ -28,6 +30,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
   if (!p || !p.variants.length) notFound();
   const contact = getContact();
   const related = relatedProducts(p);
+  const reviews = db().prepare("SELECT customer_name,rating,review_text,created_at FROM product_reviews WHERE product_id=? AND status='approved' AND verified_purchase=1 ORDER BY created_at DESC LIMIT 20").all(p.id);
   const r = priceRange(p);
   const variants = p.variants.map((v) => ({
     id: v.id, label: v.label, price: effective(v), compareAt: v.salePrice != null && v.salePrice < v.price ? v.price : null, inStock: inStock(v),
@@ -102,6 +105,11 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           <section className="card p-6">
             <h2 className="text-xl">Description</h2>
             <RichText value={p.description} />
+          </section>
+          <section className="card p-6" aria-labelledby="reviews-heading">
+            <h2 id="reviews-heading" className="text-xl">Verified customer reviews</h2>
+            {reviews.length ? <ul className="mt-4 space-y-4">{reviews.map((review, i) => <li key={i} className="border-t border-neutral-100 pt-4"><p aria-label={`${Number(review.rating)} out of 5 stars`} className="font-semibold text-amber-600">{"★".repeat(Number(review.rating))}{"☆".repeat(5 - Number(review.rating))}</p><p className="mt-2 whitespace-pre-line text-neutral-700">{String(review.review_text)}</p><p className="mt-2 text-sm text-neutral-500">Verified purchase · {String(review.customer_name)}</p></li>)}</ul> : <p className="mt-2 text-sm text-neutral-600">No approved reviews yet.</p>}
+            <details className="mt-5 border-t border-neutral-100 pt-4"><summary className="cursor-pointer font-semibold">Write a review</summary><ReviewForm product={p.slug} /></details>
           </section>
           {p.ingredients ? (
             <section className="card p-6"><h2 className="text-xl">Ingredients</h2><p className="mt-3 whitespace-pre-line leading-7 text-neutral-700">{p.ingredients}</p></section>

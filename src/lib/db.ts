@@ -222,6 +222,80 @@ const MIGRATIONS: string[] = [
      PRIMARY KEY(product_id,src)
    );
    CREATE INDEX IF NOT EXISTS idx_product_media_product_sort ON product_media(product_id,sort);`,
+  `CREATE TABLE IF NOT EXISTS admin_notifications (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     event_key TEXT NOT NULL UNIQUE,
+     type TEXT NOT NULL,
+     title TEXT NOT NULL,
+     body TEXT NOT NULL DEFAULT '',
+     href TEXT NOT NULL DEFAULT '/admin',
+     read_at TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX IF NOT EXISTS idx_admin_notifications_unread ON admin_notifications(read_at, id DESC);
+   CREATE TABLE IF NOT EXISTS admin_activity (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     actor TEXT NOT NULL,
+     action TEXT NOT NULL,
+     entity_type TEXT NOT NULL,
+     entity_id TEXT NOT NULL DEFAULT '',
+     details TEXT NOT NULL DEFAULT '',
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX IF NOT EXISTS idx_admin_activity_created ON admin_activity(id DESC);
+   CREATE INDEX IF NOT EXISTS idx_admin_activity_actor ON admin_activity(actor, id DESC);`,
+  `ALTER TABLE orders ADD COLUMN discount_amount INTEGER NOT NULL DEFAULT 0;
+   ALTER TABLE orders ADD COLUMN coupon_code TEXT NOT NULL DEFAULT '';
+   ALTER TABLE order_items ADD COLUMN discount_amount INTEGER NOT NULL DEFAULT 0;
+   CREATE TABLE IF NOT EXISTS coupons (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     code TEXT NOT NULL UNIQUE,
+     discount_type TEXT NOT NULL CHECK (discount_type IN ('fixed','percent')),
+     discount_value INTEGER NOT NULL,
+     starts_at TEXT NOT NULL DEFAULT '',
+     expires_at TEXT NOT NULL DEFAULT '',
+     usage_limit INTEGER,
+     customer_limit INTEGER NOT NULL DEFAULT 1,
+     minimum_order INTEGER NOT NULL DEFAULT 0,
+     product_ids TEXT NOT NULL DEFAULT '[]',
+     category_slugs TEXT NOT NULL DEFAULT '[]',
+     active INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE TABLE IF NOT EXISTS coupon_redemptions (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     coupon_id INTEGER NOT NULL REFERENCES coupons(id),
+     order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id),
+     customer_key TEXT NOT NULL,
+     discount_amount INTEGER NOT NULL,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     UNIQUE(coupon_id,customer_key,order_id)
+   );
+   CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_coupon ON coupon_redemptions(coupon_id,created_at);`,
+  `CREATE TABLE IF NOT EXISTS product_reviews (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+     order_id INTEGER NOT NULL REFERENCES orders(id),
+     customer_name TEXT NOT NULL,
+     rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+     review_text TEXT NOT NULL,
+     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+     verified_purchase INTEGER NOT NULL DEFAULT 1,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+     UNIQUE(product_id,order_id)
+   );
+   CREATE INDEX IF NOT EXISTS idx_product_reviews_public ON product_reviews(product_id,status,created_at DESC);
+   CREATE TABLE IF NOT EXISTS testimonials (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     customer_name TEXT NOT NULL,
+     quote TEXT NOT NULL,
+     approved INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL DEFAULT (datetime('now')),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX IF NOT EXISTS idx_testimonials_approved ON testimonials(approved,id DESC);`,
 ];
 
 function open(): DB {

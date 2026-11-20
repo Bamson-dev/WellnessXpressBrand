@@ -1,10 +1,12 @@
 import "server-only";
-import { randomBytes, timingSafeEqual } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { db, tx } from "@/lib/db";
 import { quoteLines } from "@/lib/catalog";
 import { getBank } from "@/lib/settings";
 import { NIGERIAN_STATES, normalisePhone } from "@/lib/site";
 import { clean, isEmail } from "@/lib/validate";
+import { logAdminActivity, notifyAdmin } from "@/lib/admin-events";
+import { validateCoupon } from "@/lib/coupons";
 
 export type OrderRow = Record<string, unknown> & {
   id: number; number: string; access_token: string; created_at: string; customer_name: string; phone: string; whatsapp: string;
@@ -28,6 +30,7 @@ function orderNumber() {
 export type CheckoutInput = {
   name: unknown; phone: unknown; whatsapp: unknown; email: unknown; state: unknown; city: unknown; address: unknown; instructions: unknown;
   items: unknown;
+  couponCode?: unknown;
   tracking?: { fbp?: string; fbc?: string; ua?: string; ip?: string };
 };
 
@@ -63,7 +66,7 @@ export function createOrder(input: CheckoutInput) {
   if (bad) errors.items = `${bad.name} (${bad.label}): ${bad.reason}. Update your cart and try again.`;
   if (Object.keys(errors).length) return { ok: false as const, errors };
 
-  const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
+  const itemsSubtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
   // Product payment is collected first. A configured state fee is quoted and remains payable separately.
   const bank = getBank();
 
@@ -72,7 +75,31 @@ export function createOrder(input: CheckoutInput) {
     if (zone && Number(zone.active) !== 1) throw new Error("delivery:disabled");
     if (!zone || zone.fee == null) throw new Error("delivery:unconfigured");
     const fee = Number(zone.fee);
+    const couponCode = String(input.couponCode || "").trim();
+    const customerKey = `phone:${createHash("sha256").update(phone).digest("hex")}`;
+    const coupon = couponCode ? validateCoupon(couponCode, lines.map((line) => ({ productId: line.productId, variantId: line.variantId, lineTotal: line.lineTotal })), customerKey, d) : null;
+    if (coupon && !coupon.ok) throw new Error(`coupon:${coupon.error}`);
+    const discountAmount = coupon?.ok ? coupon.discountAmount : 0;
+    const subtotal = itemsSubtotal - discountAmount;
     const total = subtotal + fee;
+    const lineDiscounts = new Map<number, number>();
+    if (coupon?.ok) {
+      const eligible = lines.filter((line) => coupon.eligibleVariantIds.includes(line.variantId));
+      let allocated = 0;
+      for (const line of eligible) {
+        const share = Math.min(line.lineTotal, Math.floor(discountAmount * line.lineTotal / coupon.eligibleSubtotal));
+        lineDiscounts.set(line.variantId, share);
+        allocated += share;
+      }
+      let remainder = discountAmount - allocated;
+      for (const line of eligible) {
+        if (!remainder) break;
+        const prior = lineDiscounts.get(line.variantId) || 0;
+        const extra = Math.min(line.lineTotal - prior, remainder);
+        lineDiscounts.set(line.variantId, prior + extra);
+        remainder -= extra;
+      }
+    }
     const deliveryEstimate = String(zone?.estimated_delivery || "");
     // Validate stock at checkout. Tracked stock is deducted only after an admin verifies payment.
     for (const l of lines) {
@@ -84,19 +111,24 @@ export function createOrder(input: CheckoutInput) {
     const token = randomBytes(24).toString("base64url");
     const r = d
       .prepare(
-        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,delivery_estimate,bank_snapshot,tracking)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?,?)`
+        `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,delivery_estimate,bank_snapshot,tracking,discount_amount,coupon_code)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?,?,?,?)`
       )
-         .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, "pending", deliveryEstimate, JSON.stringify(bank), JSON.stringify(trackingOf(input)));
+         .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, "pending", deliveryEstimate, JSON.stringify(bank), JSON.stringify(trackingOf(input)), discountAmount, coupon?.ok ? coupon.code : "");
     const oid = Number(r.lastInsertRowid);
-    const insI = d.prepare("INSERT INTO order_items (order_id,product_id,variant_id,name,variant_label,sku,unit_price,qty,line_total) VALUES (?,?,?,?,?,?,?,?,?)");
+    if (coupon?.ok) {
+      const couponRow = d.prepare("SELECT id FROM coupons WHERE code=?").get(coupon.code);
+      d.prepare("INSERT INTO coupon_redemptions(coupon_id,order_id,customer_key,discount_amount) VALUES (?,?,?,?)").run(couponRow?.id, oid, customerKey, discountAmount);
+    }
+    const insI = d.prepare("INSERT INTO order_items (order_id,product_id,variant_id,name,variant_label,sku,unit_price,qty,line_total,discount_amount) VALUES (?,?,?,?,?,?,?,?,?,?)");
     for (const l of lines) {
-      insI.run(oid, l.productId, l.variantId, l.name, l.label, l.sku, l.unitPrice, l.qty, l.lineTotal);
+      insI.run(oid, l.productId, l.variantId, l.name, l.label, l.sku, l.unitPrice, l.qty, l.lineTotal, lineDiscounts.get(l.variantId) || 0);
     }
     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
-      oid, "customer", "order_placed", "Product payment due: ₦" + subtotal.toLocaleString("en-NG") + ". Delivery fee of ₦" + fee.toLocaleString("en-NG") + " is payable separately."
+      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Product payment due: ₦${subtotal.toLocaleString("en-NG")}. Delivery fee of ₦${fee.toLocaleString("en-NG")} is payable separately.`
     );
-    return { ok: true as const, number, token, total, subtotal, fee };
+    notifyAdmin(`order:${oid}:created`, "new_order", "New order received", `${number} · ${name} · ${state}`, `/admin/orders/${oid}`);
+    return { ok: true as const, number, token, total, subtotal, itemsSubtotal, discountAmount, couponCode: coupon?.ok ? coupon.code : "", fee };
   });
 }
 
@@ -133,6 +165,10 @@ export function getOrderForCustomer(number: string, token: string) {
 export function logEvent(orderId: number, actor: string, action: string, note = "") {
   db().prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(orderId, actor, action, note);
   db().prepare("UPDATE orders SET updated_at = datetime('now') WHERE id = ?").run(orderId);
+  const order = db().prepare("SELECT number FROM orders WHERE id=?").get(orderId);
+  if (actor !== "customer" && actor !== "system") logAdminActivity(actor, action, "order", orderId, `${String(order?.number || "")} ${note}`.trim());
+  if (action === "payment_confirmation_submitted") notifyAdmin(`order:${orderId}:payment-submitted`, "payment_update", "Product payment confirmation submitted", String(order?.number || `Order ${orderId}`), `/admin/orders/${orderId}`);
+  if (action === "delivery_payment_confirmation_submitted") notifyAdmin(`order:${orderId}:delivery-payment-submitted`, "payment_update", "Delivery payment confirmation submitted", String(order?.number || `Order ${orderId}`), `/admin/orders/${orderId}`);
 }
 
 export function restoreStock(orderId: number, actor = "system") {

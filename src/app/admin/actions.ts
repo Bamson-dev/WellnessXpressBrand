@@ -14,6 +14,7 @@ import { clean, isEmail, sniffType } from "@/lib/validate";
 import { limited } from "@/lib/ratelimit";
 import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
 import { parseDeliveryCsv } from "@/lib/delivery-csv";
+import { logAdminActivity, notifyAdmin } from "@/lib/admin-events";
 
 const s = (f: FormData, k: string, max = 500) => clean(f.get(k), max);
 const text = (f: FormData, k: string, max = 8000) => {
@@ -37,6 +38,105 @@ export async function loginAction(_: unknown, f: FormData) {
 export async function logoutAction() {
   logout();
   redirect("/admin/login");
+}
+
+export async function markNotificationReadAction(f: FormData) {
+  await requireAdmin();
+  const id = Number(f.get("id"));
+  if (f.get("all") === "yes") db().prepare("UPDATE admin_notifications SET read_at=COALESCE(read_at,datetime('now'))").run();
+  else if (Number.isSafeInteger(id) && id > 0) db().prepare("UPDATE admin_notifications SET read_at=COALESCE(read_at,datetime('now')) WHERE id=?").run(id);
+  revalidatePath("/admin/notifications");
+  revalidatePath("/admin");
+  back("/admin/notifications", "Notification status updated.");
+}
+
+export async function moderateReviewAction(f: FormData) {
+  const a = await requireAdmin();
+  const id = Number(f.get("id"));
+  const status = String(f.get("status") || "");
+  if (!Number.isSafeInteger(id) || id < 1 || !["approved", "rejected"].includes(status)) return back("/admin/reviews", "Choose a valid review action.");
+  const review = db().prepare("SELECT r.product_id,p.slug FROM product_reviews r JOIN products p ON p.id=r.product_id WHERE r.id=?").get(id);
+  if (!review) return back("/admin/reviews", "Review not found.");
+  db().prepare("UPDATE product_reviews SET status=?,updated_at=datetime('now') WHERE id=?").run(status,id);
+  logAdminActivity(a.email, status === "approved" ? "review_approved" : "review_rejected", "review", id);
+  revalidatePath(`/product/${String(review.slug)}`);
+  back("/admin/reviews", `Review ${status}.`);
+}
+
+export async function saveTestimonialAction(f: FormData) {
+  const a = await requireAdmin("owner");
+  const id = Number(f.get("id")) || 0;
+  const name = s(f, "customerName", 80);
+  const quote = text(f, "quote", 1000);
+  if (name.length < 2 || quote.length < 10) return back("/admin/reviews", "Enter the customer's name and their actual statement (at least 10 characters).");
+  const approved = f.get("approved") === "on" ? 1 : 0;
+  if (id) db().prepare("UPDATE testimonials SET customer_name=?,quote=?,approved=?,updated_at=datetime('now') WHERE id=?").run(name,quote,approved,id);
+  else db().prepare("INSERT INTO testimonials (customer_name,quote,approved) VALUES (?,?,?)").run(name,quote,approved);
+  logAdminActivity(a.email, id ? "testimonial_updated" : "testimonial_added", "testimonial", id || "new");
+  revalidatePath("/");
+  back("/admin/reviews", "Testimonial saved.");
+}
+
+export async function toggleTestimonialAction(f: FormData) {
+  const a = await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  if (!Number.isSafeInteger(id) || id < 1) return back("/admin/reviews", "Choose a valid testimonial.");
+  const r = db().prepare("UPDATE testimonials SET approved=1-approved,updated_at=datetime('now') WHERE id=?").run(id);
+  if (!r.changes) return back("/admin/reviews", "Testimonial not found.");
+  logAdminActivity(a.email, "testimonial_visibility_toggled", "testimonial", id);
+  revalidatePath("/");
+  back("/admin/reviews", "Testimonial visibility updated.");
+}
+
+export async function saveCouponAction(f: FormData) {
+  const a = await requireAdmin("owner");
+  const id = Number(f.get("id")) || 0;
+  const code = s(f, "code", 40).toUpperCase().replace(/\s+/g, "");
+  const type = f.get("discountType") === "percent" ? "percent" : "fixed";
+  const value = Number(f.get("discountValue"));
+  const minRaw = String(f.get("minimumOrder") ?? "0").trim();
+  const minimum = money(minRaw);
+  const usageRaw = String(f.get("usageLimit") ?? "").trim();
+  const usage = usageRaw ? Number(usageRaw) : null;
+  const customerLimit = Number(f.get("customerLimit") || 1);
+  const startsAt = s(f, "startsAt", 10);
+  const expiresAt = s(f, "expiresAt", 10);
+  const dateOk = (x: string) => !x || /^\d{4}-\d{2}-\d{2}$/.test(x) && !Number.isNaN(Date.parse(`${x}T00:00:00Z`)) && new Date(`${x}T00:00:00Z`).toISOString().slice(0, 10) === x;
+  const productIds = [...new Set(s(f, "productIds", 500).split(",").map((x) => Number(x.trim())).filter((x) => Number.isSafeInteger(x) && x > 0))];
+  const categorySlugs = [...new Set(s(f, "categorySlugs", 500).split(",").map((x) => x.trim().toLowerCase()).filter((x) => /^[a-z0-9-]{1,70}$/.test(x)))];
+  if (!/^[A-Z0-9_-]{3,40}$/.test(code)) return back("/admin/promotions", "Coupon code must be 3–40 letters, numbers, hyphens or underscores.");
+  if (!Number.isSafeInteger(value) || value < 1 || type === "percent" && value > 100) return back("/admin/promotions", type === "percent" ? "Enter a percentage from 1 to 100." : "Enter a fixed discount of at least ₦1.");
+  if (minimum == null || !/^\d+$/.test(minRaw) || usage != null && (!Number.isSafeInteger(usage) || usage < 1) || !Number.isSafeInteger(customerLimit) || customerLimit < 1 || customerLimit > 1000)
+    return back("/admin/promotions", "Check the minimum order, usage limit, and per-customer limit.");
+  if (!dateOk(startsAt) || !dateOk(expiresAt) || startsAt && expiresAt && startsAt > expiresAt) return back("/admin/promotions", "Enter valid dates and make sure expiry is after the start date.");
+  if (productIds.length && db().prepare(`SELECT COUNT(*) n FROM products WHERE id IN (${productIds.map(() => "?").join(",")})`).get(...productIds)?.n !== productIds.length)
+    return back("/admin/promotions", "One or more restricted products could not be found.");
+  if (categorySlugs.length && db().prepare(`SELECT COUNT(*) n FROM categories WHERE slug IN (${categorySlugs.map(() => "?").join(",")})`).get(...categorySlugs)?.n !== categorySlugs.length)
+    return back("/admin/promotions", "One or more restricted categories could not be found.");
+  const fields = [code,type,value,startsAt,expiresAt,usage,customerLimit,minimum,JSON.stringify(productIds),JSON.stringify(categorySlugs),f.get("active") === "on" ? 1 : 0];
+  try {
+    if (id) db().prepare(`UPDATE coupons SET code=?,discount_type=?,discount_value=?,starts_at=?,expires_at=?,usage_limit=?,customer_limit=?,minimum_order=?,product_ids=?,category_slugs=?,active=?,updated_at=datetime('now') WHERE id=?`).run(...fields,id);
+    else db().prepare(`INSERT INTO coupons (code,discount_type,discount_value,starts_at,expires_at,usage_limit,customer_limit,minimum_order,product_ids,category_slugs,active) VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(...fields);
+  } catch (error) {
+    if (String(error).includes("UNIQUE")) return back("/admin/promotions", "That coupon code is already in use.");
+    throw error;
+  }
+  logAdminActivity(a.email, id ? "coupon_updated" : "coupon_created", "coupon", id || code, `${code} · ${type} ${value}`);
+  revalidatePath("/checkout");
+  back("/admin/promotions", "Coupon saved.");
+}
+
+export async function deleteCouponAction(f: FormData) {
+  const a = await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  if (!Number.isSafeInteger(id) || id < 1) return back("/admin/promotions", "Choose a valid coupon.");
+  const coupon = db().prepare("SELECT code FROM coupons WHERE id=?").get(id);
+  if (!coupon) return back("/admin/promotions", "Coupon not found.");
+  const uses = Number(db().prepare("SELECT COUNT(*) n FROM coupon_redemptions WHERE coupon_id=?").get(id)?.n || 0);
+  if (uses) db().prepare("UPDATE coupons SET active=0,updated_at=datetime('now') WHERE id=?").run(id);
+  else db().prepare("DELETE FROM coupons WHERE id=?").run(id);
+  logAdminActivity(a.email, uses ? "coupon_deactivated_preserving_history" : "coupon_deleted", "coupon", id, `${String(coupon.code)} · ${uses} redemptions`);
+  back("/admin/promotions", uses ? "Coupon deactivated. Its redemption history was kept." : "Coupon deleted.");
 }
 
 /* ---------- orders ---------- */
@@ -208,19 +308,20 @@ export async function saveNotesAction(f: FormData) {
 const STATUSES = ["published", "draft", "pending_confirmation", "archived"];
 
 export async function createProductAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const name = s(f, "name", 120);
   const type = f.get("type") === "combo" ? "combo" : "single";
   if (name.length < 2) return back("/admin/products", "Enter a product name.");
   let slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "product";
   while (db().prepare("SELECT 1 FROM products WHERE slug = ?").get(slug)) slug += "-2";
   const r = db().prepare("INSERT INTO products (slug,name,type,category,status,sort) VALUES (?,?,?,?, 'draft', 999)").run(slug, name, type, type === "combo" ? "combos" : "individual");
+  logAdminActivity(a.email, "product_created", "product", Number(r.lastInsertRowid), `${name} (${type})`);
   redirect(`/admin/products/${r.lastInsertRowid}?msg=${encodeURIComponent("Product created as a draft. Add a price option and a photo, then publish it.")}`);
 }
 
 /** Clone catalog configuration only. Orders, customers, and sales history are never copied. */
 export async function duplicateProductAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const id = Number(f.get("id"));
   const source = db().prepare("SELECT * FROM products WHERE id = ?").get(id);
   if (!source) return back("/admin/products", "Product not found.");
@@ -255,21 +356,23 @@ export async function duplicateProductAction(f: FormData) {
         VALUES (?,?,?,?,?,?)`).run(newId, item.item_product_id, item.item_name, item.size_note, item.quantity_note, item.sort);
     }
   });
+  logAdminActivity(a.email, "product_duplicated", "product", newId, `Copied product ${id} as draft`);
   redirect(`/admin/products/${newId}?msg=${encodeURIComponent("Draft copy created. Review its options and contents before publishing.")}`);
 }
 
 export async function archiveProductAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const id = Number(f.get("id"));
   const exists = db().prepare("SELECT id FROM products WHERE id = ?").get(id);
   if (!exists) return back("/admin/products", "Product not found.");
   db().prepare("UPDATE products SET status='archived', updated_at=datetime('now') WHERE id=?").run(id);
+  logAdminActivity(a.email, "product_archived", "product", id);
   revalidatePath("/", "layout");
   back("/admin/products", "Product archived. Historical order records were retained.");
 }
 
 export async function bulkProductAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const action = s(f, "action", 20);
   const ids = [...new Set(f.getAll("productIds").map((value) => Number(value)).filter((id) => Number.isSafeInteger(id) && id > 0))];
   if (!ids.length || ids.length > 100) return back("/admin/products", "Select between 1 and 100 products.");
@@ -284,24 +387,26 @@ export async function bulkProductAction(f: FormData) {
   }
   const update = action === "publish" ? "status='published'" : action === "draft" ? "status='draft'" : action === "archive" ? "status='archived'" : action === "feature" ? "featured=1" : "featured=0";
   tx((d) => d.prepare(`UPDATE products SET ${update},updated_at=datetime('now') WHERE id IN (${placeholders})`).run(...ids));
+  logAdminActivity(a.email, `products_bulk_${action}`, "product", ids.join(","), `${ids.length} product records updated`);
   revalidatePath("/", "layout");
   back("/admin/products", `${ids.length} products updated.`);
 }
 
 export async function createCategoryAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const name = s(f, "name", 80);
   if (name.length < 2) return back("/admin/categories", "Enter a category name.");
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70);
   if (!slug) return back("/admin/categories", "Use a category name containing letters or numbers.");
   if (db().prepare("SELECT 1 FROM categories WHERE slug = ?").get(slug)) return back("/admin/categories", "A category already uses that web address.");
-  db().prepare("INSERT INTO categories (slug,name,description,image,sort,status) VALUES (?,?,?,'',?,'hidden')")
+  const r = db().prepare("INSERT INTO categories (slug,name,description,image,sort,status) VALUES (?,?,?,'',?,'hidden')")
     .run(slug, name, text(f, "description", 1000), Number(f.get("sort")) || 0);
+  logAdminActivity(a.email, "category_created", "category", Number(r.lastInsertRowid), name);
   back("/admin/categories", "Category created hidden. Review its details and publish it when ready.");
 }
 
 export async function saveCategoryAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const id = Number(f.get("id"));
   if (!Number.isSafeInteger(id) || id < 1) return back("/admin/categories", "Choose a valid category.");
   const current = db().prepare("SELECT * FROM categories WHERE id = ?").get(id);
@@ -323,6 +428,7 @@ export async function saveCategoryAction(f: FormData) {
     d.prepare(`UPDATE categories SET slug=?,name=?,description=?,image=?,seo_title=?,meta_description=?,status=?,sort=?,updated_at=datetime('now') WHERE id=?`)
       .run(slug, name, text(f, "description", 1000), image, s(f, "seoTitle", 120), text(f, "metaDescription", 300), status, Number(f.get("sort")) || 0, id);
   });
+  logAdminActivity(a.email, "category_updated", "category", id, `${String(current.slug)} → ${slug}; ${status}`);
   revalidatePath("/", "layout");
   revalidatePath(`/category/${String(current.slug)}`);
   revalidatePath(`/category/${slug}`);
@@ -330,7 +436,7 @@ export async function saveCategoryAction(f: FormData) {
 }
 
 export async function deleteCategoryAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const id = Number(f.get("id"));
   if (!Number.isSafeInteger(id) || id < 1) return back("/admin/categories", "Choose a valid category.");
   const category = db().prepare("SELECT id,slug,name FROM categories WHERE id=?").get(id);
@@ -346,6 +452,7 @@ export async function deleteCategoryAction(f: FormData) {
     d.prepare("UPDATE category_redirects SET new_slug=? WHERE new_slug=?").run(redirectTo, category.slug);
     d.prepare("INSERT INTO category_redirects (old_slug,new_slug) VALUES (?,?) ON CONFLICT(old_slug) DO UPDATE SET new_slug=excluded.new_slug").run(category.slug, redirectTo);
   });
+  logAdminActivity(a.email, "category_deleted", "category", id, `${String(category.name)}; reassigned ${used} products`);
   revalidatePath("/", "layout");
   revalidatePath(`/category/${String(category.slug)}`);
   back("/admin/categories", used ? `Category deleted and ${used} products reassigned. Its old URL redirects to ${String(target?.slug)}.` : "Empty category deleted. Its old URL redirects to the shop.");
@@ -373,7 +480,7 @@ export async function uploadCategoryImageAction(f: FormData) {
 }
 
 export async function saveProductAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const id = Number(f.get("id"));
   const p = db().prepare("SELECT * FROM products WHERE id = ?").get(id);
   if (!p) return back("/admin/products");
@@ -393,6 +500,7 @@ export async function saveProductAction(f: FormData) {
     text(f, "ingredients", 2000), text(f, "directions", 4000), JSON.stringify(faqs), JSON.stringify(related), status, f.get("featured") ? 1 : 0,
     Number(f.get("sort")) || 0, text(f, "review", 2000), id);
   revalidatePath("/", "layout");
+  logAdminActivity(a.email, "product_updated", "product", id, `${String(p.name)} · ${slug} · ${status}`);
   back(`/admin/products/${id}`, "Product saved.");
 }
 
@@ -440,6 +548,7 @@ export async function saveVariantAction(f: FormData) {
     }
   });
   db().prepare("UPDATE products SET updated_at = datetime('now') WHERE id = ?").run(pid);
+  logAdminActivity(a.email, "variant_saved", "product", pid, `${label} · ${sku}`);
   revalidatePath("/", "layout");
   back(`/admin/products/${pid}`, "Price option saved.");
 }
@@ -472,22 +581,29 @@ export async function saveStockAction(f: FormData) {
     if (!row) return null;
     const previous = row.stock == null ? 0 : Number(row.stock);
     d.prepare("UPDATE variants SET stock=?,low_stock_threshold=? WHERE id=?").run(qty, threshold, variantId);
+    let movementId: number | null = null;
     if (previous !== qty) {
-      d.prepare(`INSERT INTO inventory_movements
+      movementId = Number(d.prepare(`INSERT INTO inventory_movements
         (product_id,variant_id,product_name,variant_label,sku,previous_qty,new_qty,qty_change,reason,actor)
         VALUES (?,?,?,?,?,?,?,?,?,?)`).run(row.product_id,row.id,row.product_name,row.label,row.sku,previous,qty,qty-previous,
-          row.stock == null ? `Opening stock: ${reason}` : reason,a.email);
+          row.stock == null ? `Opening stock: ${reason}` : reason,a.email).lastInsertRowid);
     }
-    return Number(row.product_id);
+    return { productId: Number(row.product_id), productName: String(row.product_name), label: String(row.label), qty, threshold, movementId };
   });
   if (result == null) return back("/admin/inventory", "Stock option not found.");
+  if (result.movementId != null) {
+    logAdminActivity(a.email, "stock_adjusted", "variant", variantId, `${result.productName} · ${result.label}: ${qty} (${reason})`);
+    if (threshold > 0 && qty <= threshold) {
+      notifyAdmin(`stock:${result.movementId}:low`, "low_stock", qty === 0 ? "Product out of stock" : "Product stock is low", `${result.productName} · ${result.label}: ${qty} remaining`, "/admin/inventory");
+    }
+  }
   revalidatePath("/admin/products");
-  revalidatePath(`/admin/products/${result}`);
+  revalidatePath(`/admin/products/${result.productId}`);
   back("/admin/inventory", "Stock saved and movement recorded.");
 }
 
 export async function saveComboItemsAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const pid = Number(f.get("productId"));
   const rows: { pid: number | null; name: string; size: string; qty: string }[] = [];
   for (let i = 0; i < 12; i++) {
@@ -501,6 +617,7 @@ export async function saveComboItemsAction(f: FormData) {
     d.prepare("DELETE FROM combo_items WHERE combo_id = ?").run(pid);
     rows.forEach((r, i) => d.prepare("INSERT INTO combo_items (combo_id,item_product_id,item_name,size_note,quantity_note,sort) VALUES (?,?,?,?,?,?)").run(pid, r.pid, r.name, r.size, r.qty, i));
   });
+  logAdminActivity(a.email, "combo_contents_updated", "product", pid, `${rows.length} set items`);
   back(`/admin/products/${pid}`, "Set contents saved.");
 }
 
@@ -645,6 +762,7 @@ export async function saveDeliveryAction(f: FormData) {
         .run(x.state, x.fee, x.active, x.note, x.estimate);
     }
   });
+  logAdminActivity(a.email, "delivery_settings_updated", "delivery", "all-states", `${updates.filter((x) => x.fee != null).length} configured fees`);
   revalidatePath("/checkout");
   back("/admin/delivery", "Delivery fees saved.");
 }
@@ -668,6 +786,7 @@ export async function importDeliveryCsvAction(f: FormData) {
         .run(x.state,x.fee,active,x.note,x.estimatedDelivery);
     }
   });
+  logAdminActivity(a.email, "delivery_csv_imported", "delivery", "selected-states", `${parsed.rows.length} rows`);
   revalidatePath("/checkout");
   back("/admin/delivery", `Imported ${parsed.rows.length} state delivery setting${parsed.rows.length === 1 ? "" : "s"}.`);
 }
@@ -692,6 +811,7 @@ export async function saveBulkDeliveryAction(f: FormData) {
         .run(state, fee, nextConfig.active, nextConfig.note, nextConfig.estimated_delivery);
     }
   });
+  logAdminActivity(a.email, "delivery_fees_bulk_updated", "delivery", "selected-states", `${states.length} states · ₦${fee.toLocaleString("en-NG")}`);
   revalidatePath("/checkout");
   back("/admin/delivery", `Updated the delivery fee for ${states.length} selected state${states.length === 1 ? "" : "s"}.`);
 }
@@ -704,30 +824,32 @@ export async function saveBankAction(f: FormData) {
   const accountNumber = s(f, "accountNumber", 20).replace(/\D/g, "");
   if (!bank || !accountName || !/^\d{10}$/.test(accountNumber)) return back("/admin/settings", "Enter the bank name, account name and a 10-digit account number.");
   setSetting("bank", { bank, accountName, accountNumber });
-  console.info(`[admin] bank details updated by ${a.email}`);
+  logAdminActivity(a.email, "bank_details_updated", "settings", "bank", "Bank transfer destination updated");
   back("/admin/settings", "Bank details saved. New orders show these details.");
 }
 export async function saveContactAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const whatsapp = normalisePhone(s(f, "whatsapp", 30));
   const email = s(f, "email", 254).toLowerCase();
   if (!whatsapp) return back("/admin/settings", "Enter a valid Nigerian WhatsApp number.");
   if (email && !isEmail(email)) return back("/admin/settings", "Enter a valid email address.");
   const url = (k: string) => { const v = s(f, k, 200); return /^https:\/\/[^\s]+$/.test(v) ? v : ""; };
   setSetting("contact", { whatsapp, email, instagram: url("instagram"), facebook: url("facebook"), tiktok: url("tiktok") });
+  logAdminActivity(a.email, "contact_settings_updated", "settings", "contact");
   revalidatePath("/", "layout");
   back("/admin/settings", "Contact details saved.");
 }
 export async function saveContentAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   for (const k of ["announcement", "about", "productNotice", "shippingPolicy", "returnsPolicy", "privacyPolicy", "termsPolicy"]) {
     if (f.has(k)) setSetting(k, text(f, k, k === "announcement" ? 200 : 8000));
   }
   revalidatePath("/", "layout");
+  logAdminActivity(a.email, "store_content_updated", "settings", "content");
   back("/admin/settings", "Content saved.");
 }
 export async function saveHomeContentAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const href = (key: string) => {
     const value = s(f, key, 200);
     return /^\/(?!\/)[^\\\s]*$/.test(value) ? value : null;
@@ -763,13 +885,14 @@ export async function saveHomeContentAction(f: FormData) {
     return back("/admin/settings", "An enabled banner needs a title. A button label is optional.");
   for (const [key, value] of Object.entries(hero)) setSetting(key, value);
   for (const [key, value] of Object.entries(banner)) setSetting(key, value);
+  logAdminActivity(a.email, "homepage_content_updated", "settings", "homepage");
   revalidatePath("/");
   back("/admin/settings", "Homepage content saved.");
 }
 
 /* ---------- users ---------- */
 export async function addUserAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const email = s(f, "email", 254).toLowerCase();
   const name = s(f, "name", 80);
   const pw = String(f.get("password") || "");
@@ -777,18 +900,27 @@ export async function addUserAction(f: FormData) {
   if (!isEmail(email) || name.length < 2) return back("/admin/users", "Enter a name and a valid email.");
   if (pw.length < 10) return back("/admin/users", "The password must be at least 10 characters.");
   if (db().prepare("SELECT 1 FROM users WHERE email = ?").get(email)) return back("/admin/users", "A user with that email already exists.");
-  db().prepare("INSERT INTO users (email,name,role,password_hash) VALUES (?,?,?,?)").run(email, name, role, hashPassword(pw));
+  const result = db().prepare("INSERT INTO users (email,name,role,password_hash) VALUES (?,?,?,?)").run(email, name, role, hashPassword(pw));
+  logAdminActivity(a.email, "admin_user_created", "user", Number(result.lastInsertRowid), `${email} · ${role}`);
   back("/admin/users", "User added.");
 }
 export async function toggleUserAction(f: FormData) {
-  await requireAdmin("owner");
-  db().prepare("UPDATE users SET active = 1 - active WHERE id = ?").run(Number(f.get("id")));
+  const a = await requireAdmin("owner");
+  const id = Number(f.get("id"));
+  const user = db().prepare("SELECT email,active FROM users WHERE id=?").get(id);
+  if (!user) return back("/admin/users", "User not found.");
+  db().prepare("UPDATE users SET active = 1 - active WHERE id = ?").run(id);
+  logAdminActivity(a.email, Number(user.active) ? "admin_user_deactivated" : "admin_user_activated", "user", id, String(user.email));
   back("/admin/users", "User updated.");
 }
 export async function resetUserPasswordAction(f: FormData) {
-  await requireAdmin("owner");
+  const a = await requireAdmin("owner");
   const pw = String(f.get("password") || "");
   if (pw.length < 10) return back("/admin/users", "The password must be at least 10 characters.");
-  db().prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(pw), Number(f.get("id")));
+  const id = Number(f.get("id"));
+  const user = db().prepare("SELECT email FROM users WHERE id=?").get(id);
+  if (!user) return back("/admin/users", "User not found.");
+  db().prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(pw), id);
+  logAdminActivity(a.email, "admin_password_reset", "user", id, String(user.email));
   back("/admin/users", "Password changed.");
 }

@@ -21,12 +21,13 @@ export async function POST(req: Request) {
       tracking: { fbp: c.get("_fbp")?.value, fbc: c.get("_fbc")?.value, ua: req.headers.get("user-agent") || "", ip: ipOf(req) },
     });
     if (!r.ok) return Response.json({ errors: r.errors }, { status: 400 });
-    return Response.json({ ok: true, number: r.number, token: r.token, total: r.total, subtotal: r.subtotal, deliveryFee: r.fee });
+    return Response.json({ ok: true, number: r.number, token: r.token, total: r.total, subtotal: r.subtotal, itemsSubtotal: r.itemsSubtotal, discountAmount: r.discountAmount, couponCode: r.couponCode, deliveryFee: r.fee });
   } catch (e) {
     const m = (e as Error).message || "";
     if (m.startsWith("stock:")) return Response.json({ errors: { items: `${m.slice(6)} just went out of stock. Update your cart.` } }, { status: 409 });
     if (m === "delivery:disabled") return Response.json({ errors: { state: "Delivery is not currently available in the selected state. Contact us for help." } }, { status: 400 });
     if (m === "delivery:unconfigured") return Response.json({ errors: { state: "Delivery pricing is not available for the selected state yet. Please choose another state or contact us." } }, { status: 400 });
+    if (m.startsWith("coupon:")) return Response.json({ errors: { coupon: m.slice(7) } }, { status: 400 });
     console.error("order create failed", m);
     return Response.json({ error: "We could not place your order. Try again, or message us on WhatsApp." }, { status: 500 });
   }

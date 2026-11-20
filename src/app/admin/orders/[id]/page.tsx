@@ -58,7 +58,9 @@ export default async function OrderDetail({ params, searchParams }: { params: { 
               ))}</tbody>
             </table>
             <dl className="mt-3 border-t border-neutral-200 pt-2 text-sm">
-              {row("Subtotal", naira(o.subtotal))}
+              {row("Product subtotal", naira(items.reduce((sum, item) => sum + item.line_total, 0)))}
+              {Number(o.discount_amount || 0) ? row(`Coupon (${String(o.coupon_code || "")})`, `−${naira(Number(o.discount_amount))}`) : null}
+              {Number(o.discount_amount || 0) ? row("Product payment after discount", naira(o.subtotal)) : null}
               {row(`Delivery (${o.state})`, o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
               {o.delivery_estimate ? row("Estimated delivery", String(o.delivery_estimate)) : null}
               {row("Total including delivery", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}

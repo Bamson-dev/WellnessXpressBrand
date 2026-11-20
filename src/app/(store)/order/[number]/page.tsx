@@ -24,6 +24,8 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
     );
   }
   const items = orderItems(o.id);
+  const itemsSubtotal = items.reduce((sum, item) => sum + item.line_total, 0);
+  const discountAmount = Number(o.discount_amount || 0);
   const bank = getBank();
   const status = orderStatusLabel(o);
   const isNew = searchParams.new === "1";
@@ -99,7 +101,9 @@ export default function OrderPage({ params, searchParams }: { params: { number: 
           ))}
         </ul>
         <dl className="mt-2 space-y-2 border-t border-neutral-200 pt-3 text-[15px]">
-          <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd>{naira(o.subtotal)}</dd></div>
+          <div className="flex justify-between"><dt className="text-neutral-600">Product subtotal</dt><dd>{naira(itemsSubtotal)}</dd></div>
+          {discountAmount ? <div className="flex justify-between"><dt className="text-neutral-600">Coupon{ o.coupon_code ? ` (${String(o.coupon_code)})` : ""}</dt><dd>−{naira(discountAmount)}</dd></div> : null}
+          {discountAmount ? <div className="flex justify-between"><dt className="text-neutral-600">Product payment after discount</dt><dd>{naira(o.subtotal)}</dd></div> : null}
           <div className="flex justify-between"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee != null ? naira(o.delivery_fee) : "To be confirmed"}</dd></div>
           {o.delivery_estimate ? <div className="flex justify-between"><dt className="text-neutral-600">Estimated delivery</dt><dd>{String(o.delivery_estimate)}</dd></div> : null}
           {o.delivery_fee != null ? <div className="flex justify-between"><dt className="text-neutral-600">Total including delivery</dt><dd>{naira(o.subtotal + o.delivery_fee)}</dd></div> : null}
