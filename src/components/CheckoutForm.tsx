@@ -61,7 +61,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
   const activeCoupon = couponCartKey === cartKey ? couponPreview : null;
   const discount = activeCoupon?.discountAmount || 0;
   const payNow = quote ? Math.max(0, quote.subtotal - discount) : 0;
-  const deliveryFee = delivery?.available ? (payNow >= 50000 ? 0 : Number(delivery.fee || 0)) : null;
+  const deliveryFee = delivery?.available ? (payNow >= 50000 ? 0 : Number(delivery.baseFee || 0)) : null;
   const orderTotal = quote ? payNow + (deliveryFee ?? 0) : 0;
 
   async function applyCoupon() {
