@@ -646,7 +646,7 @@ function parseDeliveryCsv(text: string) {
   const head = split(lines[0] || "").map((h) => h.toLowerCase());
   if (head[0] !== "state") return { rows, problems: ["The first line must be the header: State, Enabled, ETA, Note, Internal note. Export a template first."] };
   const col = (name: string) => head.indexOf(name);
-  const iEn = col("enabled"), iEta = col("eta"), iNote = col("note"), iInt = col("internal note");
+  const iEn = col("enabled"), iFee = col("fee"), iEta = col("eta"), iNote = col("note"), iInt = col("internal note");
   lines.slice(1).forEach((l, i) => {
     const n = i + 2;
     const c = split(l);
@@ -656,7 +656,7 @@ function parseDeliveryCsv(text: string) {
     seen.add(st);
     const en = iEn >= 0 ? (c[iEn] || "").toLowerCase() : "yes";
     if (en && !["yes", "no", "true", "false", "1", "0", "y", "n"].includes(en)) { problems.push(`Line ${n}: Enabled must be yes or no.`); return; }
-    rows.push({ state: st, fee: null, active: en === "" || ["yes", "true", "1", "y"].includes(en), eta: iEta >= 0 ? clean(c[iEta] || "", 80) : "", note: iNote >= 0 ? clean(c[iNote] || "", 160) : "", internalNote: iInt >= 0 ? clean(c[iInt] || "", 300) : "" });
+    rows.push({ state: st, fee: iFee >= 0 && c[iFee] ? money(c[iFee]) : null, active: en === "" || ["yes", "true", "1", "y"].includes(en), eta: iEta >= 0 ? clean(c[iEta] || "", 80) : "", note: iNote >= 0 ? clean(c[iNote] || "", 160) : "", internalNote: iInt >= 0 ? clean(c[iInt] || "", 300) : "" });
   });
   return { rows, problems };
 }
@@ -679,7 +679,11 @@ export async function applyDeliveryImportAction(f: FormData) {
   const { rows, problems } = parseDeliveryCsv(String(f.get("csv") || ""));
   if (problems.length) return fail("/admin/delivery", "Import cancelled. The file has problems; preview it again and fix them first.");
   if (!rows.length) return fail("/admin/delivery", "Nothing to import.");
-  writeZones(rows);
+  const existingFees = new Map(db().prepare("SELECT state, fee FROM delivery_zones").all().map((r) => [String(r.state), r.fee == null ? null : Number(r.fee)]));
+  const feeRows = rows.map((r) => ({ ...r, fee: r.fee ?? existingFees.get(r.state) ?? null }));
+  const invalidFee = feeRows.find((r) => r.active && (r.fee == null || r.fee < 1));
+  if (invalidFee) return fail("/admin/delivery", `Import cancelled. Set a delivery fee for ${invalidFee.state} first or include it in the CSV.`, `fee_${invalidFee.state}`);
+  writeZones(feeRows);
   revalidatePath("/checkout");
   audit(a, "applyDeliveryImportAction", f, "");
   back("/admin/delivery", `Imported ${rows.length} state(s). States not in the file were not changed.`);
