@@ -59,7 +59,7 @@ export default function CartPage() {
           <dl className="mt-4 space-y-2 text-[15px]">
             <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
             <div className="flex justify-between"><dt className="text-neutral-600">Delivery</dt><dd className="font-semibold">{quote ? (quote.subtotal >= 50000 ? "FREE" : quote.delivery?.baseFee != null ? naira(quote.delivery.baseFee) : "Calculated at checkout") : "…"}</dd></div>
-            <div className="flex justify-between border-t border-neutral-200 pt-2 text-lg"><dt className="font-bold">Products total (delivery at checkout)</dt><dd className="font-bold">{quote ? naira(quote.subtotal + (quote.subtotal >= 50000 ? 0 : Number(quote.delivery?.baseFee || 0))) : "…"}</dd></div>
+            <div className="flex justify-between border-t border-neutral-200 pt-2 text-lg"><dt className="font-bold">Products subtotal</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
           </dl>
           <Link href="/checkout" aria-disabled={!!blocked} className={`btn btn-primary mt-6 w-full text-base ${blocked ? "pointer-events-none opacity-50" : ""}`}>Checkout</Link>
           <Link href="/shop" className="btn btn-outline mt-2 w-full">Continue shopping</Link>
