@@ -142,7 +142,7 @@ export function createOrder(input: CheckoutInput) {
       if (tracked) recordMovement(d, l.variantId, -l.qty, "order_reserved", `Order ${number}`, "customer", oid);
     }
     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
-      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Product payment due: ₦${subtotal.toLocaleString("en-NG")}. Free delivery to ${state}.`
+      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Products: ₦${subtotal.toLocaleString("en-NG")}. Delivery: ${fee === 0 ? "free" : "₦" + fee.toLocaleString("en-NG")} to ${state}.`
     );
     notifyAdmin(`order:${oid}:created`, "new_order", "New order received", `${number} · ${name} · ${state}`, `/admin/orders/${oid}`);
     return { ok: true as const, duplicate: false, number, token, total, subtotal, itemsSubtotal, discountAmount, couponCode: coupon?.ok ? coupon.code : "", fee };
