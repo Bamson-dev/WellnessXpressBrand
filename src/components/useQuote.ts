@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 
 export type QuoteLine = { variantId: number; slug: string; name: string; label: string; image: string | null; unitPrice: number; qty: number; lineTotal: number; available: boolean; reason?: string };
-export type DeliveryInfo = { state: string; available: boolean; fee: number | null; eta: string; message: string };
+export type DeliveryInfo = { state: string; available: boolean; fee: number | null; baseFee: number | null; eta: string; message: string };
 export type Quote = { lines: QuoteLine[]; subtotal: number; deliveryFee: number | null; total: number | null; state: string | null; delivery?: DeliveryInfo | null };
 
 /** Fetches server prices for the cart (and delivery fee for a state). The browser's stored prices are only a preview. */
