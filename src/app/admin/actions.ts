@@ -90,7 +90,11 @@ export async function verifyPaymentAction(f: FormData) {
   logEvent(id, a.email, "payment_verified", s(f, "note", 300));
   ensureInvoice(id, a.email);
   const skus = orderItems(id).map((i) => i.sku);
-  const ev = await sendStorePurchase({ number: o.number, total: o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
+  // One Purchase per order: if an owner undid and re-confirmed the payment, the original event already reached Meta.
+  const already = String((o as { purchase_event_status?: unknown }).purchase_event_status || "") === "sent";
+  const ev = already
+    ? { eventId: String((o as { purchase_event_id?: unknown }).purchase_event_id || ""), status: "sent" }
+    : await sendStorePurchase({ number: o.number, total: o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
   db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
   revalidatePath("/admin");
   back(`/admin/orders/${id}`, "Payment confirmed. The order is now Paid.");
