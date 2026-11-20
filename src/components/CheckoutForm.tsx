@@ -214,10 +214,10 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
               {activeCoupon ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Coupon ({activeCoupon.code})</dt><dd className="font-semibold text-brand-800">−{naira(discount)}</dd></div> : null}
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery fee{state ? ` (${state})` : ""}</dt>
-                <dd className="text-right">{deliveryBlocked ? <span className="font-medium text-red-700">Not available</span> : deliveryFee === 0 ? <span className="font-bold text-brand-700">FREE</span> : deliveryFee != null ? naira(deliveryFee) : "Choose state"}</dd>
+                <dd className="text-right">{deliveryBlocked ? <span className="font-medium text-red-700">Fee unavailable</span> : deliveryFee === 0 ? <span className="font-bold text-brand-700">FREE</span> : deliveryFee != null ? naira(deliveryFee) : "Choose state"}</dd>
               </div>
               {delivery?.available && delivery.eta ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery time</dt><dd className="text-right">{delivery.eta}</dd></div> : null}
-              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Total delivery charge</dt><dd className="text-right font-semibold">{deliveryFee != null ? naira(deliveryFee) : "…"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Total delivery charge</dt><dd className="text-right font-semibold">{deliveryBlocked ? "Fee unavailable" : deliveryFee != null ? naira(deliveryFee) : "…"}</dd></div>
               <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Total to pay</dt><dd className="font-bold">{quote ? naira(orderTotal) : "…"}</dd></div>
             </dl>
             <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>{payNow >= 50000 ? "Your order qualifies for free delivery." : "Orders below ₦50,000 pay delivery."}</strong> Delivery fee depends on your state.</span></p>
