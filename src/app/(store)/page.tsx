@@ -138,7 +138,20 @@ export default async function Home(props: { searchParams: Promise<{ bannerPrevie
         </div>
       </section>
 
-      {promoBanners.length ? <div className="container-x space-y-6 py-6">{promoBanners.map((b) => <BannerBlock key={b.id} b={b} />)}</div> : null}
+      {/* Updated catalogue flyer */}
+      <section className="container-x py-10 sm:py-14" aria-labelledby="catalogue-flyer-h">
+        <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm">
+          <div className="bg-brand-800 px-5 py-5 text-center text-white sm:px-8">
+            <p className="text-sm font-semibold uppercase tracking-wide">Updated catalogue</p>
+            <h2 id="catalogue-flyer-h" className="mt-1 text-2xl font-extrabold sm:text-3xl">New product names and prices</h2>
+            <p className="mt-2 text-sm text-white/90">Check the updated individual and combo prices before ordering.</p>
+          </div>
+          <Image src="/images/banners/updated-price-list.svg" alt="WellnessXpress updated product and combo price list" width={1080} height={1600} className="h-auto w-full" />
+          <div className="p-5 text-center sm:p-7"><Link href="/shop" className="btn btn-primary px-8">Shop updated catalogue</Link></div>
+        </div>
+      </section>
+
+      {promoBanners.length ?? <div className="container-x space-y-6 py-6">{promoBanners.map((b) => <BannerBlock key={b.id} b={b} />)}</div> : null}
 
       {testimonials.length ? <section className="container-x py-12" aria-labelledby="testimonials-heading"><p className="eyebrow">Customer testimonials</p><h2 id="testimonials-heading" className="mt-2 text-2xl sm:text-3xl">What customers have shared</h2><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{testimonials.map((t, i) => <figure key={i} className="card p-5"><blockquote className="whitespace-pre-line text-neutral-700">“{String(t.quote)}”</blockquote><figcaption className="mt-4 font-semibold">{String(t.customer_name)}</figcaption></figure>)}</div></section> : null}
 
