@@ -25,8 +25,7 @@ export async function POST(req: Request, props: { params: Promise<{ number: stri
     return Response.json({ error: "This order is not waiting for payment." }, { status: 409 });
 
   const payerName = clean(form.get("payerName"), 100);
-  const reference = clean(form.get("reference"), 100);
-  const note = clean(form.get("note"), 500);
+  // Payment confirmations now require only the payer name. Reference and receipt remain optional for legacy customers.
   const errors: Record<string, string> = {};
   if (payerName.length < 2) errors.payerName = "Enter the name on the account you paid from.";
 
@@ -46,13 +45,11 @@ export async function POST(req: Request, props: { params: Promise<{ number: stri
       }
     }
   }
-  if (!reference && !receiptPath && !errors.receipt) errors.reference = "Enter the transfer reference or upload your receipt.";
   if (Object.keys(errors).length) return Response.json({ errors }, { status: 400 });
 
   db().prepare(
-    `UPDATE orders SET payment_status = 'awaiting_verification', payer_name = ?, payment_reference = ?, payment_note = ?,
-     receipt_path = CASE WHEN ? != '' THEN ? ELSE receipt_path END, payment_submitted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
-  ).run(payerName, reference, note, receiptPath, receiptPath, order.id);
-  logEvent(order.id, "customer", "payment_confirmation_submitted", [reference && "Ref: " + reference, receiptPath && "Receipt uploaded"].filter(Boolean).join(". "));
+    `UPDATE orders SET payment_status = 'awaiting_verification', payer_name = ?, payment_submitted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
+  ).run(payerName, order.id);
+  logEvent(order.id, "customer", "payment_confirmation_submitted", "Payer name submitted.");
   return Response.json({ ok: true });
 }
