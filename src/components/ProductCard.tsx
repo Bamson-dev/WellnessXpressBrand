@@ -6,7 +6,11 @@ import { naira } from "@/lib/site";
 
 export default function ProductCard({ p, priority }: { p: Product; priority?: boolean }) {
   const range = priorityRange(p);
-  const img = p.images[0] || null;
+  const comboImageOverrides: Record<string, string> = {
+    "2-weeks-combo-set": "/images/products/combos/2-weeks-combo-set.webp",
+    "1-month-combo-set": "/images/products/combos/1-month-combo-set.webp",
+  };
+  const img = comboImageOverrides[p.slug] || p.images[0] || null;
   const single = p.variants.length === 1 ? p.variants[0] : null;
   const detail = p.type === "combo" ? `${p.items.length} products` : p.variants.map((v) => v.label).join(" · ");
   return (
