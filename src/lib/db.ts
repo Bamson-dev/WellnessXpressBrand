@@ -479,6 +479,10 @@ const MIGRATIONS: string[] = [
    UPDATE products SET images='["/images/combos/1-month-full-kit.svg"]' WHERE slug='1-month-full-kit';
    `,
 
+  // v19: retire the two combo packages the owner removed from the current catalogue.
+  `UPDATE products SET status='archived', featured=0, review_note='Removed from the current catalogue by owner.' WHERE slug IN ('mega-tummy-blast','body-reset-combo');
+   `,
+
 ];
 
 function open(): DB {
