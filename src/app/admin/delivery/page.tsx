@@ -52,6 +52,7 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
                 <tr key={z.state} className="border-t border-neutral-100">
                   <td className="p-2 pl-3"><input type="checkbox" name="states" value={z.state} form="bulk" className="h-4 w-4 accent-brand-700" aria-label={`Select ${z.state}`} /></td>
                   <td className="p-2 font-medium">{z.state}</td>
+                  <td className="p-2"><input type="number" min="1" step="1" name={`fee_${z.state}`} defaultValue={z.fee ?? ""} placeholder="Required below ₦50k" className="admin-input w-36" aria-label={`Delivery fee for ${z.state}`} /></td>
                   <td className="p-2"><input type="checkbox" name={`active_${z.state}`} defaultChecked={z.active} className="h-4 w-4 accent-brand-700" aria-label={`Deliver to ${z.state}`} /></td>
                   <td className="p-2"><input name={`eta_${z.state}`} defaultValue={z.eta} placeholder="Not set" maxLength={80} className="admin-input w-40" aria-label={`Delivery time for ${z.state}`} /></td>
                   <td className="p-2"><input name={`note_${z.state}`} defaultValue={z.note} maxLength={160} className="admin-input w-48" aria-label={`Customer note for ${z.state}`} /></td>
