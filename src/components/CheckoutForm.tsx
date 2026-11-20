@@ -56,12 +56,13 @@ export default function CheckoutForm({ states }: { states: string[] }) {
 
   const unavailable = quote?.lines.filter((l) => !l.available) || [];
   const delivery = state && quote?.delivery && quote.delivery.state === state ? quote.delivery : null;
-  const deliveryBlocked = !!state && !!delivery && !delivery.available;
   const missing = quote ? lines.length - quote.lines.length : 0;
   const activeCoupon = couponCartKey === cartKey ? couponPreview : null;
   const discount = activeCoupon?.discountAmount || 0;
   const payNow = quote ? Math.max(0, quote.subtotal - discount) : 0;
-  const deliveryFee = delivery?.available ? (payNow >= 50000 ? 0 : Number(delivery.baseFee || 0)) : null;
+  const deliveryFee = delivery?.available ? (payNow >= 50000 ? 0 : delivery.baseFee) : null;
+  const deliveryBlocked = !!state && !!delivery && (!delivery.available || (payNow < 50000 && delivery.baseFee == null));
+  const deliveryMessage = delivery?.message || (payNow < 50000 && delivery?.baseFee == null ? `Delivery fee for ${state} is not configured. Please contact us on WhatsApp.` : "");
   const orderTotal = quote ? payNow + (deliveryFee ?? 0) : 0;
 
   async function applyCoupon() {
@@ -91,7 +92,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
     if (String(body.name || "").trim().length < 2) local.name = "Enter your full name.";
     if (!/^\d{10,13}$/.test(String(body.phone || "").replace(/\D/g, ""))) local.phone = "Enter your phone number, for example 0803 123 4567.";
     if (!body.state) local.state = "Choose your state.";
-    else if (deliveryBlocked) local.state = delivery!.message;
+    else if (deliveryBlocked) local.state = deliveryMessage;
     if (String(body.city || "").trim().length < 2) local.city = "Enter your city or local government area.";
     if (String(body.address || "").trim().length < 8) local.address = "Enter your full delivery address.";
     if (Object.keys(local).length) { setErrors(local); focusFirst(local); return; }
@@ -158,8 +159,8 @@ export default function CheckoutForm({ states }: { states: string[] }) {
                   <option value="">Choose your state</option>
                   {states.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-                {errors.state ? <p className="err" role="alert">{errors.state}</p> : deliveryBlocked ? <p className="err" role="alert">{delivery!.message}</p> : delivery?.available ? (
-                  <p className="hint">Delivery to {state}: {payNow >= 50000 ? <strong className="text-brand-700">FREE (₦50,000+ orders)</strong> : <strong>{naira(Number(delivery.fee || 0))}</strong>}{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
+                {errors.state ? <p className="err" role="alert">{errors.state}</p> : deliveryBlocked ? <p className="err" role="alert">{deliveryMessage}</p> : delivery?.available ? (
+                  <p className="hint">Delivery to {state}: {payNow >= 50000 ? <strong className="text-brand-700">FREE (₦50,000+ orders)</strong> : <strong>{delivery.baseFee != null ? naira(delivery.baseFee) : "Fee not configured"}</strong>}{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
                 ) : null}
               </div>
               {field("city", "City or local government area", { autoComplete: "address-level2" })}
