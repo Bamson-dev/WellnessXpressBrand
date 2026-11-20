@@ -42,7 +42,7 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead className="bg-neutral-50 text-left text-xs uppercase text-neutral-500">
-              <tr><th className="p-3"><span className="sr-only">Select</span></th><th className="p-3">State</th><th className="p-3">On</th><th className="p-3">Delivery time</th><th className="p-3">Customer note</th><th className="p-3">Internal logistics note</th><th className="p-3">Status</th></tr>
+              <tr><th className="p-3"><span className="sr-only">Select</span></th><th className="p-3">State</th><th className="p-3">Delivery fee (₦)</th><th className="p-3">On</th><th className="p-3">Delivery time</th><th className="p-3">Customer note</th><th className="p-3">Internal logistics note</th><th className="p-3">Status</th></tr>
             </thead>
             <tbody>
               {zones.map((z) => (
