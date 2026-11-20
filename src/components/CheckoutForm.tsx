@@ -61,6 +61,8 @@ export default function CheckoutForm({ states }: { states: string[] }) {
   const activeCoupon = couponCartKey === cartKey ? couponPreview : null;
   const discount = activeCoupon?.discountAmount || 0;
   const payNow = quote ? Math.max(0, quote.subtotal - discount) : 0;
+  const deliveryFee = delivery?.available ? (payNow >= 50000 ? 0 : Number(delivery.fee || 0)) : null;
+  const orderTotal = quote ? payNow + (deliveryFee ?? 0) : 0;
 
   async function applyCoupon() {
     setCouponMessage(""); setCouponPreview(null); setCouponBusy(true);
@@ -157,7 +159,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
                   {states.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 {errors.state ? <p className="err" role="alert">{errors.state}</p> : deliveryBlocked ? <p className="err" role="alert">{delivery!.message}</p> : delivery?.available ? (
-                  <p className="hint">Delivery to {state}: <strong className="text-brand-700">FREE</strong>{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
+                  <p className="hint">Delivery to {state}: {payNow >= 50000 ? <strong className="text-brand-700">FREE (₦50,000+ orders)</strong> : <strong>{naira(Number(delivery.fee || 0))}</strong>}{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
                 ) : null}
               </div>
               {field("city", "City or local government area", { autoComplete: "address-level2" })}
@@ -211,13 +213,13 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
               {activeCoupon ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Coupon ({activeCoupon.code})</dt><dd className="font-semibold text-brand-800">−{naira(discount)}</dd></div> : null}
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery fee{state ? ` (${state})` : ""}</dt>
-                <dd className="text-right">{deliveryBlocked ? <span className="font-medium text-red-700">Not available</span> : <span className="font-bold text-brand-700">FREE</span>}</dd>
+                <dd className="text-right">{deliveryBlocked ? <span className="font-medium text-red-700">Not available</span> : deliveryFee === 0 ? <span className="font-bold text-brand-700">FREE</span> : deliveryFee != null ? naira(deliveryFee) : "Choose state"}</dd>
               </div>
               {delivery?.available && delivery.eta ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery time</dt><dd className="text-right">{delivery.eta}</dd></div> : null}
-              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Total delivery charge</dt><dd className="text-right font-semibold">₦0</dd></div>
-              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Total to pay</dt><dd className="font-bold">{quote ? naira(payNow) : "…"}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Total delivery charge</dt><dd className="text-right font-semibold">{deliveryFee != null ? naira(deliveryFee) : "…"}</dd></div>
+              <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Total to pay</dt><dd className="font-bold">{quote ? naira(orderTotal) : "…"}</dd></div>
             </dl>
-            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>Free delivery across Nigeria.</strong> You pay only for your products, by bank transfer.</span></p>
+            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>{payNow >= 50000 ? "Your order qualifies for free delivery." : "Orders below ₦50,000 pay delivery."}</strong> Delivery fee depends on your state.</span></p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
             <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0 || deliveryBlocked} className="btn btn-primary mt-5 w-full text-base">
