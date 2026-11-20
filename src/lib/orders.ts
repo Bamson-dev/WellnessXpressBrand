@@ -91,7 +91,10 @@ export function createOrder(input: CheckoutInput) {
     const coupon = couponCode ? validateCoupon(couponCode, lines.map((l) => ({ productId: l.productId, variantId: l.variantId, lineTotal: l.lineTotal })), customerKey, d) : null;
     if (coupon && !coupon.ok) throw new Error(`coupon:${coupon.error}`);
     const discountAmount = coupon?.ok ? coupon.discountAmount : 0;
-    const subtotal = itemsSubtotal - discountAmount; // product payment due
+    const subtotal = itemsSubtotal - discountAmount; // discounted product subtotal
+    // Free delivery threshold is evaluated after discounts.
+    const fee = deliveryQuote(state, subtotal).fee ?? 0;
+    const deliveryStatus = fee === 0 ? "not_required" : "pending";
     const total = subtotal + fee;
     const lineDiscounts = new Map<number, number>();
     if (coupon?.ok) {
