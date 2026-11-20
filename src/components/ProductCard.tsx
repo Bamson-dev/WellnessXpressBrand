@@ -9,6 +9,10 @@ export default function ProductCard({ p, priority }: { p: Product; priority?: bo
   const comboImageOverrides: Record<string, string> = {
     "2-weeks-combo-set": "/images/products/combos/2-weeks-combo-set.webp",
     "1-month-combo-set": "/images/products/combos/1-month-combo-set.webp",
+    "1-month-full-kit": "/images/products/combos/full-product-group-alternate.webp",
+    "mini-combo-set": "/images/products/combos/mini-combo-set.webp",
+    "maxi-combo-set": "/images/products/combos/maxi-combo-set.webp",
+    "tummy-set": "/images/products/combos/tummy-set.webp",
   };
   const img = comboImageOverrides[p.slug] || p.images[0] || null;
   const single = p.variants.length === 1 ? p.variants[0] : null;
@@ -29,7 +33,7 @@ export default function ProductCard({ p, priority }: { p: Product; priority?: bo
         <p className="mt-2 text-base font-bold text-ink sm:text-lg">
           {range ? (range.min === range.max ? naira(range.min) : <>From {naira(range.min)}</>) : "—"}
         </p>
-        <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-brand-700 sm:text-xs">Free delivery</p>
+        <p className="mt-1 text-[11px] font-bold text-brand-700 sm:text-xs">Free delivery on ₦50,000+ orders</p>
         <div className="mt-auto grid gap-2 pt-3">
           {single ? (
             <QuickAdd product={{ slug: p.slug, name: p.name, image: img }} variant={{ id: single.id, sku: single.sku, label: single.label, price: effective(single), compareAt: null, inStock: inStock(single), detail: "" }} />
