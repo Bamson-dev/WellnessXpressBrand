@@ -460,6 +460,12 @@ const MIGRATIONS: string[] = [
    UPDATE products SET sort=11 WHERE slug='get-snatched-oil';
    `,
 
+  // v16: create the priced Flat Tummy Seed option when the older placeholder had no variants.
+  `INSERT OR IGNORE INTO variants (product_id,label,size,duration,sku,price,status,needs_confirmation,price_source,sort)
+    SELECT id,'Flat Tummy Seed','','','WX-FLAT-TUMMY-SEED-SINGLE',4000,'active',0,'WellnessXpress flyer 2026-11-20',0
+    FROM products WHERE slug='detox-seed' AND NOT EXISTS (SELECT 1 FROM variants WHERE product_id=products.id);
+   `,
+
 ];
 
 function open(): DB {
