@@ -16,7 +16,7 @@ const nextConfig = {
   poweredByHeader: false,
   // Version-skew protection: browsers can detect a deployment change and reload instead
   // of submitting stale Server Action identifiers to a different build.
-  deploymentId: process.env.NEXT_DEPLOYMENT_ID || process.env.GIT_COMMIT_SHA || process.env.CI_COMMIT_SHA || "wellnessx-build",
+  deploymentId: process.env.NEXT_DEPLOYMENT_ID,
   // Put page metadata in <head> for every visitor (Next 15 otherwise streams it later for non-bot browsers).
   htmlLimitedBots: /.*/,
   reactStrictMode: true,
