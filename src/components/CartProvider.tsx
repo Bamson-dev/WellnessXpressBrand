@@ -2,7 +2,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { track } from "@/components/pixel";
 
-export type CartLine = { variantId: number; qty: number; slug: string; name: string; label: string; price: number; image: string | null };
+export type CartLine = { variantId: number; qty: number; slug: string; name: string; label: string; price: number; image: string | null; sku?: string };
+/** Meta content id for a cart line: the SKU, the same id ViewContent and the server Purchase event use. */
+export const contentId = (l: { sku?: string; variantId: number }) => l.sku || String(l.variantId);
 type Ctx = {
   lines: CartLine[];
   count: number;
@@ -43,7 +45,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (ex) return prev.map((p) => (p.variantId === l.variantId ? { ...p, ...l, qty: Math.min(MAX_QTY, p.qty + qty) } : p));
       return [...prev, { ...l, qty: Math.min(MAX_QTY, qty) }];
     });
-    track("AddToCart", { currency: "NGN", value: l.price * qty, content_ids: [String(l.variantId)], content_type: "product" });
+    track("AddToCart", { currency: "NGN", value: l.price * qty, content_ids: [contentId(l)], content_type: "product" });
     setOpen(true);
   }, []);
   const setQty = useCallback((id: number, qty: number) => {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useCart } from "@/components/CartProvider";
+import { contentId, useCart } from "@/components/CartProvider";
 import { useQuote } from "@/components/useQuote";
 import { track } from "@/components/pixel";
 import { IconBank, IconShield, IconTruck } from "@/components/icons";
@@ -39,7 +39,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
   useEffect(() => {
     if (ready && lines.length && !tracked.current) {
       tracked.current = true;
-      track("InitiateCheckout", { currency: "NGN", value: lines.reduce((s, l) => s + l.price * l.qty, 0), num_items: lines.length, content_ids: lines.map((l) => String(l.variantId)) });
+      track("InitiateCheckout", { currency: "NGN", value: lines.reduce((s, l) => s + l.price * l.qty, 0), num_items: lines.length, content_ids: lines.map(contentId), content_type: "product" });
     }
   }, [ready, lines]);
 

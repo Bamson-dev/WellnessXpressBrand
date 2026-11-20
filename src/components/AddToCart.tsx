@@ -5,7 +5,7 @@ import QtyControl from "@/components/QtyControl";
 import { IconCart } from "@/components/icons";
 import { naira } from "@/lib/site";
 
-export type VariantOpt = { id: number; label: string; price: number; compareAt: number | null; inStock: boolean; detail: string };
+export type VariantOpt = { id: number; label: string; price: number; compareAt: number | null; inStock: boolean; detail: string; sku?: string };
 
 /** Full purchase box for product pages: variant choice, quantity and add to cart. */
 export function PurchaseBox({ product, variants }: { product: { slug: string; name: string; image: string | null }; variants: VariantOpt[] }) {
@@ -37,7 +37,7 @@ export function PurchaseBox({ product, variants }: { product: { slug: string; na
       ) : v.detail ? <p className="mt-2 text-neutral-600">{v.detail}</p> : null}
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <QtyControl value={qty} onChange={(n) => setQty(Math.max(1, n))} label="Quantity" />
-        <button type="button" disabled={!v.inStock} onClick={() => add({ variantId: v.id, slug: product.slug, name: product.name, label: v.label, price: v.price, image: product.image }, qty)}
+        <button type="button" disabled={!v.inStock} onClick={() => add({ variantId: v.id, sku: v.sku, slug: product.slug, name: product.name, label: v.label, price: v.price, image: product.image }, qty)}
           className="btn btn-primary min-w-[200px] flex-1 text-base">
           <IconCart /> {v.inStock ? "Add to cart" : "Out of stock"}
         </button>
@@ -50,7 +50,7 @@ export function PurchaseBox({ product, variants }: { product: { slug: string; na
 export function QuickAdd({ product, variant }: { product: { slug: string; name: string; image: string | null }; variant: VariantOpt }) {
   const { add } = useCart();
   return (
-    <button type="button" disabled={!variant.inStock} onClick={() => add({ variantId: variant.id, slug: product.slug, name: product.name, label: variant.label, price: variant.price, image: product.image })}
+    <button type="button" disabled={!variant.inStock} onClick={() => add({ variantId: variant.id, sku: variant.sku, slug: product.slug, name: product.name, label: variant.label, price: variant.price, image: product.image })}
       className="btn btn-primary min-h-[44px] w-full px-4 text-sm">
       {variant.inStock ? "Add to cart" : "Out of stock"}
     </button>
