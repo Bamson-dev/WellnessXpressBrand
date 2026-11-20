@@ -18,7 +18,7 @@ Set `COMING_SOON=false` in `.env.local` to preview the storefront. Run `npm run 
 
 ## Store and administration
 
-Products, variants, stock, product images, combo contents, prices, and visibility are managed in `/admin`. Product and combo artwork lives in `public/images/products/`; original product photos are retained in `public/images/products/originals/`. Prices are stored as whole NGN amounts in SQLite and quoted server-side for cart and checkout.
+Products, variants, stock, product images, combo contents, prices, and visibility are managed in `/admin`. Admins can add, edit, or remove product options and set their prices from the dashboard. Product and combo artwork lives in `public/images/products/`; original product photos are retained in `public/images/products/originals/`. Prices are stored as whole NGN amounts in SQLite and quoted server-side for cart and checkout.
 
 Checkout uses manual bank transfer for product payment. The customer can submit a transfer reference or receipt, but only an authorized admin can confirm payment after checking the bank account. The current store policy provides free delivery across enabled Nigerian states. Older orders may retain their historical delivery-fee details. Admin credentials and session secrets must be set in the deployment environment, never committed.
 
