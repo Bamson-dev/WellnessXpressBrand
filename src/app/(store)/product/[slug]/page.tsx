@@ -23,7 +23,11 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   const r = priceRange(p);
   const title = p.seoTitle || p.name;
   const desc = p.metaDescription || `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Free delivery across Nigeria. Order from WellnessXpressBrand.`.trim();
-  const image = p.ogImage || p.images[0];
+  const comboImageOverrides: Record<string, string> = {
+    "2-weeks-combo-set": "/images/products/combos/2-weeks-combo-set.webp",
+    "1-month-combo-set": "/images/products/combos/1-month-combo-set.webp",
+  };
+  const image = p.ogImage || comboImageOverrides[p.slug] || p.images[0];
   return {
     title, description: desc, alternates: { canonical: `/product/${p.slug}` },
     openGraph: { title, description: desc, url: `${site.url}/product/${p.slug}`, images: image ? [{ url: image, alt: p.name }] : undefined },
@@ -44,6 +48,11 @@ export default async function ProductPage(
   }
   if (!p || !p.variants.length) notFound();
   const contact = getContact();
+  const comboImageOverrides: Record<string, string> = {
+    "2-weeks-combo-set": "/images/products/combos/2-weeks-combo-set.webp",
+    "1-month-combo-set": "/images/products/combos/1-month-combo-set.webp",
+  };
+  const productImages = comboImageOverrides[p.slug] ? [comboImageOverrides[p.slug]] : p.images;
   const related = relatedProducts(p);
   const reviews = db().prepare("SELECT customer_name,rating,review_text,created_at FROM product_reviews WHERE product_id=? AND status='approved' AND verified_purchase=1 ORDER BY created_at DESC LIMIT 20").all(p.id);
   const r = priceRange(p);
@@ -53,7 +62,7 @@ export default async function ProductPage(
   }));
   const ld = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, description: plainText(p.description), sku: p.variants[0]?.sku,
-    image: p.images.map((i) => site.url + i), brand: { "@type": "Brand", name: "WellnessXpress" },
+    image: productImages.map((i) => site.url + i), brand: { "@type": "Brand", name: "WellnessXpress" },
     offers: r ? {
       "@type": "AggregateOffer", priceCurrency: "NGN", lowPrice: r.min, highPrice: r.max, offerCount: p.variants.length,
       availability: p.variants.some(inStock) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `${site.url}/product/${p.slug}`,
@@ -83,7 +92,7 @@ export default async function ProductPage(
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         <div>
           {preview ? <p className="mb-3 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-900 lg:col-span-2">Preview: this product is {p.status.replace("_", " ")} and hidden from customers.</p> : null}
-          <Gallery images={p.images} name={p.name} meta={mediaMeta(p.images)} />
+          <Gallery images={productImages} name={p.name} meta={mediaMeta(productImages)} />
           {p.slug === "tummy-set" ? (
             <p className="mt-3 rounded-xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm font-semibold text-brand-900">
               Set contents: Tummy Balance Big + Detox Seed
@@ -95,7 +104,7 @@ export default async function ProductPage(
           <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">{p.name}</h1>
           <p className="mt-3 text-lg text-neutral-700">{p.shortDescription}</p>
           <div className="mt-6">
-            <PurchaseBox product={{ slug: p.slug, name: p.name, image: p.images[0] || null }} variants={variants} />
+            <PurchaseBox product={{ slug: p.slug, name: p.name, image: productImages[0] || null }} variants={variants} />
           </div>
 
           {p.type === "combo" && p.items.length ? (
