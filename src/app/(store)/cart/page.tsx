@@ -63,7 +63,7 @@ export default function CartPage() {
           </dl>
           <Link href="/checkout" aria-disabled={!!blocked} className={`btn btn-primary mt-6 w-full text-base ${blocked ? "pointer-events-none opacity-50" : ""}`}>Checkout</Link>
           <Link href="/shop" className="btn btn-outline mt-2 w-full">Continue shopping</Link>
-          <p className="mt-4 text-sm font-semibold text-brand-800">Free delivery on orders ₦50,000 and above. Smaller orders pay delivery.</p>
+          <p className="mt-4 text-sm font-semibold text-brand-800">Free delivery applies to your product subtotal of ₦50,000 or more before discounts. Smaller orders pay the delivery fee for their state.</p>
           <p className="mt-1 text-sm text-neutral-500">No account needed. Pay by bank transfer after you place your order.</p>
         </aside>
       </div>
