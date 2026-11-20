@@ -40,19 +40,19 @@ export function deliveryZones(): DeliveryZone[] {
 
 export type DeliveryQuote = { state: string; available: boolean; free: boolean; fee: number | null; eta: string; note: string; message: string };
 
-/** Store policy: free delivery to every covered Nigerian state (36 states and FCT). */
-export const FREE_DELIVERY = true;
+/** Free delivery threshold is based on the discounted product subtotal. */
+export const FREE_DELIVERY_THRESHOLD = 50_000;
 
-/**
- * Server-side delivery quote. The browser never supplies the fee.
- * Delivery is free to every Nigerian state that is switched on (coverage). Fees entered before the policy are ignored.
- */
-export function deliveryQuote(state: string): DeliveryQuote {
+/** Delivery fees are server-side. No fee is trusted from the browser. */
+export function deliveryQuote(state: string, discountedSubtotal = 0): DeliveryQuote {
   const none = { state, available: false, free: false, fee: null, eta: "", note: "" };
   if (!NIGERIAN_STATES.includes(state)) return { ...none, message: "Choose your state. We deliver within Nigeria only." };
-  const r = db().prepare("SELECT active, eta, note FROM delivery_zones WHERE state = ?").get(state);
+  const r = db().prepare("SELECT active, fee, eta, note FROM delivery_zones WHERE state = ?").get(state);
   if (r && Number(r.active) !== 1) return { ...none, message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
-  return { state, available: true, free: true, fee: 0, eta: r ? String(r.eta || "") : "", note: r ? String(r.note || "") : "", message: "" };
+  const feeConfigured = r?.fee != null;
+  if (discountedSubtotal < FREE_DELIVERY_THRESHOLD && !feeConfigured) return { ...none, message: `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` };
+  const fee = discountedSubtotal >= FREE_DELIVERY_THRESHOLD ? 0 : Number(r.fee);
+  return { state, available: true, free: fee === 0, fee, eta: r ? String(r.eta || "") : "", note: r ? String(r.note || "") : "", message: "" };
 }
 
 export function deliveryFeeFor(state: string): number | null {
