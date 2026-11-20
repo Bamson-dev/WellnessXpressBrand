@@ -151,7 +151,7 @@ export default async function Home(props: { searchParams: Promise<{ bannerPrevie
         </div>
       </section>
 
-      {promoBanners.length ?? <div className="container-x space-y-6 py-6">{promoBanners.map((b) => <BannerBlock key={b.id} b={b} />)}</div> : null}
+      {promoBanners.length ? <div className="container-x space-y-6 py-6">{promoBanners.map((b) => <BannerBlock key={b.id} b={b} />)}</div> : null}
 
       {testimonials.length ? <section className="container-x py-12" aria-labelledby="testimonials-heading"><p className="eyebrow">Customer testimonials</p><h2 id="testimonials-heading" className="mt-2 text-2xl sm:text-3xl">What customers have shared</h2><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{testimonials.map((t, i) => <figure key={i} className="card p-5"><blockquote className="whitespace-pre-line text-neutral-700">“{String(t.quote)}”</blockquote><figcaption className="mt-4 font-semibold">{String(t.customer_name)}</figcaption></figure>)}</div></section> : null}
 
