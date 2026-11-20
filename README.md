@@ -40,3 +40,12 @@ The app uses Next.js Server Actions in the admin. Avoid version-skew during rede
 - Keep the app on one active production build at a time unless the deployment platform routes requests consistently.
 - Do not reuse old browser HTML or static assets across releases. After a deploy, refresh clients if the deployment ID changes.
 - Optionally set a stable, secure `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` as a Coolify build-time variable, generated once and kept private. Never commit it.
+
+
+## Required Coolify build arguments for stable Server Actions
+
+Configure the following **build arguments** in Coolify for this Docker build:
+- `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`: a persistent base64 AES key (16, 24, or 32 decoded bytes). Do not rotate it on each deploy and never commit it to Git.
+- `NEXT_DEPLOYMENT_ID`: optional unique build identifier. The Dockerfile generates a unique value when omitted.
+
+Use the same persistent Server Actions key for every production build and every running instance. After changing it, perform a full rebuild and ensure only the current release serves traffic. Keep the key private.
