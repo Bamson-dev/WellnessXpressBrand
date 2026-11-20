@@ -1,0 +1,56 @@
+name: Store checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches-ignore: [main]
+
+jobs:
+  build-and-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright for the existing E2E suite
+        run: npm install --no-save --package-lock=false playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3300
+          NEXT_PUBLIC_META_PIXEL_ID: 123456789012345
+          ADMIN_EMAIL: owner@test.local
+          ADMIN_PASSWORD: test-password-123
+          ADMIN_SESSION_SECRET: ci-only-secret-0123456789abcdef0123456789
+          COMING_SOON: "false"
+          DATA_DIR: /tmp/wx-test
+      - name: Start isolated test server
+        run: |
+          mkdir -p /tmp/wx-test
+          PORT=3300 HOSTNAME=127.0.0.1 DATA_DIR=/tmp/wx-test ADMIN_EMAIL=owner@test.local ADMIN_PASSWORD=test-password-123 ADMIN_SESSION_SECRET=ci-only-secret-0123456789abcdef0123456789 COMING_SOON=false NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3300 node .next/standalone/server.js > /tmp/wx-server.log 2>&1 &
+          echo $! > /tmp/wx-server.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3300/api/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/wx-server.log
+          exit 1
+      - name: Run E2E tests on disposable database
+        run: WX_BASE=http://127.0.0.1:3300 WX_DATA=/tmp/wx-test WX_SHOTS=test-results node tests/e2e.mjs
+        env:
+          ADMIN_EMAIL: owner@test.local
+          ADMIN_PASSWORD: test-password-123
+      - name: Upload screenshots and test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wellnessxpress-store-e2e
+          path: test-results/
+          if-no-files-found: ignore
