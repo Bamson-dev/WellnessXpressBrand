@@ -470,6 +470,15 @@ const MIGRATIONS: string[] = [
   `UPDATE products SET images='["/images/banners/updated-price-list.svg"]' WHERE slug IN ('2-weeks-combo-set','1-month-combo-set','tummy-set','mega-tummy-blast','body-reset-combo','1-month-full-kit');
    `,
 
+  // v18: use specific updated artwork for each combo listing.
+  `UPDATE products SET images='["/images/combos/general-fat-loss-2-weeks.svg"]' WHERE slug='2-weeks-combo-set';
+   UPDATE products SET images='["/images/combos/general-fat-loss-1-month.svg"]' WHERE slug='1-month-combo-set';
+   UPDATE products SET images='["/images/combos/basic-tummy-blast.svg"]' WHERE slug='tummy-set';
+   UPDATE products SET images='["/images/combos/mega-tummy-blast.svg"]' WHERE slug='mega-tummy-blast';
+   UPDATE products SET images='["/images/combos/body-reset-combo.svg"]' WHERE slug='body-reset-combo';
+   UPDATE products SET images='["/images/combos/1-month-full-kit.svg"]' WHERE slug='1-month-full-kit';
+   `,
+
 ];
 
 function open(): DB {
