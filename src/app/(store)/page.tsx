@@ -57,7 +57,7 @@ export default async function Home(props: { searchParams: Promise<{ bannerPrevie
             <ul className="mt-8 grid grid-cols-1 gap-3 text-[15px] text-neutral-700 sm:grid-cols-3">
               <li className="flex items-center gap-2"><IconUser className="h-5 w-5 text-brand-700" /> No account needed</li>
               <li className="flex items-center gap-2"><IconBank className="h-5 w-5 text-brand-700" /> Pay by bank transfer</li>
-              <li className="flex items-center gap-2"><IconTruck className="h-5 w-5 text-brand-700" /> Free delivery nationwide</li>
+              <li className="flex items-center gap-2"><IconTruck className="h-5 w-5 text-brand-700" /> Free delivery on ₦50,000+ orders</li>
             </ul>
           </div>
           <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
