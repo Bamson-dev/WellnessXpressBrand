@@ -52,7 +52,7 @@ export function createOrder(input: CheckoutInput) {
   if (waRaw && !whatsapp) errors.whatsapp = "Enter a valid WhatsApp number, or leave this empty.";
   if (email && !isEmail(email)) errors.email = "Enter a valid email address, or leave this empty.";
   if (!NIGERIAN_STATES.includes(state)) errors.state = "Choose your state.";
-  const delivery = deliveryQuote(state);
+  const delivery = deliveryQuote(state, 50_000);
   if (NIGERIAN_STATES.includes(state) && !delivery.available) errors.state = delivery.message;
   const clientKey = /^[A-Za-z0-9_-]{16,64}$/.test(String(input.clientKey || "")) ? String(input.clientKey) : "";
   if (clientKey) {
@@ -91,7 +91,9 @@ export function createOrder(input: CheckoutInput) {
     const discountAmount = coupon?.ok ? coupon.discountAmount : 0;
     const subtotal = itemsSubtotal - discountAmount; // discounted product subtotal
     // Free delivery threshold is evaluated after discounts.
-    const fee = deliveryQuote(state, subtotal).fee ?? 0;
+    const deliveryForOrder = deliveryQuote(state, subtotal);
+    if (!deliveryForOrder.available || deliveryForOrder.fee == null) throw new Error("delivery_fee_missing");
+    const fee = deliveryForOrder.fee;
     const deliveryStatus = fee === 0 ? "not_required" : "pending";
     const total = subtotal + fee;
     const lineDiscounts = new Map<number, number>();
