@@ -598,8 +598,6 @@ export async function saveDeliveryAction(f: FormData) {
   const rows: ZoneInput[] = NIGERIAN_STATES.map((st) => ({
     state: st, fee: money(f.get(`fee_${st}`)), active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160), internalNote: s(f, `internal_${st}`, 300),
   }));
-  const invalidFee = rows.find((r) => r.active && (r.fee == null || r.fee < 1));
-  if (invalidFee) return fail("/admin/delivery", `Enter a delivery fee of at least ₦1 for ${invalidFee.state}. Orders below ₦50,000 require a configured fee.`, `fee_${invalidFee.state}`);
   writeZones(rows);
   revalidatePath("/checkout");
   const off = rows.filter((r) => !r.active).map((r) => r.state);
@@ -681,8 +679,6 @@ export async function applyDeliveryImportAction(f: FormData) {
   if (!rows.length) return fail("/admin/delivery", "Nothing to import.");
   const existingFees = new Map(db().prepare("SELECT state, fee FROM delivery_zones").all().map((r) => [String(r.state), r.fee == null ? null : Number(r.fee)]));
   const feeRows = rows.map((r) => ({ ...r, fee: r.fee ?? existingFees.get(r.state) ?? null }));
-  const invalidFee = feeRows.find((r) => r.active && (r.fee == null || r.fee < 1));
-  if (invalidFee) return fail("/admin/delivery", `Import cancelled. Set a delivery fee for ${invalidFee.state} first or include it in the CSV.`, `fee_${invalidFee.state}`);
   writeZones(feeRows);
   revalidatePath("/checkout");
   audit(a, "applyDeliveryImportAction", f, "");
