@@ -13,6 +13,7 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
   await requirePerm("delivery");
   const zones = deliveryZones();
   const covered = zones.filter((z) => z.active).length;
+  const missingFees = zones.filter((z) => z.active && (z.fee == null || z.fee < 1)).length;
   return (
     <div>
       <Flash msg={searchParams.msg} />
@@ -26,6 +27,8 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
       <p className={`mt-3 rounded-lg px-4 py-2 text-sm font-medium ${covered === 37 ? "bg-brand-50 text-brand-900" : "bg-amber-50 text-amber-900"}`}>
         Delivery is enabled for {covered} of 37 locations.{covered < 37 ? " Customers in switched-off states cannot check out." : ""}
       </p>
+
+      {missingFees > 0 ? <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">{missingFees} enabled locations still need a delivery fee. Orders below ₦50,000 cannot be placed for these locations until you set the fee. Orders of ₦50,000 and above qualify for free delivery.</p> : null}
 
       <AdminForm action={bulkDeliveryAction} id="bulk" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-[auto_1fr_auto]">
         <select name="op" className="admin-input w-auto" aria-label="Bulk action">
