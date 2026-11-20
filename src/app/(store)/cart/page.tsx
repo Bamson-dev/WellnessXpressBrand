@@ -29,12 +29,12 @@ export default function CartPage() {
     <div className="container-x py-8 sm:py-12">
       <h1 className="text-3xl sm:text-4xl">Your cart</h1>
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
-        <ul className="divide-y divide-neutral-200 rounded-2xl border border-neutral-200 bg-white">
+        <ul className="min-w-0 divide-y divide-neutral-200 rounded-2xl border border-neutral-200 bg-white">
           {lines.map((l) => {
             const s = q(l.variantId);
             return (
-              <li key={l.variantId} className="flex gap-4 p-4 sm:p-5">
-                <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-brand-50">{l.image ? <Image src={l.image} alt="" fill sizes="96px" className="object-contain" /> : null}</div>
+              <li key={l.variantId} className="flex gap-3 p-3 sm:gap-4 sm:p-5">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-brand-50 sm:h-24 sm:w-24">{l.image ? <Image src={l.image} alt="" fill sizes="96px" className="object-contain" /> : null}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -45,7 +45,7 @@ export default function CartPage() {
                   </div>
                   {s && !s.available ? <p className="err">{s.reason}. Remove it or change the quantity.</p> : null}
                   {quote && !s ? <p className="err">This item is no longer available. Remove it to continue.</p> : null}
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <QtyControl value={l.qty} onChange={(n) => setQty(l.variantId, n)} small label={`Quantity of ${l.name}`} />
                     <span className="text-lg font-bold">{naira((s?.unitPrice ?? l.price) * l.qty)}</span>
                   </div>
@@ -54,7 +54,7 @@ export default function CartPage() {
             );
           })}
         </ul>
-        <aside className="card h-fit p-6 lg:sticky lg:top-28">
+        <aside className="card h-fit min-w-0 p-6 lg:sticky lg:top-28">
           <h2 className="text-xl">Order summary</h2>
           <dl className="mt-4 space-y-2 text-[15px]">
             <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
