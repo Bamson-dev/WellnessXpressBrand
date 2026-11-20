@@ -1,12 +1,10 @@
 "use client";
 import { useEffect, useRef, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
 
 type Props = Omit<React.FormHTMLAttributes<HTMLFormElement>, "action" | "onSubmit"> & { action: (f: FormData) => unknown | Promise<unknown> };
 const KEY = "wx-admin-last-form";
 const SNAP = "wx-admin-form-values";
 type Snap = { id: string; values: [string, string | boolean][] };
-
 /** Stable identity for a form across re-renders: the page path plus its position among the page's forms. */
 const keyOf = (form: HTMLFormElement) => `${location.pathname}:${Array.from(document.querySelectorAll("form")).indexOf(form)}`;
 
@@ -40,7 +38,6 @@ function restore(form: HTMLFormElement, id: string) {
 export default function AdminForm({ action, children, id, ...rest }: Props) {
   const ref = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
-  const params = useSearchParams();
 
   useEffect(() => {
     const form = ref.current;
@@ -48,12 +45,16 @@ export default function AdminForm({ action, children, id, ...rest }: Props) {
     const formId = keyOf(form);
     form.querySelectorAll("[data-field-error]").forEach((n) => n.remove());
     form.querySelectorAll("[aria-invalid='true']").forEach((n) => n.removeAttribute("aria-invalid"));
+
+    // Read query parameters after mount to avoid useSearchParams' client-render bailout
+    // in admin pages that otherwise fail during hydration.
+    const params = new URLSearchParams(window.location.search);
     const field = params.get("field");
     let last = ""; try { last = sessionStorage.getItem(KEY) || ""; } catch {}
     if (last !== formId || params.get("err") !== "1") return;
-    restore(form, formId); // validation failed: put back what the admin typed
+    restore(form, formId);
     if (!field) return;
-    const el = form.querySelector<HTMLElement>(`[name="${CSS.escape(field)}"]`);
+    const el = Array.from(form.elements).find((item) => (item as HTMLInputElement).name === field) as HTMLElement | undefined;
     if (!el) return;
     el.setAttribute("aria-invalid", "true");
     const p = document.createElement("p");
@@ -61,7 +62,7 @@ export default function AdminForm({ action, children, id, ...rest }: Props) {
     p.textContent = params.get("msg") || "Check this field.";
     (el.closest("label") || el).insertAdjacentElement("afterend", p);
     el.focus();
-  }, [params]);
+  }, []);
 
   return (
     <form
