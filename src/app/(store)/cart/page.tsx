@@ -58,12 +58,12 @@ export default function CartPage() {
           <h2 className="text-xl">Order summary</h2>
           <dl className="mt-4 space-y-2 text-[15px]">
             <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
-            <div className="flex justify-between"><dt className="text-neutral-600">Delivery</dt><dd className="font-semibold">{quote ? (quote.subtotal >= 50000 ? "FREE" : quote.delivery?.baseFee != null ? naira(quote.delivery.baseFee) : "Calculated at checkout") : "…"}</dd></div>
+            <div className="flex justify-between"><dt className="text-neutral-600">Delivery</dt><dd className="font-semibold">{quote ? "Calculated at checkout" : "…"}</dd></div>
             <div className="flex justify-between border-t border-neutral-200 pt-2 text-lg"><dt className="font-bold">Products subtotal</dt><dd className="font-bold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
           </dl>
           <Link href="/checkout" aria-disabled={!!blocked} className={`btn btn-primary mt-6 w-full text-base ${blocked ? "pointer-events-none opacity-50" : ""}`}>Checkout</Link>
           <Link href="/shop" className="btn btn-outline mt-2 w-full">Continue shopping</Link>
-          <p className="mt-4 text-sm font-semibold text-brand-800">Free delivery applies to your product subtotal of ₦50,000 or more before discounts. Smaller orders pay the delivery fee for their state.</p>
+          <p className="mt-4 text-sm font-semibold text-brand-800">Free delivery applies when your discounted product subtotal reaches ₦50,000. Delivery fees for smaller orders appear at checkout.</p>
           <p className="mt-1 text-sm text-neutral-500">No account needed. Pay by bank transfer after you place your order.</p>
         </aside>
       </div>
