@@ -582,14 +582,13 @@ export async function setThresholdAction(f: FormData) {
 }
 
 /* ---------- delivery ---------- */
-type ZoneInput = { state: string; active: boolean; eta: string; note: string; internalNote: string };
-/** Delivery is free nationwide; these settings control coverage, delivery times and notes. Fees are not used. */
+type ZoneInput = { state: string; fee: number | null; active: boolean; eta: string; note: string; internalNote: string };
 function writeZones(rows: ZoneInput[]) {
   tx((d) => {
     for (const z of rows) {
-      d.prepare(`INSERT INTO delivery_zones (state, fee, active, eta, note, internal_note, updated_at) VALUES (?, NULL, ?, ?, ?, ?, datetime('now'))
-        ON CONFLICT(state) DO UPDATE SET active=excluded.active, eta=excluded.eta, note=excluded.note, internal_note=excluded.internal_note, updated_at=datetime('now')`)
-        .run(z.state, z.active ? 1 : 0, z.eta, z.note, z.internalNote);
+      d.prepare(`INSERT INTO delivery_zones (state, fee, active, eta, note, internal_note, updated_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(state) DO UPDATE SET fee=excluded.fee, active=excluded.active, eta=excluded.eta, note=excluded.note, internal_note=excluded.internal_note, updated_at=datetime('now')`)
+        .run(z.state, z.fee, z.active ? 1 : 0, z.eta, z.note, z.internalNote);
     }
   });
 }
@@ -597,8 +596,10 @@ function writeZones(rows: ZoneInput[]) {
 export async function saveDeliveryAction(f: FormData) {
   const a = await requirePerm("delivery");
   const rows: ZoneInput[] = NIGERIAN_STATES.map((st) => ({
-    state: st, active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160), internalNote: s(f, `internal_${st}`, 300),
+    state: st, fee: money(f.get(`fee_${st}`)), active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160), internalNote: s(f, `internal_${st}`, 300),
   }));
+  const invalidFee = rows.find((r) => r.active && (r.fee == null || r.fee < 1));
+  if (invalidFee) return fail("/admin/delivery", `Enter a delivery fee of at least ₦1 for ${invalidFee.state}. Orders below ₦50,000 require a configured fee.`, `fee_${invalidFee.state}`);
   writeZones(rows);
   revalidatePath("/checkout");
   const off = rows.filter((r) => !r.active).map((r) => r.state);
@@ -615,7 +616,7 @@ export async function bulkDeliveryAction(f: FormData) {
   const current = new Map(db().prepare("SELECT * FROM delivery_zones").all().map((r) => [String(r.state), r]));
   const rows: ZoneInput[] = states.map((st) => {
     const c = current.get(st);
-    const base: ZoneInput = { state: st, active: c ? Number(c.active) === 1 : true, eta: String(c?.eta || ""), note: String(c?.note || ""), internalNote: String(c?.internal_note || "") };
+    const base: ZoneInput = { state: st, fee: c?.fee == null ? null : Number(c.fee), active: c ? Number(c.active) === 1 : true, eta: String(c?.eta || ""), note: String(c?.note || ""), internalNote: String(c?.internal_note || "") };
     if (op === "eta") return { ...base, eta: s(f, "bulkEta", 80) };
     if (op === "note") return { ...base, note: s(f, "bulkEta", 160) };
     if (op === "enable") return { ...base, active: true };
@@ -655,7 +656,7 @@ function parseDeliveryCsv(text: string) {
     seen.add(st);
     const en = iEn >= 0 ? (c[iEn] || "").toLowerCase() : "yes";
     if (en && !["yes", "no", "true", "false", "1", "0", "y", "n"].includes(en)) { problems.push(`Line ${n}: Enabled must be yes or no.`); return; }
-    rows.push({ state: st, active: en === "" || ["yes", "true", "1", "y"].includes(en), eta: iEta >= 0 ? clean(c[iEta] || "", 80) : "", note: iNote >= 0 ? clean(c[iNote] || "", 160) : "", internalNote: iInt >= 0 ? clean(c[iInt] || "", 300) : "" });
+    rows.push({ state: st, fee: null, active: en === "" || ["yes", "true", "1", "y"].includes(en), eta: iEta >= 0 ? clean(c[iEta] || "", 80) : "", note: iNote >= 0 ? clean(c[iNote] || "", 160) : "", internalNote: iInt >= 0 ? clean(c[iInt] || "", 300) : "" });
   });
   return { rows, problems };
 }
