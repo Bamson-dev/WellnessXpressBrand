@@ -769,7 +769,7 @@ await step("untracked stock history", async () => {
 
 await step("responsive", async () => {
   const widths = [320, 360, 375, 390, 414, 430, 768, 1024, 1280, 1440, 1920];
-  const pub = ["/", "/shop", "/category/combos", "/category/individual", "/product/tummy-balance", "/product/1-month-combo-set", "/shipping", "/cart", "/checkout", "/faq", "/contact", "/about", ...(order.url ? [order.url] : [])];
+  const pub = ["/", "/shop", "/category/combos", "/category/individual", "/product/tummy-balance", "/product/1-month-combo-set", "/shipping", "/cart", "/checkout", "/faq", "/contact", "/about", ...(order.url && order.url.startsWith("/") ? [order.url] : [])];
   const adm = ["/admin", "/admin/products", "/admin/inventory", "/admin/delivery", "/admin/media", "/admin/orders", "/admin/categories", "/admin/promotions", "/admin/reviews", "/admin/analytics", "/admin/notifications", "/admin/activity"];
   const cookies = await admin.context().cookies();
   for (const w of widths) {
