@@ -42,7 +42,14 @@ export async function login(email: string, password: string): Promise<Session | 
 }
 
 export async function logout() {
-  (await cookies()).set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+  const c = await cookies();
+  const s = await verifySession(c.get(SESSION_COOKIE)?.value);
+  if (s?.sid) {
+    const d = db();
+    d.prepare("DELETE FROM revoked_sessions WHERE expires_at < ?").run(Date.now());
+    d.prepare("INSERT OR IGNORE INTO revoked_sessions (sid, expires_at) VALUES (?, ?)").run(s.sid, s.exp);
+  }
+  c.set(SESSION_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
 }
 
 export type Admin = Session & { perms: Permission[] };
@@ -51,6 +58,8 @@ export type Admin = Session & { perms: Permission[] };
 export async function currentAdmin(): Promise<Admin | null> {
   const s = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!s) return null;
+  // Signed-out sessions stay invalid until they expire; sessions without an id predate server-side logout.
+  if (!s.sid || db().prepare("SELECT 1 FROM revoked_sessions WHERE sid = ?").get(s.sid)) return null;
   if (s.uid === "owner") return { ...s, role: "owner", perms: [...ALL_PERMISSIONS] };
   const u = db().prepare("SELECT active, role, permissions FROM users WHERE id = ?").get(Number(s.uid));
   if (!u || Number(u.active) !== 1) return null;

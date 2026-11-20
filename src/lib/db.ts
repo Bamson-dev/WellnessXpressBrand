@@ -371,6 +371,13 @@ const MIGRATIONS: string[] = [
      new_slug TEXT NOT NULL,
      created_at TEXT NOT NULL DEFAULT (datetime('now'))
    );`,
+  // v14: server-side admin logout. A signed-out session id is kept until its own expiry so the cookie cannot be reused.
+  // Also shortens the original 170-character homepage description to 154, only where an admin has not rewritten it.
+  `CREATE TABLE IF NOT EXISTS revoked_sessions (
+     sid TEXT PRIMARY KEY,
+     expires_at INTEGER NOT NULL
+   );
+   UPDATE settings SET value = REPLACE(value, 'Shop WellnessXpress weight-management and wellness products in Nigeria. Order without an account, pay by bank transfer and enjoy free delivery to all 36 states and Abuja.', 'Shop WellnessXpress weight-management and wellness products in Nigeria. No account needed, pay by bank transfer, free delivery to all 36 states and Abuja.') WHERE key = 'seo';`,
 ];
 
 function open(): DB {

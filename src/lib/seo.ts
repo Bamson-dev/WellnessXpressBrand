@@ -46,6 +46,9 @@ export function seoIssues() {
     if (title.length > TITLE_MAX) issues.push({ where, href: `/admin/seo#c-${c.id}`, problem: `Title is ${title.length} characters.` });
     add(titles, title, where); add(descs, desc, where);
   }
+  const site = getSeo();
+  if ((site.homeDescription || "").length > DESC_MAX) issues.push({ where: "Homepage", href: "/admin/seo", problem: `Description is ${site.homeDescription.length} characters; keep it under ${DESC_MAX}.` });
+  if ((site.homeTitle || "").length > TITLE_MAX) issues.push({ where: "Homepage", href: "/admin/seo", problem: `Title is ${site.homeTitle.length} characters; search results show about ${TITLE_MAX}.` });
   for (const [t, w] of titles) if (w.length > 1) issues.push({ where: w.join(", "), href: "/admin/seo", problem: `Same title used more than once: "${t}".` });
   for (const [d, w] of descs) if (w.length > 1) issues.push({ where: w.join(", "), href: "/admin/seo", problem: `Same description used more than once: "${d.slice(0, 60)}…".` });
   return issues;
