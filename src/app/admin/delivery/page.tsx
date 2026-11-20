@@ -19,12 +19,12 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl">Delivery coverage</h1>
-          <p className="mt-1 max-w-3xl text-sm text-neutral-600">Delivery is free across Nigeria. There are no delivery fees to set. Use this page to switch delivery on or off for each state, add delivery times you know to be accurate, and keep notes. Customers see the delivery time and the customer note at checkout. Internal notes stay in the dashboard.</p>
+          <p className="mt-1 max-w-3xl text-sm text-neutral-600">Free delivery applies to product subtotals of ₦50,000 and above. Orders below that threshold pay the state delivery fee configured here. Use this page to set fees, switch delivery on or off, add delivery times, and keep customer and internal notes.</p>
         </div>
         <a href="/api/admin/delivery-export" className="admin-btn-ghost">Export CSV</a>
       </div>
       <p className={`mt-3 rounded-lg px-4 py-2 text-sm font-medium ${covered === 37 ? "bg-brand-50 text-brand-900" : "bg-amber-50 text-amber-900"}`}>
-        Free delivery is on for {covered} of 37 locations.{covered < 37 ? " Customers in switched-off states cannot check out." : ""}
+        Delivery is enabled for {covered} of 37 locations.{covered < 37 ? " Customers in switched-off states cannot check out." : ""}
       </p>
 
       <AdminForm action={bulkDeliveryAction} id="bulk" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-[auto_1fr_auto]">
@@ -53,7 +53,7 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
                   <td className="p-2"><input name={`eta_${z.state}`} defaultValue={z.eta} placeholder="Not set" maxLength={80} className="admin-input w-40" aria-label={`Delivery time for ${z.state}`} /></td>
                   <td className="p-2"><input name={`note_${z.state}`} defaultValue={z.note} maxLength={160} className="admin-input w-48" aria-label={`Customer note for ${z.state}`} /></td>
                   <td className="p-2"><input name={`internal_${z.state}`} defaultValue={z.internalNote} maxLength={300} className="admin-input w-48" aria-label={`Internal note for ${z.state}`} /></td>
-                  <td className="p-2 text-xs">{z.active ? <span className="rounded-full bg-brand-50 px-2 py-0.5 font-semibold text-brand-900">Free delivery</span> : <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-neutral-600">Off</span>}</td>
+                  <td className="p-2 text-xs">{z.active ? <span className="rounded-full bg-brand-50 px-2 py-0.5 font-semibold text-brand-900">Delivery enabled</span> : <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-neutral-600">Off</span>}</td>
                 </tr>
               ))}
             </tbody>
