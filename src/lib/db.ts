@@ -466,6 +466,10 @@ const MIGRATIONS: string[] = [
     FROM products WHERE slug='detox-seed' AND NOT EXISTS (SELECT 1 FROM variants WHERE product_id=products.id);
    `,
 
+  // v17: use the new catalogue artwork for renamed and newly introduced combo packages.
+  `UPDATE products SET images='["/images/banners/updated-price-list.svg"]' WHERE slug IN ('2-weeks-combo-set','1-month-combo-set','tummy-set','mega-tummy-blast','body-reset-combo','1-month-full-kit');
+   `,
+
 ];
 
 function open(): DB {
