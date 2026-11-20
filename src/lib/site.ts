@@ -40,8 +40,8 @@ export function normalisePhone(raw: string) {
 }
 
 /** Customer-facing free delivery copy, used everywhere the offer appears. */
-export const FREE_DELIVERY_TITLE = "FREE DELIVERY ACROSS NIGERIA";
-export const FREE_DELIVERY_TEXT = "Shop your favourite products and enjoy free delivery to all 36 states and Abuja.";
+export const FREE_DELIVERY_TITLE = "FREE DELIVERY ON ORDERS ₦50,000+";
+export const FREE_DELIVERY_TEXT = "Orders of ₦50,000 or more qualify for free delivery nationwide. Smaller orders pay the delivery fee for their state.";
 
 export const PAYMENT_STATUS: Record<string, string> = {
   pending_payment: "Pending Payment",
