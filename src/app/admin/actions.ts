@@ -602,7 +602,7 @@ export async function saveDeliveryAction(f: FormData) {
   revalidatePath("/checkout");
   const off = rows.filter((r) => !r.active).map((r) => r.state);
   audit(a, "saveDeliveryAction", f, `${37 - off.length} of 37 covered`);
-  back("/admin/delivery", off.length ? `Saved. Delivery is switched off for: ${off.join(", ")}.` : "Saved. Free delivery is on for all 37 locations.");
+  back("/admin/delivery", off.length ? `Saved. Delivery is switched off for: ${off.join(", ")}.` : "Delivery settings saved. Free delivery applies to qualifying orders.");
 }
 
 export async function bulkDeliveryAction(f: FormData) {
