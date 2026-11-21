@@ -6,15 +6,9 @@ import { naira } from "@/lib/site";
 
 export default function ProductCard({ p, priority }: { p: Product; priority?: boolean }) {
   const range = priorityRange(p);
-  const comboImageOverrides: Record<string, string> = {
-    "2-weeks-combo-set": "/images/products/combos/2-weeks-combo-set.webp",
-    "1-month-combo-set": "/images/products/combos/1-month-combo-set.webp",
-    "1-month-full-kit": "/images/products/combos/full-product-group-alternate.webp",
-    "mini-combo-set": "/images/products/combos/mini-combo-set.webp",
-    "maxi-combo-set": "/images/products/combos/maxi-combo-set.webp",
-    "tummy-set": "/images/products/combos/tummy-set.webp",
-  };
-  const img = comboImageOverrides[p.slug] || p.images[0] || null;
+  // Always use the current image saved on the product record. Hardcoded slug overrides
+  // caused category/home cards to keep showing older images after admin replacement.
+  const img = p.images[0] || null;
   const single = p.variants.length === 1 ? p.variants[0] : null;
   const detail = p.type === "combo" ? `${p.items.length} products` : p.variants.map((v) => v.label).join(" · ");
   return (
