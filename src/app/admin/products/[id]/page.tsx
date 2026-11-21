@@ -5,8 +5,9 @@ import { allProductsAdmin, getCategories, getProductById } from "@/lib/catalog";
 import Flash from "@/components/admin/Flash";
 import UnsavedGuard from "@/components/admin/UnsavedGuard";
 import { listMedia } from "@/lib/media";
-import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOrderAction, replaceImageAction, saveMediaMetaAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
+import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOrderAction, saveMediaMetaAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
 import AdminForm from "@/components/admin/AdminForm";
+import ReplaceImageUpload from "@/components/admin/ReplaceImageUpload";
 
 export const metadata = { title: "Edit product" };
 
@@ -91,11 +92,7 @@ export default async function EditProduct(
                           <button className="admin-btn-ghost px-2 py-1 text-xs">Save</button>
                         </AdminForm>
                       ) : null}
-                      <AdminForm action={replaceImageAction} className="flex flex-wrap items-center gap-1 text-xs">
-                        <input type="hidden" name="productId" value={p.id} /><input type="hidden" name="index" value={i} />
-                        <input type="file" name="image" accept="image/jpeg,image/png,image/webp" className="max-w-[180px] text-xs" aria-label={`Replacement for photo ${i + 1}`} required />
-                        <button className="text-brand-700 underline">Replace</button>
-                      </AdminForm>
+                      <ReplaceImageUpload productId={p.id} index={i} returnPath={`/admin/products/${p.id}`} />
                     </div>
                   </div>
                 );
