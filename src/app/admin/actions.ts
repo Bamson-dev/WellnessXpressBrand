@@ -216,12 +216,12 @@ export async function createFlyerCatalogAction(f: FormData) {
     { name: "Get Snatched Oil", prices: [{ label: "Single Bottle", size: "Single Bottle", duration: "", price: 15000 }] },
   ];
   const combos = [
-    { name: "General Fat Loss (2 Weeks)", price: 35500, items: ["Appetite Suppressant", "Metabolic Reset", "Tummy Tea", "Flat Tummy Seed"], sizeNote: "2 Weeks" },
+    { name: "General Fat Loss (2 Weeks)", price: 35500, items: ["Appetite Suppressant", "Metabolic Reset", "Tummy Balance", "Flat Tummy Seed"], sizeNote: "2 Weeks" },
     { name: "General Fat Loss (1 Month)", price: 64500, items: ["Appetite Suppressant", "Metabolic Reset", "Tummy Tea", "Flat Tummy Seed"], sizeNote: "1 Month" },
-    { name: "Basic Tummy Blast", price: 26000, items: ["Tummy Tea", "Flat Tummy Seed"], sizeNote: "" },
-    { name: "Mega Tummy Blast", price: 40000, items: ["Tummy Tea", "Flat Tummy Seed", "Get Snatched Oil"], sizeNote: "" },
-    { name: "Body Reset Combo", price: 31000, items: ["Metabolic Reset", "Trim Down Coffee", "Tummy Tea"], sizeNote: "" },
-    { name: "1 Month Full Kit", price: 87000, items: ["Metabolic Reset", "Appetite Suppressant", "Tummy Tea", "Trim Down Coffee", "Get Snatched Oil", "Flat Tummy Seed"], sizeNote: "1 Month" },
+    { name: "Basic Tummy Blast", price: 26000, items: ["Tummy Balance (Big)", "Flat Tummy Seed"], sizeNote: "" },
+    { name: "Mega Tummy Blast", price: 40000, items: ["Tummy Balance (Big)", "Flat Tummy Seed", "Get Snatched Oil"], sizeNote: "" },
+    { name: "Body Reset Combo", price: 31000, items: ["Metabolic Reset", "Trim Down Coffee", "Tummy Balance (S)"], sizeNote: "" },
+    { name: "1 Month Full Kit", price: 87000, items: ["Metabolic Reset", "Appetite Suppressant", "Tummy Balance", "Trim Down Coffee", "Get Snatched Oil", "Flat Tummy Seed"], sizeNote: "1 Month" },
   ];
   let created = 0, skipped = 0;
   const createdIds = new Map<string, number>();
