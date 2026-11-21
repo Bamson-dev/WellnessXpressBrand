@@ -229,6 +229,10 @@ export async function createFlyerCatalogAction(f: FormData) {
   let created = 0, skipped = 0;
   const createdIds = new Map<string, number>();
   tx((d) => {
+    // Archive legacy duration-variant listings so the split listings do not appear alongside them.
+    ["Appetite Suppressant", "Metabolic Reset", "Tummy Tea"].forEach((legacyName) => {
+      d.prepare("UPDATE products SET status='archived' WHERE lower(name)=lower(?) AND type='single'").run(legacyName);
+    });
     const createProduct = (name: string, type: "single" | "combo", variants: {label:string;size:string;duration:string;price:number}[], items: string[] = [], sizeNote = "") => {
       const exists = d.prepare("SELECT id FROM products WHERE lower(name)=lower(?) AND type=? AND status!='archived'").get(name, type);
       if (exists) { skipped++; createdIds.set(name, Number(exists.id)); return; }
