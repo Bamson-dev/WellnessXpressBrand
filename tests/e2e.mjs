@@ -77,23 +77,23 @@ await step("admin login", async () => {
 // ---------------- delivery settings ----------------
 await step("delivery admin", async () => {
   await admin.goto(B + "/admin/delivery");
-  ok((await admin.locator('input[name^="active_"]').count()) === 37 && (await admin.locator('input[name^="fee_"]').count()) === 0, "delivery page lists all 37 locations and asks for no fees");
+  ok((await admin.locator('input[name^="active_"]').count()) === 37 && (await admin.locator('input[name^="fee_"]').count()) === 37, "delivery page lists all 37 locations with configurable fee fields");
   ok(q1("SELECT COUNT(*) c FROM delivery_zones").c === 37 && q1("SELECT COUNT(*) c FROM delivery_zones WHERE active=1").c === 37, "all 37 locations covered by default");
   ok(q1("SELECT COUNT(*) c FROM delivery_zones WHERE fee IS NOT NULL").c === 0, "no delivery fee stored");
-  await admin.fill('input[name="eta_Lagos"]', "1–2 working days");
+  await admin.fill('input[name="fee_Lagos"]', "4500");\n  await admin.fill('input[name="eta_Lagos"]', "1–2 working days");
   await admin.fill('input[name="internal_Lagos"]', "Rider pickup at 10am");
   await admin.locator('input[name="active_Kano"]').uncheck();
   await go(admin, admin.locator("button:has-text('Save delivery settings')").first());
   ok(/switched off for: Kano/.test(await flash(admin)), "switching a state off is confirmed");
   const lag = q1("SELECT * FROM delivery_zones WHERE state='Lagos'");
-  ok(lag.active === 1 && lag.eta === "1–2 working days" && lag.internal_note === "Rider pickup at 10am" && lag.fee === null, "delivery time and internal note saved, no fee");
+  ok(lag.active === 1 && lag.eta === "1–2 working days" && lag.internal_note === "Rider pickup at 10am" && lag.fee === 4500, "delivery fee, time and internal note saved");
   await admin.goto(B + "/admin/delivery");
   for (const st of ["Oyo", "Osun"]) await admin.check(`input[name="states"][value="${st}"]`);
   await admin.selectOption('select[name="op"]', "eta"); await admin.fill('input[name="bulkEta"]', "2–4 working days");
   await go(admin, admin.locator("button:has-text('Apply to ticked states')").first());
   ok(qa("SELECT eta FROM delivery_zones WHERE state IN ('Oyo','Osun')").every((r) => r.eta === "2–4 working days"), "bulk update sets delivery time");
   const csv = await (await admin.request.get(B + "/api/admin/delivery-export")).text();
-  ok(csv.trim().split(/\r?\n/).length === 38 && /State,Enabled,ETA,Note,Internal note/.test(csv) && /Kano,no/.test(csv), "delivery CSV export has header + 37 rows");
+  ok(csv.trim().split(/\r?\n/).length === 38 && /State,Enabled,ETA,Note,Internal note/.test(csv) && /Kano,,no/.test(csv), "delivery CSV export includes fee column and 37 rows");
   const bad = path.join(SHOTS, "bad.csv"); fs.writeFileSync(bad, "State,Enabled,ETA,Note,Internal note\nEkiti,maybe,,,\nAtlantis,yes,,,\n");
   await admin.setInputFiles('input[name="file"]', bad); await go(admin, admin.locator("button:has-text('Preview import')").first());
   ok(await admin.locator("text=Fix these problems").waitFor({ timeout: 8000 }).then(() => true, () => false), "import preview reports invalid rows");
@@ -103,7 +103,7 @@ await step("delivery admin", async () => {
   await admin.setInputFiles('input[name="file"]', good); await go(admin, admin.locator("button:has-text('Preview import')").first());
   await go(admin, admin.locator("button:has-text('Save these 1 states')").first());
   const ek = q1("SELECT * FROM delivery_zones WHERE state='Ekiti'");
-  ok(ek.eta === "3–5 working days" && ek.note === "Pickup at the park" && ek.fee === null, "old-format import applied, fee column ignored");
+  ok(ek.eta === "3–5 working days" && ek.note === "Pickup at the park" && ek.fee === 5000, "import applies state delivery fee and notes");
   ok(q1("SELECT eta FROM delivery_zones WHERE state='Lagos'").eta === "1–2 working days", "states missing from the import are unchanged");
   await admin.screenshot({ path: path.join(SHOTS, "admin-delivery.png"), fullPage: true });
 });
