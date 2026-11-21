@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useTransition } from "react";
+import { useEffect, useRef } from "react";
 
 type Props = Omit<React.FormHTMLAttributes<HTMLFormElement>, "action" | "onSubmit"> & { action: (f: FormData) => unknown | Promise<unknown> };
 const KEY = "wx-admin-last-form";
@@ -37,7 +37,7 @@ function restore(form: HTMLFormElement, id: string) {
  */
 export default function AdminForm({ action, children, id, ...rest }: Props) {
   const ref = useRef<HTMLFormElement>(null);
-  const [pending, start] = useTransition();
+
 
   useEffect(() => {
     const form = ref.current;
@@ -69,17 +69,12 @@ export default function AdminForm({ action, children, id, ...rest }: Props) {
       {...rest}
       id={id}
       ref={ref}
-      aria-busy={pending}
-      inert={pending}
+      action={action}
       onSubmit={(e) => {
-        e.preventDefault();
-        if (pending) return;
         const form = e.currentTarget;
         const formId = keyOf(form);
-        const data = new FormData(form, (e.nativeEvent as SubmitEvent).submitter);
         try { sessionStorage.setItem(KEY, formId); } catch {}
         snapshot(form, formId);
-        start(async () => { await action(data); });
       }}
     >
       {children}
