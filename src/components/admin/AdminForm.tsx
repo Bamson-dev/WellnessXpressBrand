@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-type Props = Omit<React.FormHTMLAttributes<HTMLFormElement>, "action" | "onSubmit"> & { action: (f: FormData) => unknown | Promise<unknown> };
+type Props = Omit<React.FormHTMLAttributes<HTMLFormElement>, "action" | "onSubmit"> & { action: (f: FormData) => void | Promise<void> };
 const KEY = "wx-admin-last-form";
 const SNAP = "wx-admin-form-values";
 type Snap = { id: string; values: [string, string | boolean][] };
