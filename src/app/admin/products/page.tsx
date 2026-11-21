@@ -53,7 +53,7 @@ export default async function Products(
       </AdminForm>
       <AdminForm action={createFlyerCatalogAction} className="mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3">
         <input type="hidden" name="confirm" value="yes" />
-        <button className="admin-btn" type="submit">Create flyer catalog (12 products)</button>
+        <button className="admin-btn" type="submit">Create flyer catalog (15 products)</button>
         <span className="text-xs text-neutral-600">Creates missing products as drafts. Existing products are skipped. Add photos before publishing.</span>
       </AdminForm>
       <form method="get" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-7">
