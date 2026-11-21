@@ -233,6 +233,31 @@ export async function createFlyerCatalogAction(f: FormData) {
     ["Appetite Suppressant", "Metabolic Reset", "Tummy Tea"].forEach((legacyName) => {
       d.prepare("UPDATE products SET status='archived' WHERE lower(name)=lower(?) AND type='single'").run(legacyName);
     });
+    const syncSingleProduct = (item: typeof singles[number]) => {
+      const product = d.prepare("SELECT id FROM products WHERE lower(name)=lower(?) AND type='single' AND status!='archived'").get(item.name);
+      let productId: number;
+      if (product) {
+        productId = Number(product.id);
+        d.prepare("UPDATE products SET category='individual', short_description=?, updated_at=datetime('now') WHERE id=?").run("WellnessXpress individual product.", productId);
+      } else {
+        let slug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "product";
+        while (d.prepare("SELECT 1 FROM products WHERE slug=?").get(slug)) slug += "-2";
+        productId = Number(d.prepare("INSERT INTO products (slug,name,type,category,short_description,description,status,featured,sort,review_note) VALUES (?,?,?,?,?,?, 'draft',0,999,?)").run(
+          slug, item.name, "single", "individual", "WellnessXpress individual product.", "", "Created from approved flyer. Add product image and verify details before publishing."
+        ).lastInsertRowid);
+      }
+      const v = item.prices[0];
+      const oldVariants = d.prepare("SELECT id,sku FROM variants WHERE product_id=? ORDER BY sort,id").all(productId);
+      const target = oldVariants[0];
+      if (target) {
+        d.prepare("UPDATE variants SET label=?,size=?,duration=?,price=?,sale_price=NULL,stock=NULL,status='active',needs_confirmation=0,sort=0 WHERE id=? AND product_id=?").run(v.label,v.size,v.duration,v.price,target.id,productId);
+        if (oldVariants.length > 1) d.prepare("UPDATE variants SET status='inactive' WHERE product_id=? AND id!=?").run(productId,target.id);
+      } else {
+        d.prepare("INSERT INTO variants (product_id,label,size,duration,sku,price,sale_price,stock,status,needs_confirmation,price_source,sort) VALUES (?,?,?,?,?,?,NULL,NULL,'active',0,?,?)").run(productId,v.label,v.size,v.duration,`WX-FLYER-${productId}-1`,v.price,"November 20, 2026 flyer",0);
+      }
+      createdIds.set(item.name, productId);
+    };
+    singles.forEach(syncSingleProduct);
     const createProduct = (name: string, type: "single" | "combo", variants: {label:string;size:string;duration:string;price:number}[], items: string[] = [], sizeNote = "") => {
       const exists = d.prepare("SELECT id FROM products WHERE lower(name)=lower(?) AND type=? AND status!='archived'").get(name, type);
       if (exists) { skipped++; createdIds.set(name, Number(exists.id)); return; }
