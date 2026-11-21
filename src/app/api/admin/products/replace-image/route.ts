@@ -10,9 +10,12 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const origin = request.headers.get("origin");
-    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
-    if (origin && new URL(origin).host !== host) {
-      return NextResponse.json({ error: "Request origin did not match this site." }, { status: 403 });
+    const allowedHosts = new Set(["wellnessxpressbrand.com", "www.wellnessxpressbrand.com"]);
+    if (origin) {
+      const originHost = new URL(origin).hostname.toLowerCase();
+      if (!allowedHosts.has(originHost)) {
+        return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
+      }
     }
     const admin = await currentAdmin();
     if (!admin || !can(admin, "products")) {
