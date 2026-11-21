@@ -202,6 +202,63 @@ export async function saveNotesAction(f: FormData) {
 /* ---------- products ---------- */
 const STATUSES = ["published", "draft", "pending_confirmation", "archived"];
 
+
+/* ---------- flyer catalog creation ---------- */
+export async function createFlyerCatalogAction(f: FormData) {
+  const admin = await requirePerm("products");
+  if (f.get("confirm") !== "yes") return fail("/admin/products", "Confirm that you want to create the flyer products as drafts.");
+  const singles = [
+    { name: "Appetite Suppressant", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 9500 }, { label: "1 Month", size: "1 Month", duration: "1 Month", price: 18000 }] },
+    { name: "Metabolic Reset", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 10500 }, { label: "1 Month", size: "1 Month", duration: "1 Month", price: 19500 }] },
+    { name: "Tummy Tea", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 13000 }, { label: "1 Month", size: "1 Month", duration: "1 Month", price: 25000 }] },
+    { name: "Flat Tummy Seed", prices: [{ label: "Single Pack", size: "Single Pack", duration: "", price: 4000 }] },
+    { name: "Trim Down Coffee", prices: [{ label: "Single Pack", size: "Single Pack", duration: "", price: 10000 }] },
+    { name: "Get Snatched Oil", prices: [{ label: "Single Bottle", size: "Single Bottle", duration: "", price: 15000 }] },
+  ];
+  const combos = [
+    { name: "General Fat Loss (2 Weeks)", price: 35500, items: ["Appetite Suppressant", "Metabolic Reset", "Tummy Tea", "Flat Tummy Seed"], sizeNote: "2 Weeks" },
+    { name: "General Fat Loss (1 Month)", price: 64500, items: ["Appetite Suppressant", "Metabolic Reset", "Tummy Tea", "Flat Tummy Seed"], sizeNote: "1 Month" },
+    { name: "Basic Tummy Blast", price: 26000, items: ["Tummy Tea", "Flat Tummy Seed"], sizeNote: "" },
+    { name: "Mega Tummy Blast", price: 40000, items: ["Tummy Tea", "Flat Tummy Seed", "Get Snatched Oil"], sizeNote: "" },
+    { name: "Body Reset Combo", price: 31000, items: ["Metabolic Reset", "Trim Down Coffee", "Tummy Tea"], sizeNote: "" },
+    { name: "1 Month Full Kit", price: 87000, items: ["Metabolic Reset", "Appetite Suppressant", "Tummy Tea", "Trim Down Coffee", "Get Snatched Oil", "Flat Tummy Seed"], sizeNote: "1 Month" },
+  ];
+  let created = 0, skipped = 0;
+  const createdIds = new Map<string, number>();
+  tx((d) => {
+    const createProduct = (name: string, type: "single" | "combo", variants: {label:string;size:string;duration:string;price:number}[], items: string[] = [], sizeNote = "") => {
+      const exists = d.prepare("SELECT id FROM products WHERE lower(name)=lower(?) AND type=? AND status!='archived'").get(name, type);
+      if (exists) { skipped++; createdIds.set(name, Number(exists.id)); return; }
+      let slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "product";
+      while (d.prepare("SELECT 1 FROM products WHERE slug=?").get(slug)) slug += "-2";
+      const productId = Number(d.prepare("INSERT INTO products (slug,name,type,category,short_description,description,status,featured,sort,review_note) VALUES (?,?,?,?,?,?, 'draft',0,999,?)").run(
+        slug, name, type, type === "combo" ? "combos" : "individual", type === "combo" ? "WellnessXpress combo set." : "WellnessXpress individual product.", "", "Created from the approved November 20, 2026 flyer. Add product image and verify product details before publishing."
+      ).lastInsertRowid);
+      variants.forEach((v, i) => {
+        const sku = `WX-FLYER-${productId}-${i+1}`;
+        d.prepare("INSERT INTO variants (product_id,label,size,duration,sku,price,sale_price,stock,status,needs_confirmation,price_source,sort) VALUES (?,?,?,?,?,?,NULL,NULL,'active',0,?,?)").run(
+          productId, v.label, v.size, v.duration, sku, v.price, "November 20, 2026 flyer", i
+        );
+      });
+      if (type === "combo") {
+        items.forEach((item, i) => {
+          const linked = d.prepare("SELECT id FROM products WHERE lower(name)=lower(?) AND type='single'").get(item);
+          d.prepare("INSERT INTO combo_items (combo_id,item_product_id,item_name,size_note,quantity_note,sort) VALUES (?,?,?,?,?,?)").run(
+            productId, linked ? Number(linked.id) : null, item, sizeNote, "", i
+          );
+        });
+      }
+      created++;
+      createdIds.set(name, productId);
+    };
+    singles.forEach((item) => createProduct(item.name, "single", item.prices));
+    combos.forEach((item) => createProduct(item.name, "combo", [{label: item.sizeNote || "Combo Set", size: item.sizeNote, duration: item.sizeNote, price: item.price}], item.items, item.sizeNote));
+  });
+  logAdminActivity(admin.email, "create_flyer_catalog", "product", "", `Created ${created}, skipped existing ${skipped}`);
+  revalidatePath("/", "layout");
+  back("/admin/products", `Flyer catalog processed. ${created} created as drafts, ${skipped} existing products skipped. Add photos to drafts before publishing.`);
+}
+
 export async function createProductAction(f: FormData) {
   const a = await requirePerm("products");
   const name = s(f, "name", 120);
