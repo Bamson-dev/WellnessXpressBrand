@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requirePerm } from "@/lib/auth";
 import { allProductsAdmin, getCategories } from "@/lib/catalog";
-import { archiveProductAction, bulkProductsAction, createProductAction, duplicateProductAction } from "@/app/admin/actions";
+import { archiveProductAction, bulkProductsAction, createFlyerCatalogAction, createProductAction, duplicateProductAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
 import { naira } from "@/lib/site";
 import AdminForm from "@/components/admin/AdminForm";
@@ -50,6 +50,11 @@ export default async function Products(
         <input name="name" placeholder="New product name" className="admin-input max-w-xs" required />
         <select name="type" className="admin-input w-auto"><option value="single">Individual product</option><option value="combo">Combo set</option></select>
         <button className="admin-btn">Add product</button>
+      </AdminForm>
+      <AdminForm action={createFlyerCatalogAction} className="mt-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3">
+        <input type="hidden" name="confirm" value="yes" />
+        <button className="admin-btn" type="submit">Create flyer catalog (12 products)</button>
+        <span className="text-xs text-neutral-600">Creates missing products as drafts. Existing products are skipped. Add photos before publishing.</span>
       </AdminForm>
       <form method="get" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-7">
         <input name="q" defaultValue={searchParams.q} placeholder="Search name or SKU" className="admin-input" />
