@@ -22,12 +22,8 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   if (!p) return { title: "Product not found", robots: { index: false } };
   const r = priceRange(p);
   const title = p.seoTitle || p.name;
-  const desc = p.metaDescription || `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Free delivery across Nigeria. Order from WellnessXpressBrand.`.trim();
-  const comboImageOverrides: Record<string, string> = {
-    "2-weeks-combo-set": "/images/products/combos/2-weeks-combo-set.webp",
-    "1-month-combo-set": "/images/products/combos/1-month-combo-set.webp",
-  };
-  const image = p.ogImage || comboImageOverrides[p.slug] || p.images[0];
+  const desc = p.metaDescription || `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Free delivery on orders of ₦50,000 or more. Order from WellnessXpressBrand.`.trim();
+  const image = p.ogImage || p.images[0];
   return {
     title, description: desc, alternates: { canonical: `/product/${p.slug}` },
     openGraph: { title, description: desc, url: `${site.url}/product/${p.slug}`, images: image ? [{ url: image, alt: p.name }] : undefined },
@@ -48,11 +44,7 @@ export default async function ProductPage(
   }
   if (!p || !p.variants.length) notFound();
   const contact = getContact();
-  const comboImageOverrides: Record<string, string> = {
-    "2-weeks-combo-set": "/images/products/combos/2-weeks-combo-set.webp",
-    "1-month-combo-set": "/images/products/combos/1-month-combo-set.webp",
-  };
-  const productImages = comboImageOverrides[p.slug] ? [comboImageOverrides[p.slug]] : p.images;
+  const productImages = p.images;
   const related = relatedProducts(p);
   const reviews = db().prepare("SELECT customer_name,rating,review_text,created_at FROM product_reviews WHERE product_id=? AND status='approved' AND verified_purchase=1 ORDER BY created_at DESC LIMIT 20").all(p.id);
   const r = priceRange(p);
