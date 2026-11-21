@@ -12,6 +12,7 @@ COPY . .
 ARG NEXT_DEPLOYMENT_ID=
 ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=
 ENV NEXT_TELEMETRY_DISABLED=1 NEXT_DEPLOYMENT_ID=$NEXT_DEPLOYMENT_ID NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+RUN node -e 'const k=process.env.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY; if(!k) { console.error("NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is required for stable Server Actions across deployments."); process.exit(1); } const b=Buffer.from(k,"base64"); if (![16,24,32].includes(b.length)) { console.error("NEXT_SERVER_ACTIONS_ENCRYPTION_KEY must decode to 16, 24, or 32 bytes."); process.exit(1); }'
 ARG NEXT_PUBLIC_SITE_URL=https://wellnessxpressbrand.com
 ARG NEXT_PUBLIC_WHATSAPP_NUMBER=
 ARG NEXT_PUBLIC_CONTACT_EMAIL=
