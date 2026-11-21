@@ -23,7 +23,7 @@ const nextConfig = {
   reactStrictMode: true,
   compress: true,
   images: { formats: ["image/webp"] },
-  experimental: { serverActions: { bodySizeLimit: "8mb" } },
+  experimental: { serverActions: { bodySizeLimit: "8mb", allowedOrigins: ["wellnessxpressbrand.com", "www.wellnessxpressbrand.com"] } },
   async headers() {
     const deploymentHeader = process.env.NEXT_DEPLOYMENT_ID
       ? [{ key: "x-nextjs-deployment-id", value: process.env.NEXT_DEPLOYMENT_ID }]
