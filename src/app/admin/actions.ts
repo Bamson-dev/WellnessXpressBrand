@@ -208,9 +208,12 @@ export async function createFlyerCatalogAction(f: FormData) {
   const admin = await requirePerm("products");
   if (f.get("confirm") !== "yes") return fail("/admin/products", "Confirm that you want to create the flyer products as drafts.");
   const singles = [
-    { name: "Appetite Suppressant", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 9500 }, { label: "1 Month", size: "1 Month", duration: "1 Month", price: 18000 }] },
-    { name: "Metabolic Reset", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 10500 }, { label: "1 Month", size: "1 Month", duration: "1 Month", price: 19500 }] },
-    { name: "Tummy Tea", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 13000 }, { label: "1 Month", size: "1 Month", duration: "1 Month", price: 25000 }] },
+    { name: "Appetite Suppressant (2 Weeks)", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 9500 }] },
+    { name: "Appetite Suppressant (1 Month)", prices: [{ label: "1 Month", size: "1 Month", duration: "1 Month", price: 18000 }] },
+    { name: "Metabolic Reset (2 Weeks)", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 10500 }] },
+    { name: "Metabolic Reset (1 Month)", prices: [{ label: "1 Month", size: "1 Month", duration: "1 Month", price: 19500 }] },
+    { name: "Tummy Tea (2 Weeks)", prices: [{ label: "2 Weeks", size: "2 Weeks", duration: "2 Weeks", price: 13000 }] },
+    { name: "Tummy Tea (1 Month)", prices: [{ label: "1 Month", size: "1 Month", duration: "1 Month", price: 25000 }] },
     { name: "Flat Tummy Seed", prices: [{ label: "Single Pack", size: "Single Pack", duration: "", price: 4000 }] },
     { name: "Trim Down Coffee", prices: [{ label: "Single Pack", size: "Single Pack", duration: "", price: 10000 }] },
     { name: "Get Snatched Oil", prices: [{ label: "Single Bottle", size: "Single Bottle", duration: "", price: 15000 }] },
