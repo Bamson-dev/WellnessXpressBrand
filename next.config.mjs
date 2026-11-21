@@ -17,6 +17,7 @@ const nextConfig = {
   // Version-skew protection: browsers can detect a deployment change and reload instead
   // of submitting stale Server Action identifiers to a different build.
   deploymentId: process.env.NEXT_DEPLOYMENT_ID,
+  generateBuildId: async () => process.env.NEXT_DEPLOYMENT_ID || `build-${Date.now()}`,
   // Put page metadata in <head> for every visitor (Next 15 otherwise streams it later for non-bot browsers).
   htmlLimitedBots: /.*/,
   reactStrictMode: true,
@@ -24,7 +25,10 @@ const nextConfig = {
   images: { formats: ["image/webp"] },
   experimental: { serverActions: { bodySizeLimit: "8mb" } },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    const deploymentHeader = process.env.NEXT_DEPLOYMENT_ID
+      ? [{ key: "x-nextjs-deployment-id", value: process.env.NEXT_DEPLOYMENT_ID }]
+      : [];
+    return [{ source: "/:path*", headers: [...securityHeaders, ...deploymentHeader] }];
   },
 };
 export default nextConfig;
