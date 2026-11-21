@@ -24,7 +24,8 @@ RUN if [ -z "$NEXT_DEPLOYMENT_ID" ]; then NEXT_DEPLOYMENT_ID="deploy-$(date +%s)
 
 FROM node:22-alpine AS run
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 DATA_DIR=/data
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 DATA_DIR=/data NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 RUN addgroup -S app && adduser -S app -G app && mkdir -p /data && chown app:app /data
 COPY --from=build --chown=app:app /app/.next/standalone ./
 COPY --from=build --chown=app:app /app/.next/static ./.next/static
