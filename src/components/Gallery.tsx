@@ -8,8 +8,9 @@ const isLocal = (s: string) => s.startsWith("/images/");
 export default function Gallery({ images, name, meta = {}, selectedIndex, onSelect }: { images: string[]; name: string; meta?: Record<string, { alt: string; caption: string }>; selectedIndex?: number; onSelect?: (index: number) => void }) {
   const context = useVariantImage();
   const [localIndex, setLocalIndex] = useState(0);
-  const i = selectedIndex ?? context?.selectedImage ?? localIndex;
-  const select = (index: number) => { setLocalIndex(index); context?.setSelectedImage(index); onSelect?.(index); };
+  const requestedIndex = selectedIndex ?? context?.selectedImage ?? localIndex;
+  const i = images.length ? Math.max(0, Math.min(requestedIndex, images.length - 1)) : 0;
+  const select = (index: number) => { const safeIndex = images.length ? Math.max(0, Math.min(index, images.length - 1)) : 0; setLocalIndex(safeIndex); context?.setSelectedImage(safeIndex); onSelect?.(safeIndex); };
   const cur = images[i];
   const alt = (cur && meta[cur]?.alt) || `${name} by WellnessXpress`;
   const caption = cur ? meta[cur]?.caption : "";
