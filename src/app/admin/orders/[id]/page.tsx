@@ -25,7 +25,8 @@ export default async function OrderDetail(
   const waNumber = o.whatsapp || o.phone;
   const waMsg = (m: string) => `https://wa.me/${waNumber}?text=${encodeURIComponent(m)}`;
   const storeName = "WellnessXpressBrand";
-  const bundledDelivery = o.delivery_fee_source === "included_in_order";\n  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
+  const bundledDelivery = o.delivery_fee_source === "included_in_order";
+  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
   const feeMsg = o.delivery_fee != null && !freeDelivery && !bundledDelivery ? waMsg(`Hello ${o.customer_name}. This is ${storeName}. The delivery fee for your order ${o.number} is ${naira(o.delivery_fee)}. Please pay the delivery fee separately and reply with your transfer confirmation. Thank you.`) : null;
   const paidMsg = waMsg(`Hello ${o.customer_name}. This is ${storeName}. We have confirmed your payment for order ${o.number}. We will update you when it is on the way. Thank you.`);
   const row = (k: string, v: React.ReactNode) => <div className="flex justify-between gap-4 py-1.5"><dt className="text-neutral-500">{k}</dt><dd className="text-right font-medium">{v}</dd></div>;
