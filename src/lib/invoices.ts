@@ -43,7 +43,8 @@ export function invoiceFor(orderId: number): Invoice | null {
   const lines = items.map((i) => ({ name: i.name, label: i.variant_label, sku: i.sku, qty: i.qty, unitPrice: i.unit_price, lineTotal: i.line_total, discount: Number(i.discount_amount || 0) }));
   const itemsSubtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
   const discount = Number(o.discount_amount || 0);
-  const bundledDelivery = o.delivery_fee_source === "included_in_order";\n  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
+  const bundledDelivery = o.delivery_fee_source === "included_in_order";
+  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
   const deliveryFee = freeDelivery ? 0 : o.delivery_fee == null ? null : Number(o.delivery_fee);
   const productTotal = Number(o.subtotal);
   const total = productTotal + (deliveryFee || 0);
@@ -152,7 +153,8 @@ export async function invoicePdf(inv: Invoice): Promise<Uint8Array> {
   text("Payment", M, y, { b: true }); y -= 14;
   if (inv.productPaidAt && inv.order.payment_status === "paid") { text(`Product payment verified on ${inv.productPaidAt.slice(0, 16)} UTC.`, M, y); y -= 13; }
   else { text(`Pay by bank transfer: ${inv.bank.bank}, ${inv.bank.accountName}, ${inv.bank.accountNumber}. Narration: ${inv.order.number}.`.slice(0, 110), M, y); y -= 13; }
-  if (inv.bundledDelivery) { text("Delivery is included in the customer payment. WellnessXpressBrand settles the delivery agent.", M, y, { color: green }); y -= 13; }\n  else if (!inv.freeDelivery && inv.deliveryFee) { text(inv.deliveryPaidAt ? `Delivery payment verified on ${inv.deliveryPaidAt.slice(0, 16)} UTC.` : "Delivery fee is payable separately.", M, y); y -= 13; }
+  if (inv.bundledDelivery) { text("Delivery is included in the customer payment. WellnessXpressBrand settles the delivery agent.", M, y, { color: green }); y -= 13; }
+  else if (!inv.freeDelivery && inv.deliveryFee) { text(inv.deliveryPaidAt ? `Delivery payment verified on ${inv.deliveryPaidAt.slice(0, 16)} UTC.` : "Delivery fee is payable separately.", M, y); y -= 13; }
   if (inv.freeDelivery) { text("Free delivery across Nigeria.", M, y, { color: green }); y -= 13; }
   text("A payment shows as paid only after we verify it in our bank account.", M, 60, { size: 8, color: grey });
   text(`${site.name} · ${site.url.replace(/^https?:\/\//, "")}`, W - M, 60, { size: 8, color: grey, right: true });
