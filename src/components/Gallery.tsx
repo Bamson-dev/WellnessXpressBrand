@@ -1,13 +1,15 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
+import { useVariantImage } from "@/components/VariantImageContext";
 
 const isLocal = (s: string) => s.startsWith("/images/");
 
 export default function Gallery({ images, name, meta = {}, selectedIndex, onSelect }: { images: string[]; name: string; meta?: Record<string, { alt: string; caption: string }>; selectedIndex?: number; onSelect?: (index: number) => void }) {
+  const context = useVariantImage();
   const [localIndex, setLocalIndex] = useState(0);
-  const i = selectedIndex ?? localIndex;
-  const select = (index: number) => { setLocalIndex(index); onSelect?.(index); };
+  const i = selectedIndex ?? context?.selectedImage ?? localIndex;
+  const select = (index: number) => { setLocalIndex(index); context?.setSelectedImage(index); onSelect?.(index); };
   const cur = images[i];
   const alt = (cur && meta[cur]?.alt) || `${name} by WellnessXpress`;
   const caption = cur ? meta[cur]?.caption : "";
