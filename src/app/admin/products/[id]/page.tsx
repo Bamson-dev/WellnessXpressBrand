@@ -5,9 +5,9 @@ import { allProductsAdmin, getCategories, getProductById } from "@/lib/catalog";
 import Flash from "@/components/admin/Flash";
 import UnsavedGuard from "@/components/admin/UnsavedGuard";
 import { listMedia } from "@/lib/media";
-import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOrderAction, saveMediaMetaAction, saveComboItemsAction, saveProductAction, saveVariantAction, uploadImageAction } from "@/app/admin/actions";
+import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOrderAction, saveMediaMetaAction, saveComboItemsAction, saveProductAction, saveVariantAction } from "@/app/admin/actions";
 import AdminForm from "@/components/admin/AdminForm";
-import ReplaceImageUpload from "@/components/admin/ReplaceImageUpload";
+import ReplaceImageUpload from "@/components/admin/ReplaceImageUpload";\nimport ProductImageUpload from "@/components/admin/ProductImageUpload";
 
 export const metadata = { title: "Edit product" };
 
@@ -100,11 +100,7 @@ export default async function EditProduct(
                 );
               })}
             </div>
-            <AdminForm action={uploadImageAction} className="mt-3 space-y-2">
-              <input type="hidden" name="productId" value={p.id} />
-              <input type="file" name="image" multiple accept="image/jpeg,image/png,image/webp" className="block w-full text-sm" required aria-label="Upload photos" />
-              <button className="admin-btn-ghost">Upload photos</button>
-            </AdminForm>
+            <ProductImageUpload productId={p.id} />
             {library.length ? (
               <AdminForm action={addFromLibraryAction} className="mt-3 flex gap-2">
                 <input type="hidden" name="productId" value={p.id} />
