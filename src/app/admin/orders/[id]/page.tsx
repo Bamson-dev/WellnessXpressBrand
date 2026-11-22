@@ -95,7 +95,7 @@ export default async function OrderDetail(
                 <p className="mt-1 text-xs text-neutral-500">A receipt or reference from the customer is not proof of payment. Confirm only when you see the money in the account.</p>
                 <AdminForm action={verifyPaymentAction} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={o.id} />
-                  <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(bundledDelivery ? o.total : o.subtotal)} arrive for this order.</label>
+                  <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(bundledDelivery ? (o.total ?? o.subtotal) : o.subtotal)} arrive for this order.</label>
                   <input name="note" placeholder="Note (optional), for example bank reference" className="admin-input" />
                   <button className="admin-btn">Confirm product payment</button>
                 </AdminForm>
