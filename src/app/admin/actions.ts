@@ -10,7 +10,7 @@ import { hashPassword, login, logout, requirePerm } from "@/lib/auth";
 import { isPermission } from "@/lib/permissions";
 import { getOrderById, logEvent, orderItems } from "@/lib/orders";
 import { adjustStock, recordMovement, releaseOrderStock, reserveOrderStock, type AdjustKind } from "@/lib/inventory";
-import { setSetting } from "@/lib/settings";
+import { deliveryZones, setSetting } from "@/lib/settings";
 import { deleteMedia, getMedia, saveImageUpload } from "@/lib/media";
 import { sendStorePurchase } from "@/lib/meta";
 import { clean, isEmail, sniffType } from "@/lib/validate";
@@ -71,12 +71,14 @@ export async function setDeliveryFeeAction(f: FormData) {
   const fee = money(f.get("fee"));
   const o = getOrderById(id);
   if (!o || fee == null) return fail(`/admin/orders/${id}`, "Enter a valid delivery fee.", "fee");
+  if (o.payment_status === "paid") return fail(`/admin/orders/${id}`, "Payment for this order is already confirmed. The delivery fee can no longer change.");
   if (o.delivery_payment_status === "paid") return fail(`/admin/orders/${id}`, "Delivery payment is already confirmed.");
-  if (o.delivery_payment_status === "not_required") return fail(`/admin/orders/${id}`, "This order has free delivery. There is no delivery fee to set.");
-  db().prepare("UPDATE orders SET delivery_fee = ?, total = subtotal + ?, delivery_payment_status = ?, delivery_fee_source = 'admin', updated_at = datetime('now') WHERE id = ?").run(fee, fee, fee > 0 ? "pending" : "paid", id);
+  if (o.delivery_fee_source === "free_delivery") return fail(`/admin/orders/${id}`, "This order has free delivery. There is no delivery fee to set.");
+  // The customer pays one total (products + delivery) to the store. The store settles the delivery agent itself.
+  db().prepare("UPDATE orders SET delivery_fee = ?, total = subtotal + ?, delivery_payment_status = 'not_required', delivery_fee_source = 'included_in_order', updated_at = datetime('now') WHERE id = ?").run(fee, fee, id);
   logEvent(id, a.email, "delivery_fee_set", `₦${fee.toLocaleString()}${o.delivery_fee != null ? ` (was ₦${Number(o.delivery_fee).toLocaleString()})` : ""}`);
   revalidatePath(`/admin/orders/${id}`);
-  back(`/admin/orders/${id}`, "Delivery fee saved. The customer's order page now shows the final amount.");
+  back(`/admin/orders/${id}`, "Delivery fee saved and included in the order total. The customer's order page now shows the amount to pay.");
 }
 
 export async function verifyPaymentAction(f: FormData) {
@@ -684,14 +686,16 @@ function writeZones(rows: ZoneInput[]) {
 
 export async function saveDeliveryAction(f: FormData) {
   const a = await requirePerm("delivery");
+  // Fees come from the approved rate list, not this form. Keep whatever fee is stored; never turn a blank into ₦0.
+  const stored = new Map(deliveryZones().map((z) => [z.state, z.fee]));
   const rows: ZoneInput[] = NIGERIAN_STATES.map((st) => ({
-    state: st, fee: money(f.get(`fee_${st}`)), active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160), internalNote: s(f, `internal_${st}`, 300),
+    state: st, fee: stored.get(st) ?? null, active: !!f.get(`active_${st}`), eta: s(f, `eta_${st}`, 80), note: s(f, `note_${st}`, 160), internalNote: s(f, `internal_${st}`, 300),
   }));
   writeZones(rows);
   revalidatePath("/checkout");
   const off = rows.filter((r) => !r.active).map((r) => r.state);
   audit(a, "saveDeliveryAction", f, `${37 - off.length} of 37 covered`);
-  back("/admin/delivery", off.length ? `Saved. Delivery is switched off for: ${off.join(", ")}.` : "Delivery settings saved. Free delivery applies to qualifying orders.");
+  back("/admin/delivery", off.length ? `Saved. Delivery is switched off for: ${off.join(", ")}.` : "Delivery settings saved.");
 }
 
 export async function bulkDeliveryAction(f: FormData) {
