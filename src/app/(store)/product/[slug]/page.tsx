@@ -4,9 +4,9 @@ import Image from "next/image";
 import { notFound, permanentRedirect } from "next/navigation";
 import { effective, getCategories, getProduct, inStock, priceRange, relatedProducts } from "@/lib/catalog";
 import { getContact } from "@/lib/settings";
-import { PurchaseBox } from "@/components/AddToCart";
+import ProductVariantGallery from "@/components/ProductVariantGallery";
 import ProductCard from "@/components/ProductCard";
-import Gallery from "@/components/Gallery";
+
 import ReviewForm from "@/components/ReviewForm";
 import { db } from "@/lib/db";
 import RichText, { plainText } from "@/components/RichText";
@@ -84,7 +84,7 @@ export default async function ProductPage(
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         <div>
           {preview ? <p className="mb-3 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-900 lg:col-span-2">Preview: this product is {p.status.replace("_", " ")} and hidden from customers.</p> : null}
-          <Gallery images={productImages} name={p.name} meta={mediaMeta(productImages)} />
+          <ProductVariantGallery images={productImages} name={p.name} meta={mediaMeta(productImages)} product={{ slug: p.slug, name: p.name, image: productImages[0] || null }} variants={variants} />
           {p.slug === "tummy-set" ? (
             <p className="mt-3 rounded-xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm font-semibold text-brand-900">
               Set contents: Tummy Balance Big + Detox Seed
@@ -96,7 +96,7 @@ export default async function ProductPage(
           <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">{p.name}</h1>
           <p className="mt-3 text-lg text-neutral-700">{p.shortDescription}</p>
           <div className="mt-6">
-            <PurchaseBox product={{ slug: p.slug, name: p.name, image: productImages[0] || null }} variants={variants} />
+            
           </div>
 
           {p.type === "combo" && p.items.length ? (
