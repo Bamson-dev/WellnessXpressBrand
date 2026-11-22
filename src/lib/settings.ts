@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { NIGERIAN_STATES } from "@/lib/site";
 import { DEFAULT_SETTINGS } from "@/lib/seed";
-import { getStateDeliveryFee, getLagosDelivery, getOfficePickupFee } from "@/lib/delivery-rates";
+import { getStateDeliveryFee, getLagosDelivery } from "@/lib/delivery-rates";
 
 export type Bank = { bank: string; accountName: string; accountNumber: string };
 export type Contact = { whatsapp: string; email: string; instagram: string; facebook: string; tiktok: string };
@@ -47,11 +47,6 @@ export const FREE_DELIVERY_THRESHOLD = 50_000;
 /** Delivery fees are server-side. No fee is trusted from the browser. */
 export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""): DeliveryQuote {
   const none = { state, available: false, free: false, fee: null, baseFee: null, eta: "", note: "" };
-  if (state === "Office Pickup") {
-    const pickupFee = getOfficePickupFee(city);
-    if (pickupFee == null) return { ...none, message: "Select a valid office pickup destination." };
-    return { state, available: true, free: false, fee: pickupFee, baseFee: pickupFee, eta: "3–7 working days", note: "0–4 kg. Extra charges may apply for final weight or bulky parcels.", message: "" };
-  }
   if (!NIGERIAN_STATES.includes(state)) return { ...none, message: "Choose your state. We deliver within Nigeria only." };
   const r = db().prepare("SELECT active, fee, eta, note FROM delivery_zones WHERE state = ?").get(state);
   const areaRate = state === "Lagos" ? getLagosDelivery(city) : null;
@@ -62,7 +57,7 @@ export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""):
   const feeConfigured = configuredRate != null || r?.fee != null;
   if (discountedSubtotal < FREE_DELIVERY_THRESHOLD && !feeConfigured) return { ...none, message: `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` };
   const baseFee = configuredRate != null ? configuredRate : r?.fee == null ? null : Number(r.fee);
-  const fee = discountedSubtotal >= FREE_DELIVERY_THRESHOLD ? 0 : baseFee;
+  const isAbuja = state === "FCT (Abuja)";\n  const fee = isAbuja ? 5000 : state !== "Lagos" ? 0 : discountedSubtotal >= FREE_DELIVERY_THRESHOLD ? 0 : baseFee;
   return { state, available: fee != null, free: fee === 0, fee, baseFee, eta: areaRate?.eta || (r ? String(r.eta || "") : ""), note: areaRate?.note || (r ? String(r.note || "") : ""), message: fee == null ? `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` : "" };
 }
 
