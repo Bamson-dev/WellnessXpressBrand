@@ -20,28 +20,30 @@ const map = (r: Record<string, unknown>): Media => ({
 export async function saveImageUpload(file: File, actor: string): Promise<{ media?: Media; error?: string }> {
   if (!file || !file.size) return { error: "Choose an image to upload." };
   if (file.size > MAX_IMAGE_BYTES) return { error: `${file.name || "The image"} is larger than 6 MB.` };
-  const buf = Buffer.from(await file.arrayBuffer());
-  const type = sniffType(buf);
-  if (!type || type === "pdf") return { error: `${file.name || "That file"} is not a JPG, PNG or WebP image.` };
-  const name = `${randomBytes(12).toString("hex")}.${type}`;
-  await fs.mkdir(PRODUCT_IMG_DIR, { recursive: true });
-  const fullPath = path.join(PRODUCT_IMG_DIR, name);
-  const url = `/product-images/${name}`;
-  const original = (file.name || "").replace(/[^\w. -]+/g, "").slice(0, 120);
-  const alt = original.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 150);
+  let fullPath = "";
+  let url = "";
   try {
+    const buf = Buffer.from(await file.arrayBuffer());
+    const type = sniffType(buf);
+    if (!type || type === "pdf") return { error: `${file.name || "That file"} is not a JPG, PNG or WebP image.` };
+    const name = `${randomBytes(12).toString("hex")}.${type}`;
+    await fs.mkdir(PRODUCT_IMG_DIR, { recursive: true });
+    fullPath = path.join(PRODUCT_IMG_DIR, name);
+    url = `/product-images/${name}`;
+    const original = (file.name || "").replace(/[^\\w. -]+/g, "").slice(0, 120);
+    const alt = original.replace(/\\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 150);
     await fs.writeFile(fullPath, buf, { flag: "wx" });
     db().prepare("INSERT INTO media (url, file, original_name, mime, bytes, alt, uploaded_by) VALUES (?,?,?,?,?,?,?)").run(url, "product-images/" + name, original, MIME[type], buf.length, alt, actor);
     const media = getMediaByUrl(url);
     if (!media) throw new Error("Uploaded file record could not be loaded.");
     return { media };
   } catch (error) {
-    await fs.unlink(fullPath).catch(() => {});
+    if (url) db().prepare("DELETE FROM media WHERE url = ?").run(url);
+    if (fullPath) await fs.unlink(fullPath).catch(() => {});
     console.error("Image upload storage failed:", error);
-    return { error: "Image upload could not be saved. Please try again." };
+    return { error: "Image upload could not be saved. Check available storage and try again." };
   }
 }
-
 export function listMedia(q = "") {
   const like = "%" + q.replace(/[%_]/g, "") + "%";
   return db().prepare("SELECT * FROM media WHERE (? = '' OR url LIKE ? OR original_name LIKE ? OR alt LIKE ?) ORDER BY id DESC LIMIT 500").all(q, like, like, like).map(map);
