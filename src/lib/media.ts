@@ -25,12 +25,21 @@ export async function saveImageUpload(file: File, actor: string): Promise<{ medi
   if (!type || type === "pdf") return { error: `${file.name || "That file"} is not a JPG, PNG or WebP image.` };
   const name = `${randomBytes(12).toString("hex")}.${type}`;
   await fs.mkdir(PRODUCT_IMG_DIR, { recursive: true });
-  await fs.writeFile(path.join(PRODUCT_IMG_DIR, name), buf, { flag: "wx" });
+  const fullPath = path.join(PRODUCT_IMG_DIR, name);
   const url = `/product-images/${name}`;
-  const original = (file.name || "").replace(/[^\w.\- ]+/g, "").slice(0, 120);
-  const alt = original.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 150);
-  db().prepare("INSERT INTO media (url, file, original_name, mime, bytes, alt, uploaded_by) VALUES (?,?,?,?,?,?,?)").run(url, "product-images/" + name, original, MIME[type], buf.length, alt, actor);
-  return { media: getMediaByUrl(url)! };
+  const original = (file.name || "").replace(/[^\\w.\\- ]+/g, "").slice(0, 120);
+  const alt = original.replace(/\\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 150);
+  try {
+    await fs.writeFile(fullPath, buf, { flag: "wx" });
+    db().prepare("INSERT INTO media (url, file, original_name, mime, bytes, alt, uploaded_by) VALUES (?,?,?,?,?,?,?)").run(url, "product-images/" + name, original, MIME[type], buf.length, alt, actor);
+    const media = getMediaByUrl(url);
+    if (!media) throw new Error("Uploaded file record could not be loaded.");
+    return { media };
+  } catch (error) {
+    await fs.unlink(fullPath).catch(() => {});
+    console.error("Image upload storage failed:", error);
+    return { error: "Image upload could not be saved. Please try again." };
+  }
 }
 
 export function listMedia(q = "") {
