@@ -38,7 +38,8 @@ export default async function EditProduct(
         <h1 className="text-2xl">{p.name}</h1>
         {p.status === "published" ? <Link href={`/product/${p.slug}`} target="_blank" className="text-sm text-brand-700 underline">View in store</Link> : <Link href={`/product/${p.slug}?preview=1`} target="_blank" className="text-sm text-brand-700 underline">Preview (only you can see it)</Link>}
       </div>
-      <div className="mt-4"><Flash msg={searchParams.msg} /></div>\n      {mediaLoadError ? <p role="alert" className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">The media library could not load. You can still edit product details. Image uploads may fail until storage or database access is restored.</p> : null}
+      <div className="mt-4"><Flash msg={searchParams.msg} /></div>
+      {mediaLoadError ? <p role="alert" className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">The media library could not load. You can still edit product details. Image uploads may fail until storage or database access is restored.</p> : null}
       {p.reviewNote ? <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>Needs confirmation:</strong> {p.reviewNote}</p> : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
