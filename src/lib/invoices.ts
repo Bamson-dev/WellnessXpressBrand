@@ -49,8 +49,8 @@ export function invoiceFor(orderId: number): Invoice | null {
   const productTotal = Number(o.subtotal);
   const total = productTotal + (deliveryFee || 0);
   const productPaid = o.payment_status === "paid";
-  const deliveryPaid = freeDelivery || deliveryFee === 0 || o.delivery_payment_status === "paid";
-  const amountPaid = (productPaid ? productTotal : 0) + (deliveryPaid && deliveryFee ? deliveryFee : 0);
+  const deliveryPaid = bundledDelivery || freeDelivery || deliveryFee === 0 || o.delivery_payment_status === "paid";
+  const amountPaid = productPaid ? (bundledDelivery ? total : productTotal) + (deliveryPaid && !bundledDelivery && deliveryFee ? deliveryFee : 0) : 0;
   const status: InvoiceStatus = o.fulfilment_status === "cancelled" && !productPaid ? "cancelled"
     : productPaid && deliveryPaid && deliveryFee !== null ? "paid" : amountPaid > 0 ? "part_paid" : "unpaid";
   return {
