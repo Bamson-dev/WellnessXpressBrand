@@ -145,7 +145,7 @@ export async function invoicePdf(inv: Invoice): Promise<Uint8Array> {
   const row = (k: string, v: string, b = false) => { text(k, 380, y, { b, right: true, color: b ? ink : grey }); text(v, W - M - 8, y, { b, right: true }); y -= 16; };
   row("Products subtotal", money(inv.itemsSubtotal));
   if (inv.discount) row(`Discount${inv.couponCode ? ` (${inv.couponCode})` : ""}`, "−" + money(inv.discount));
-  row("Delivery", inv.freeDelivery ? "FREE (₦0)" : inv.deliveryFee == null ? "To be confirmed" : money(inv.deliveryFee));
+  row("Delivery", inv.freeDelivery || (inv.bundledDelivery && inv.deliveryFee === 0) ? "FREE (₦0)" : inv.deliveryFee == null ? "To be confirmed" : money(inv.deliveryFee));
   row("Total", money(inv.total), true);
   row("Amount paid (verified)", money(inv.amountPaid));
   row("Balance due", money(inv.balance), true);

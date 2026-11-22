@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { NIGERIAN_STATES } from "@/lib/site";
 import { DEFAULT_SETTINGS } from "@/lib/seed";
-import { getStateDeliveryFee, getLagosDelivery } from "@/lib/delivery-rates";
+import { getStateDeliveryFee, getLagosDelivery, chargedDeliveryFee, FREE_DELIVERY_THRESHOLD } from "@/lib/delivery-rates";
 
 export type Bank = { bank: string; accountName: string; accountNumber: string };
 export type Contact = { whatsapp: string; email: string; instagram: string; facebook: string; tiktok: string };
@@ -41,8 +41,7 @@ export function deliveryZones(): DeliveryZone[] {
 
 export type DeliveryQuote = { state: string; available: boolean; free: boolean; fee: number | null; baseFee: number | null; eta: string; note: string; message: string };
 
-/** Free delivery threshold is based on the discounted product subtotal. */
-export const FREE_DELIVERY_THRESHOLD = 50_000;
+export { FREE_DELIVERY_THRESHOLD };
 
 /** Delivery fees are server-side. No fee is trusted from the browser. */
 export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""): DeliveryQuote {
@@ -51,14 +50,13 @@ export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""):
   const r = db().prepare("SELECT active, fee, eta, note FROM delivery_zones WHERE state = ?").get(state);
   const areaRate = state === "Lagos" ? getLagosDelivery(city) : null;
   const configuredRate = state === "Lagos" ? areaRate?.fee ?? null : getStateDeliveryFee(state);
-  const rateOverride = configuredRate != null;
-  if (r && Number(r.active) !== 1 && !rateOverride) return { ...none, message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
+  // A location switched off in Delivery settings is not sold, whatever its rate.
+  if (r && Number(r.active) !== 1) return { ...none, message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
   if (state === "Lagos" && !areaRate) return { ...none, message: "Select a valid Lagos delivery area to calculate the delivery fee." };
   const feeConfigured = configuredRate != null || r?.fee != null;
   if (discountedSubtotal < FREE_DELIVERY_THRESHOLD && !feeConfigured) return { ...none, message: `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` };
   const baseFee = configuredRate != null ? configuredRate : r?.fee == null ? null : Number(r.fee);
-  const isAbuja = state === "FCT (Abuja)";
-  const fee = isAbuja ? 5000 : discountedSubtotal >= FREE_DELIVERY_THRESHOLD ? 0 : baseFee;
+  const fee = chargedDeliveryFee(state, baseFee, discountedSubtotal);
   return { state, available: fee != null, free: fee === 0, fee, baseFee, eta: areaRate?.eta || (r ? String(r.eta || "") : ""), note: areaRate?.note || (r ? String(r.note || "") : ""), message: fee == null ? `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` : "" };
 }
 

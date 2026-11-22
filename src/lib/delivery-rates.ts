@@ -1,5 +1,19 @@
 export type DeliveryOption = { fee: number; eta: string; note?: string };
 
+/** Orders whose discounted product subtotal reaches this amount get free delivery, except Abuja (FCT), which is always ₦5,000. */
+export const FREE_DELIVERY_THRESHOLD = 50_000;
+export const ABUJA_DELIVERY_FEE = 5000;
+
+/**
+ * The delivery fee actually charged, from the location's base fee and the discounted product subtotal.
+ * Shared by the server (order creation, quotes) and the checkout page, so the displayed total always matches the order.
+ */
+export function chargedDeliveryFee(state: string, baseFee: number | null, discountedSubtotal: number): number | null {
+  if (state === "FCT (Abuja)") return ABUJA_DELIVERY_FEE;
+  if (discountedSubtotal >= FREE_DELIVERY_THRESHOLD) return 0;
+  return baseFee;
+}
+
 const STATE_FEES: Record<string, number> = {
   Niger: 7500, Benue: 7500, Nasarawa: 7500, Plateau: 7500, Kogi: 7500,
   Jigawa: 7500, Kaduna: 7500, Katsina: 7500, Zamfara: 7500, Sokoto: 7500,

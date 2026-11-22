@@ -30,8 +30,8 @@ export async function saveImageUpload(file: File, actor: string): Promise<{ medi
     await fs.mkdir(PRODUCT_IMG_DIR, { recursive: true });
     fullPath = path.join(PRODUCT_IMG_DIR, name);
     url = `/product-images/${name}`;
-    const original = (file.name || "").replace(/[^\\w. -]+/g, "").slice(0, 120);
-    const alt = original.replace(/\\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 150);
+    const original = (file.name || "").replace(/[^\w. -]+/g, "").slice(0, 120);
+    const alt = original.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim().slice(0, 150);
     await fs.writeFile(fullPath, buf, { flag: "wx" });
     db().prepare("INSERT INTO media (url, file, original_name, mime, bytes, alt, uploaded_by) VALUES (?,?,?,?,?,?,?)").run(url, "product-images/" + name, original, MIME[type], buf.length, alt, actor);
     const media = getMediaByUrl(url);

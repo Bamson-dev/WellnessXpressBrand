@@ -21,9 +21,9 @@ export function salesAnalytics(range: { start: string; end: string }) {
     SUM(CASE WHEN fulfilment_status='cancelled' THEN 1 ELSE 0 END) cancelled,
     SUM(CASE WHEN fulfilment_status='delivered' THEN 1 ELSE 0 END) completed,
     COALESCE(SUM(CASE WHEN payment_status='paid' AND fulfilment_status!='cancelled' THEN subtotal ELSE 0 END),0) revenue,
-    COALESCE(SUM(CASE WHEN delivery_payment_status='paid' AND fulfilment_status!='cancelled' THEN delivery_fee ELSE 0 END),0) delivery_collected,
+    COALESCE(SUM(CASE WHEN (delivery_payment_status='paid' OR (delivery_fee_source='included_in_order' AND payment_status='paid')) AND fulfilment_status!='cancelled' THEN COALESCE(delivery_fee,0) ELSE 0 END),0) delivery_collected,
     COALESCE(SUM(CASE WHEN payment_status='paid' AND fulfilment_status!='cancelled' THEN discount_amount ELSE 0 END),0) discounts,
-    COALESCE(SUM(CASE WHEN payment_status IN ('pending_payment','awaiting_verification','payment_failed') AND fulfilment_status!='cancelled' THEN subtotal ELSE 0 END),0) pending_amount,
+    COALESCE(SUM(CASE WHEN payment_status IN ('pending_payment','awaiting_verification','payment_failed') AND fulfilment_status!='cancelled' THEN subtotal + CASE WHEN delivery_fee_source='included_in_order' THEN COALESCE(delivery_fee,0) ELSE 0 END ELSE 0 END),0) pending_amount,
     COALESCE(SUM(CASE WHEN delivery_payment_status='pending' AND fulfilment_status!='cancelled' THEN delivery_fee ELSE 0 END),0) delivery_pending
     FROM orders WHERE created_at>=? AND created_at<?`).get(range.start, range.end);
   const paid = Number(orders?.paid || 0);
@@ -38,7 +38,7 @@ export function salesAnalytics(range: { start: string; end: string }) {
     WHERE o.created_at>=? AND o.created_at<? AND o.payment_status='paid' AND o.fulfilment_status!='cancelled'
     GROUP BY c.slug,c.name ORDER BY gross DESC`).all(range.start, range.end);
   const states = d.prepare(`SELECT state,COUNT(*) orders,SUM(subtotal) revenue,
-    SUM(CASE WHEN delivery_payment_status='paid' THEN COALESCE(delivery_fee,0) ELSE 0 END) delivery_collected
+    SUM(CASE WHEN delivery_payment_status='paid' OR delivery_fee_source='included_in_order' THEN COALESCE(delivery_fee,0) ELSE 0 END) delivery_collected
     FROM orders WHERE created_at>=? AND created_at<? AND payment_status='paid' AND fulfilment_status!='cancelled'
     GROUP BY state ORDER BY revenue DESC`).all(range.start, range.end);
   const customers = Number(d.prepare(`SELECT COUNT(DISTINCT phone) n FROM orders WHERE created_at>=? AND created_at<? AND payment_status='paid' AND fulfilment_status!='cancelled'`).get(range.start, range.end)?.n || 0);
