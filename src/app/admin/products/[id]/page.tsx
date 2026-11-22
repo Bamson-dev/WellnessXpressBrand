@@ -19,7 +19,9 @@ export default async function EditProduct(
   await requirePerm("products");
   const p = getProductById(Number(params.id));
   if (!p) notFound();
-  const mediaItems = listMedia();
+  let mediaItems: ReturnType<typeof listMedia> = [];
+  let mediaLoadError = false;
+  try { mediaItems = listMedia(); } catch (error) { mediaLoadError = true; console.error("Product editor media library load failed:", error); }
   const mediaByUrl = new Map(mediaItems.map((m) => [m.url, m]));
   const meta = Object.fromEntries(p.images.map((u) => { const m = mediaByUrl.get(u); return [u, m ? { id: m.id, alt: m.alt, caption: m.caption } : null]; }));
   const library = mediaItems.filter((m) => !p.images.includes(m.url)).slice(0, 200);
@@ -35,7 +37,7 @@ export default async function EditProduct(
         <h1 className="text-2xl">{p.name}</h1>
         {p.status === "published" ? <Link href={`/product/${p.slug}`} target="_blank" className="text-sm text-brand-700 underline">View in store</Link> : <Link href={`/product/${p.slug}?preview=1`} target="_blank" className="text-sm text-brand-700 underline">Preview (only you can see it)</Link>}
       </div>
-      <div className="mt-4"><Flash msg={searchParams.msg} /></div>
+      <div className="mt-4"><Flash msg={searchParams.msg} /></div>\n      {mediaLoadError ? <p role="alert" className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">The media library could not load. You can still edit product details. Image uploads may fail until storage or database access is restored.</p> : null}
       {p.reviewNote ? <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>Needs confirmation:</strong> {p.reviewNote}</p> : null}
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
