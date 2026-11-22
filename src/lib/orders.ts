@@ -51,7 +51,7 @@ export function createOrder(input: CheckoutInput) {
   if (!phone) errors.phone = "Enter a valid Nigerian phone number, for example 0803 123 4567.";
   if (waRaw && !whatsapp) errors.whatsapp = "Enter a valid WhatsApp number, or leave this empty.";
   if (email && !isEmail(email)) errors.email = "Enter a valid email address, or leave this empty.";
-  if (!NIGERIAN_STATES.includes(state) && state !== "Office Pickup") errors.state = "Choose your state.";
+  if (!NIGERIAN_STATES.includes(state)) errors.state = "Choose your state.";
   const clientKey = /^[A-Za-z0-9_-]{16,64}$/.test(String(input.clientKey || "")) ? String(input.clientKey) : "";
   if (clientKey) {
     // Repeated submission of the same checkout (double tap, retry): return the existing order instead of creating another.
@@ -59,7 +59,7 @@ export function createOrder(input: CheckoutInput) {
     if (existing) return { ok: true as const, duplicate: true, number: String(existing.number), token: String(existing.access_token), total: Number(existing.total), subtotal: Number(existing.subtotal), itemsSubtotal: Number(existing.subtotal) + Number(existing.discount_amount || 0), discountAmount: Number(existing.discount_amount || 0), couponCode: String(existing.coupon_code || ""), fee: existing.delivery_fee == null ? null : Number(existing.delivery_fee) };
   }
   if (city.length < 2) errors.city = "Enter your city or local government area.";
-  if (state !== "Office Pickup" && address.length < 8) errors.address = "Enter your full delivery address.";
+  if (address.length < 8) errors.address = "Enter your full delivery address.";
 
   const raw = Array.isArray(input.items) ? (input.items as { variantId: unknown; qty: unknown }[]) : [];
   const merged = new Map<number, number>();
