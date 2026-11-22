@@ -19,8 +19,10 @@ export default async function EditProduct(
   await requirePerm("products");
   const p = getProductById(Number(params.id));
   if (!p) notFound();
-  const meta = Object.fromEntries(p.images.map((u) => [u, (() => { const m = listMedia().find((x) => x.url === u); return m ? { id: m.id, alt: m.alt, caption: m.caption } : null; })()]));
-  const library = listMedia().filter((m) => !p.images.includes(m.url)).slice(0, 200);
+  const mediaItems = listMedia();
+  const mediaByUrl = new Map(mediaItems.map((m) => [m.url, m]));
+  const meta = Object.fromEntries(p.images.map((u) => { const m = mediaByUrl.get(u); return [u, m ? { id: m.id, alt: m.alt, caption: m.caption } : null]; }));
+  const library = mediaItems.filter((m) => !p.images.includes(m.url)).slice(0, 200);
   const categories = getCategories(true);
   const singles = allProductsAdmin().filter((x) => x.type === "single");
   const L = ({ children }: { children: React.ReactNode }) => <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</span>;
