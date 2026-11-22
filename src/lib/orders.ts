@@ -88,7 +88,7 @@ export function createOrder(input: CheckoutInput) {
     const discountAmount = coupon?.ok ? coupon.discountAmount : 0;
     const subtotal = itemsSubtotal - discountAmount; // discounted product subtotal
     // Free delivery threshold is evaluated after discounts.
-    const deliveryForOrder = deliveryQuote(state, subtotal);
+    const deliveryForOrder = deliveryQuote(state, subtotal, city);
     if (!deliveryForOrder.available || deliveryForOrder.fee == null) throw new Error("delivery_fee_missing");
     const fee = deliveryForOrder.fee;
     const deliveryStatus = fee === 0 ? "not_required" : "pending";
