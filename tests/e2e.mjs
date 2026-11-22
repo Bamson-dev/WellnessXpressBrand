@@ -246,6 +246,7 @@ await step("checkout", async () => {
   await p.goto(B + "/product/get-snatched-oil"); await p.getByRole("button", { name: /Add to cart/ }).first().click();
   await p.getByRole("dialog", { name: "Your cart" }).waitFor();
   ok(/Add ₦35,000 more for FREE DELIVERY/.test(await p.getByRole("dialog", { name: "Your cart" }).innerText()), "cart drawer shows how much more is needed for free delivery");
+  ok(/outfit/i.test(await p.getByRole("dialog", { name: "Your cart" }).locator("h2").evaluate((e) => getComputedStyle(e).fontFamily)), "cart drawer uses the store font");
   ok(/max-age=\d+/.test((await anon.request.get(B + "/")).headers()["strict-transport-security"] || ""), "HSTS header sent");
   await p.goto(B + "/cart"); await p.locator("button[aria-label='Increase quantity']").first().click(); await p.waitForTimeout(600);
   ok((await p.locator("aside").innerText()).includes("30,000"), "cart quantity change updates subtotal (2 × ₦15,000)");
