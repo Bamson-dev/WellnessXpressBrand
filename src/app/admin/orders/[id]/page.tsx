@@ -25,8 +25,8 @@ export default async function OrderDetail(
   const waNumber = o.whatsapp || o.phone;
   const waMsg = (m: string) => `https://wa.me/${waNumber}?text=${encodeURIComponent(m)}`;
   const storeName = "WellnessXpressBrand";
-  const freeDelivery = o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required";
-  const feeMsg = o.delivery_fee != null && !freeDelivery ? waMsg(`Hello ${o.customer_name}. This is ${storeName}. The delivery fee for your order ${o.number} is ${naira(o.delivery_fee)}. Please pay the delivery fee separately and reply with your transfer confirmation. Thank you.`) : null;
+  const bundledDelivery = o.delivery_fee_source === "included_in_order";\n  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
+  const feeMsg = o.delivery_fee != null && !freeDelivery && !bundledDelivery ? waMsg(`Hello ${o.customer_name}. This is ${storeName}. The delivery fee for your order ${o.number} is ${naira(o.delivery_fee)}. Please pay the delivery fee separately and reply with your transfer confirmation. Thank you.`) : null;
   const paidMsg = waMsg(`Hello ${o.customer_name}. This is ${storeName}. We have confirmed your payment for order ${o.number}. We will update you when it is on the way. Thank you.`);
   const row = (k: string, v: React.ReactNode) => <div className="flex justify-between gap-4 py-1.5"><dt className="text-neutral-500">{k}</dt><dd className="text-right font-medium">{v}</dd></div>;
 
@@ -44,10 +44,10 @@ export default async function OrderDetail(
 
       <div className="mt-2 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-5">
-          {o.delivery_fee == null && !freeDelivery && o.fulfilment_status !== "cancelled" ? (
+          {o.delivery_fee == null && !freeDelivery && !bundledDelivery && o.fulfilment_status !== "cancelled" ? (
             <section className="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
               <h2 className="text-lg">Set the delivery fee</h2>
-              <p className="mt-1 text-sm text-amber-900">Agree the delivery charge with the customer, record it here, then send the separate delivery payment message.</p>
+              <p className="mt-1 text-sm text-amber-900">Delivery fee is included in the customer payment. You handle settlement with the delivery agent.</p>
               <AdminForm action={setDeliveryFeeAction} className="mt-3 flex flex-wrap gap-2">
                 <input type="hidden" name="id" value={o.id} />
                 <input name="fee" inputMode="numeric" placeholder="Delivery fee in ₦" className="admin-input w-48" required />
@@ -68,8 +68,8 @@ export default async function OrderDetail(
               {row("Product subtotal", naira(items.reduce((sum, item) => sum + item.line_total, 0)))}
               {Number(o.discount_amount || 0) ? row(`Coupon (${String(o.coupon_code || "")})`, `−${naira(Number(o.discount_amount))}`) : null}
               {Number(o.discount_amount || 0) ? row("Product payment after discount", naira(o.subtotal)) : null}
-              {row(`Delivery (${o.state})`, freeDelivery ? <span className="font-bold text-brand-700">FREE</span> : o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
-              {row(freeDelivery ? "Order total" : "Total including delivery", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}
+              {row(`Delivery (${o.state})`, bundledDelivery ? <span>{naira(o.delivery_fee || 0)} · Included</span> : freeDelivery ? <span className="font-bold text-brand-700">FREE</span> : o.delivery_fee != null ? naira(o.delivery_fee) : <span className="text-amber-700">Not set</span>)}
+              {row("Customer total", <span className="text-lg">{o.total != null ? naira(o.total) : "To be confirmed"}</span>)}
             </dl>
           </section>
 
@@ -90,11 +90,11 @@ export default async function OrderDetail(
               <p className="mt-3 text-xs text-neutral-500">You can view this order. Payment verification needs the Payment verification permission.</p>
             ) : o.payment_status !== "paid" ? (
               <div className="mt-4 rounded-lg bg-neutral-50 p-4">
-                <p className="text-sm font-semibold">Check your {bank.bank} account for the product payment of {naira(o.subtotal)} before you confirm.</p>
+                <p className="text-sm font-semibold">Check your {bank.bank} account for the full customer payment of {naira(bundledDelivery ? o.total : o.subtotal)} before you confirm.</p>
                 <p className="mt-1 text-xs text-neutral-500">A receipt or reference from the customer is not proof of payment. Confirm only when you see the money in the account.</p>
                 <AdminForm action={verifyPaymentAction} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={o.id} />
-                  <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(o.subtotal)} arrive for the products in this order.</label>
+                  <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(bundledDelivery ? o.total : o.subtotal)} arrive for this order.</label>
                   <input name="note" placeholder="Note (optional), for example bank reference" className="admin-input" />
                   <button className="admin-btn">Confirm product payment</button>
                 </AdminForm>
@@ -115,12 +115,12 @@ export default async function OrderDetail(
             ) : null}
           </section>
 
-          {freeDelivery ? (
+          {freeDelivery || bundledDelivery ? (
             <section className="rounded-xl border border-brand-100 bg-brand-50 p-5">
               <h2 className="text-lg">Delivery</h2>
               <dl className="mt-2 text-sm">
-                {row("Delivery charge", <span className="font-bold text-brand-700">FREE (₦0)</span>)}
-                {row("Delivery payment", "Not required")}
+                {row("Delivery charge", bundledDelivery ? <span>{naira(o.delivery_fee || 0)} · Included in order payment</span> : <span className="font-bold text-brand-700">FREE (₦0)</span>)}
+                {row("Delivery payment", bundledDelivery ? "Included in customer payment. Settle delivery agent yourself." : "Not required")}
                 {row("Estimated time", String(o.delivery_eta || "Not set"))}
                 {row("Dispatched", o.dispatched_at ? String(o.dispatched_at) : "Not yet")}
               </dl>
@@ -135,7 +135,7 @@ export default async function OrderDetail(
             </section>
           ) : null}
 
-          {!freeDelivery ? <section className="rounded-xl border border-neutral-200 bg-white p-5">
+          {!freeDelivery && !bundledDelivery ? <section className="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 className="text-lg">Delivery payment (order placed before free delivery)</h2>
             <dl className="mt-2 text-sm">
               {row("Delivery fee", o.delivery_fee == null ? "Not set" : naira(o.delivery_fee))}
