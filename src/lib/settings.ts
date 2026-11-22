@@ -53,7 +53,7 @@ export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""):
   const configuredRate = state === "Lagos" ? areaRate?.fee ?? null : getStateDeliveryFee(state);
   const rateOverride = configuredRate != null;
   if (r && Number(r.active) !== 1 && !rateOverride) return { ...none, message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
-  if (state === "Lagos" && !areaRate && discountedSubtotal < FREE_DELIVERY_THRESHOLD) return { ...none, message: "Select a valid Lagos delivery area to calculate the delivery fee." };
+  if (state === "Lagos" && !areaRate) return { ...none, message: "Select a valid Lagos delivery area to calculate the delivery fee." };
   const feeConfigured = configuredRate != null || r?.fee != null;
   if (discountedSubtotal < FREE_DELIVERY_THRESHOLD && !feeConfigured) return { ...none, message: `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` };
   const baseFee = configuredRate != null ? configuredRate : r?.fee == null ? null : Number(r.fee);
