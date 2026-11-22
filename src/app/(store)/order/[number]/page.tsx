@@ -31,7 +31,8 @@ export default async function OrderPage(
   const itemsSubtotal = items.reduce((sum, item) => sum + item.line_total, 0);
   const discountAmount = Number(o.discount_amount || 0);
   // Orders placed under the free delivery policy. Older orders keep their own delivery fee and payment record.
-  const bundledDelivery = o.delivery_fee_source === "included_in_order";\n  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
+  const bundledDelivery = o.delivery_fee_source === "included_in_order";
+  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
   const bank = getBank();
   const status = orderStatusLabel(o);
   const isNew = searchParams.new === "1";
@@ -59,7 +60,12 @@ export default async function OrderPage(
         <div className="card p-4"><p className="text-sm text-neutral-500">{bundledDelivery ? "Total payment" : "Product payment"}</p><p className="mt-1 text-lg font-bold">{naira(bundledDelivery ? o.total : o.subtotal)}</p></div>
       </div>
 
-      {o.fulfilment_status !== "cancelled" && bundledDelivery ? (\n        <section className="mt-6 rounded-2xl border border-brand-100 bg-brand-50 p-5 sm:p-6">\n          <IconTruck className="h-6 w-6 shrink-0 text-brand-700" />\n          <div><h2 className="text-xl text-brand-900">Delivery included in your payment</h2><p className="mt-1 text-neutral-700">Delivery to {o.state}: <strong>{naira(o.delivery_fee || 0)}</strong>. Pay the total shown below to WellnessXpressBrand. We handle payment to the delivery agent.{o.delivery_eta ? ` Estimated delivery time: ${String(o.delivery_eta)}.` : ""}</p></div>\n        </section>\n      ) : o.fulfilment_status !== "cancelled" && freeDelivery ? (
+      {o.fulfilment_status !== "cancelled" && bundledDelivery ? (
+        <section className="mt-6 rounded-2xl border border-brand-100 bg-brand-50 p-5 sm:p-6">
+          <IconTruck className="h-6 w-6 shrink-0 text-brand-700" />
+          <div><h2 className="text-xl text-brand-900">Delivery included in your payment</h2><p className="mt-1 text-neutral-700">Delivery to {o.state}: <strong>{naira(o.delivery_fee || 0)}</strong>. Pay the total shown below to WellnessXpressBrand. We handle payment to the delivery agent.{o.delivery_eta ? ` Estimated delivery time: ${String(o.delivery_eta)}.` : ""}</p></div>
+        </section>
+      ) : o.fulfilment_status !== "cancelled" && freeDelivery ? (
         <section className="mt-6 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 p-5 sm:p-6">
           <IconTruck className="h-6 w-6 shrink-0 text-brand-700" />
           <div>
