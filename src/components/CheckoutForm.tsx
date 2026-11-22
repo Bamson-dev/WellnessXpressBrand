@@ -153,7 +153,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
           </section>
 
           <section className="card p-5 sm:p-6" aria-labelledby="d-h">
-            <h2 id="d-h" className="text-xl">Delivery or pickup</h2>
+            <h2 id="d-h" className="text-xl">Delivery address</h2>
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="state" className="label">State</label>
@@ -162,7 +162,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
                   {states.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
                 {errors.state ? <p className="err" role="alert">{errors.state}</p> : deliveryBlocked ? <p className="err" role="alert">{deliveryMessage}</p> : delivery?.available ? (
-                  <p className="hint">Delivery to {state}: {payNow >= 50000 ? <strong className="text-brand-700">FREE (₦50,000+ orders)</strong> : <strong>{delivery.baseFee != null ? naira(delivery.baseFee) : "Fee not configured"}</strong>}{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
+                  <p className="hint">Delivery to {state}: <strong>{deliveryFee === 0 ? "FREE" : deliveryFee != null ? naira(deliveryFee) : "Fee not configured"}</strong>{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
                 ) : null}
               </div>
               <div>
@@ -233,7 +233,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Total delivery charge</dt><dd className="text-right font-semibold">{deliveryBlocked ? "Fee unavailable" : deliveryFee != null ? naira(deliveryFee) : "…"}</dd></div>
               <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Total to pay</dt><dd className="font-bold">{quote ? naira(orderTotal) : "…"}</dd></div>
             </dl>
-            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>{payNow >= 50000 ? "Enjoy FREE DELIVERY on this order." : "Add products to reach ₦50,000 and get FREE DELIVERY."}</strong> Delivery charges depend on your selected location.</span></p>
+            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>{state === "Lagos" ? payNow >= 50000 ? "Enjoy FREE DELIVERY on this order." : "Add products to reach ₦50,000 for FREE DELIVERY." : state === "FCT (Abuja)" ? "Delivery to Abuja costs ₦5,000." : "Delivery to other states is FREE."}</strong></span></p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
             <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0 || deliveryBlocked} className="btn btn-primary mt-5 w-full text-base">
