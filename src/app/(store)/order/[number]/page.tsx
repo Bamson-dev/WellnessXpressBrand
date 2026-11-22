@@ -131,7 +131,13 @@ export default async function OrderPage(
           <div className="flex justify-between"><dt className="text-neutral-600">Product subtotal</dt><dd>{naira(itemsSubtotal)}</dd></div>
           {discountAmount ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Coupon{o.coupon_code ? ` (${String(o.coupon_code)})` : ""}</dt><dd>−{naira(discountAmount)}</dd></div> : null}
           {discountAmount ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Product payment after discount</dt><dd>{naira(o.subtotal)}</dd></div> : null}
-          {freeDelivery ? (
+          {bundledDelivery ? (
+            <>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{naira(o.delivery_fee || 0)} · Included</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Payment status</dt><dd>{o.payment_status === "paid" ? "Confirmed" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
+              <div className="flex justify-between text-lg font-bold"><dt>Total to pay WellnessXpressBrand</dt><dd>{naira(o.total)}</dd></div>
+            </>
+          ) : freeDelivery ? (
             <>
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd className="font-bold text-brand-700">FREE</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Product payment</dt><dd>{o.payment_status === "paid" ? "Confirmed" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
