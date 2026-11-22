@@ -4,7 +4,7 @@ const STATE_FEES: Record<string, number> = {
   Niger: 0, Benue: 0, Nasarawa: 0, Plateau: 0, Kogi: 0, Jigawa: 0,
   Kaduna: 0, Katsina: 0, Zamfara: 0, Sokoto: 0, Kebbi: 0, Gombe: 0,
   Bauchi: 0, Yobe: 0, Kano: 0, Borno: 0, Adamawa: 0, Taraba: 0,
-  FCT: 5000, Abuja: 5000,
+  FCT: 5000, Abuja: 5000, "FCT (Abuja)": 5000,
   Ogun: 0, Oyo: 0, Ekiti: 0, Osun: 0, Ondo: 0,
   Enugu: 0, Imo: 0, Anambra: 0, Ebonyi: 0, Abia: 0, Rivers: 0,
   Bayelsa: 0, Delta: 0, Edo: 0, Kwara: 0,
