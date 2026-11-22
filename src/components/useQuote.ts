@@ -14,17 +14,34 @@ export function useQuote(state?: string) {
   const key = JSON.stringify(lines.map((l) => [l.variantId, l.qty])) + "|" + (state || "");
   useEffect(() => {
     if (!ready) return;
-    if (!lines.length) { setQuote({ lines: [], subtotal: 0, deliveryFee: null, total: null, state: null, delivery: null }); setLoading(false); return; }
+    if (!lines.length) {
+      setQuote({ lines: [], subtotal: 0, deliveryFee: null, total: null, state: null, delivery: null });
+      setLoading(false);
+      return;
+    }
     const ctl = new AbortController();
     setLoading(true);
-    fetch("/api/cart/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })), state }), signal: ctl.signal })
-      .then((r) => r.json())
-      .then((q: Quote) => {
+    fetch("/api/cart/quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })), state }),
+      signal: ctl.signal,
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Quote request failed");
+        return r.json() as Promise<Quote>;
+      })
+      .then((q) => {
+        if (ctl.signal.aborted) return;
         setQuote(q);
         replacePrices(Object.fromEntries(q.lines.map((l) => [l.variantId, l.unitPrice])));
         setLoading(false);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (ctl.signal.aborted) return;
+        setQuote(null);
+        setLoading(false);
+      });
     return () => ctl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, ready]);
