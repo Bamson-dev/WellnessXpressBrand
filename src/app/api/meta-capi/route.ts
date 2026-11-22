@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { ipOf } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,16 +96,17 @@ export async function POST(req: NextRequest) {
   }
 
   // Parse and validate event_source_url. Only accept URLs from permitted origins.
-  let safeUrl = "https://weightloss.wellnessxpressbrand.com/masterclass/";
-  let sourcePath = "/masterclass/";
+  let safeUrl: string;
+  let sourcePath: string;
   try {
     const u = new URL(String(body.event_source_url || ""));
-    if (ALLOWED_ORIGINS.has(u.origin)) {
-      safeUrl = u.origin + u.pathname;
-      sourcePath = u.pathname;
+    if (!ALLOWED_ORIGINS.has(u.origin)) {
+      return NextResponse.json({ error: "invalid_event_source_url" }, { status: 400, headers });
     }
+    safeUrl = u.origin + u.pathname;
+    sourcePath = u.pathname;
   } catch {
-    // keep defaults
+    return NextResponse.json({ error: "invalid_event_source_url" }, { status: 400, headers });
   }
 
   // Route to correct pixel/token. WhatsApp MUST NOT fall back to Telegram credentials.
@@ -140,12 +142,12 @@ export async function POST(req: NextRequest) {
   const userData: Record<string, unknown> = {};
   const rawFbc = String(body.fbc || "");
   const rawFbp = String(body.fbp || "");
-  if (/^fb\.\d+\.\d+\.\d+$/.test(rawFbc)) userData.fbc = rawFbc;
-  if (/^fb\.\d+\.\d+\.\d+$/.test(rawFbp)) userData.fbp = rawFbp;
-  const rawIp = String(body.client_ip_address || "");
-  const rawUa = String(body.client_user_agent || "");
-  if (rawIp) userData.client_ip_address = rawIp.slice(0, 45);
-  if (rawUa) userData.client_user_agent = rawUa.slice(0, 500);
+  if (/^fb\.\d+\.\d+\.[A-Za-z0-9_-]{4,200}$/.test(rawFbc)) userData.fbc = rawFbc;
+  if (/^fb\.\d+\.\d+\.[A-Za-z0-9_-]{4,200}$/.test(rawFbp)) userData.fbp = rawFbp;
+  const serverIp = ipOf(req);
+  const serverUa = req.headers.get("user-agent") || "";
+  if (serverIp && serverIp !== "unknown") userData.client_ip_address = serverIp.slice(0, 45);
+  if (serverUa) userData.client_user_agent = serverUa.slice(0, 500);
 
   const custom_data: Record<string, unknown> = {};
   if (body.content_name)
