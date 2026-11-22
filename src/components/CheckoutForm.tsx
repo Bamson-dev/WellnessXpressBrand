@@ -15,7 +15,8 @@ type AppliedCoupon = { code: string; discountAmount: number; eligibleSubtotal: n
 export default function CheckoutForm({ states }: { states: string[] }) {
   const { lines, ready, clear } = useCart();
   const [state, setState] = useState("");
-  const { quote, loading } = useQuote(state);
+  const [city, setCity] = useState("");
+  const { quote, loading } = useQuote(state, city);
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState("");
