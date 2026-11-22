@@ -167,10 +167,15 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               </div>
               <div>
                 <label htmlFor="city" className="label">Area / city</label>
-                {state === "Office Pickup" ? (\n                  <select id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} aria-invalid={!!errors.city}>\n                    <option value="">Select pickup destination</option>\n                    {OFFICE_PICKUP_DESTINATIONS.map((place) => <option key={place} value={place}>{place.replace(/\\b\\w/g, (letter) => letter.toUpperCase())}</option>)}\n                  </select>\n                ) : state === "Lagos" ? (
+                {state === "Office Pickup" ? (
+                  <select id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} aria-invalid={!!errors.city}>
+                    <option value="">Select pickup destination</option>
+                    {OFFICE_PICKUP_DESTINATIONS.map((place) => <option key={place} value={place}>{place.replace(/\b\w/g, (letter) => letter.toUpperCase())}</option>)}
+                  </select>
+                ) : state === "Lagos" ? (
                   <select id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} aria-invalid={!!errors.city}>
                     <option value="">Select your Lagos area</option>
-                    {LAGOS_DELIVERY_AREAS.map((area) => <option key={area} value={area}>{area.replace(/\\b\\w/g, (letter) => letter.toUpperCase())}</option>)}
+                    {LAGOS_DELIVERY_AREAS.map((area) => <option key={area} value={area}>{area.replace(/\b\w/g, (letter) => letter.toUpperCase())}</option>)}
                   </select>
                 ) : (
                   <input id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} autoComplete="address-level2" aria-invalid={!!errors.city} placeholder="Enter city or local area" />
