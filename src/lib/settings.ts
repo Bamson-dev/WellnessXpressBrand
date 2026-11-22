@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { NIGERIAN_STATES } from "@/lib/site";
 import { DEFAULT_SETTINGS } from "@/lib/seed";
+import { getStateDeliveryFee, getLagosDelivery } from "@/lib/delivery-rates";
 
 export type Bank = { bank: string; accountName: string; accountNumber: string };
 export type Contact = { whatsapp: string; email: string; instagram: string; facebook: string; tiktok: string };
@@ -44,16 +45,20 @@ export type DeliveryQuote = { state: string; available: boolean; free: boolean; 
 export const FREE_DELIVERY_THRESHOLD = 50_000;
 
 /** Delivery fees are server-side. No fee is trusted from the browser. */
-export function deliveryQuote(state: string, discountedSubtotal = 0): DeliveryQuote {
+export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""): DeliveryQuote {
   const none = { state, available: false, free: false, fee: null, baseFee: null, eta: "", note: "" };
   if (!NIGERIAN_STATES.includes(state)) return { ...none, message: "Choose your state. We deliver within Nigeria only." };
   const r = db().prepare("SELECT active, fee, eta, note FROM delivery_zones WHERE state = ?").get(state);
-  if (r && Number(r.active) !== 1) return { ...none, message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
-  const feeConfigured = r?.fee != null;
+  const areaRate = state === "Lagos" ? getLagosDelivery(city) : null;
+  const configuredRate = state === "Lagos" ? areaRate?.fee ?? null : getStateDeliveryFee(state);
+  const rateOverride = configuredRate != null;
+  if (r && Number(r.active) !== 1 && !rateOverride) return { ...none, message: `We are not delivering to ${state} at the moment. Message us on WhatsApp and we will help.` };
+  if (state === "Lagos" && !areaRate && discountedSubtotal < FREE_DELIVERY_THRESHOLD) return { ...none, message: "Select a valid Lagos delivery area to calculate the delivery fee." };
+  const feeConfigured = configuredRate != null || r?.fee != null;
   if (discountedSubtotal < FREE_DELIVERY_THRESHOLD && !feeConfigured) return { ...none, message: `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` };
-  const baseFee = r?.fee == null ? null : Number(r.fee);
+  const baseFee = configuredRate != null ? configuredRate : r?.fee == null ? null : Number(r.fee);
   const fee = discountedSubtotal >= FREE_DELIVERY_THRESHOLD ? 0 : baseFee;
-  return { state, available: fee != null, free: fee === 0, fee, baseFee, eta: r ? String(r.eta || "") : "", note: r ? String(r.note || "") : "", message: fee == null ? `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` : "" };
+  return { state, available: fee != null, free: fee === 0, fee, baseFee, eta: areaRate?.eta || (r ? String(r.eta || "") : ""), note: areaRate?.note || (r ? String(r.note || "") : ""), message: fee == null ? `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` : "" };
 }
 
 export function deliveryFeeFor(state: string): number | null {
