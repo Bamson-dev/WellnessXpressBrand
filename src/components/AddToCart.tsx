@@ -8,7 +8,7 @@ import { naira } from "@/lib/site";
 export type VariantOpt = { id: number; label: string; price: number; compareAt: number | null; inStock: boolean; detail: string; sku?: string };
 
 /** Full purchase box for product pages: variant choice, quantity and add to cart. */
-export function PurchaseBox({ product, variants }: { product: { slug: string; name: string; image: string | null }; variants: VariantOpt[] }) {
+export function PurchaseBox({ product, variants, onVariantChange }: { product: { slug: string; name: string; image: string | null }; variants: VariantOpt[]; onVariantChange?: (variantIndex: number) => void }) {
   const { add } = useCart();
   const first = variants.find((v) => v.inStock) || variants[0];
   const [vid, setVid] = useState(first?.id);
@@ -27,7 +27,7 @@ export function PurchaseBox({ product, variants }: { product: { slug: string; na
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {variants.map((o) => (
               <label key={o.id} className={`relative flex min-h-[64px] cursor-pointer flex-col justify-center rounded-xl border px-3 py-2 text-left transition ${o.id === v.id ? "border-brand-700 bg-brand-50 ring-1 ring-brand-700" : "border-neutral-300 hover:border-brand-500"} ${!o.inStock ? "opacity-50" : ""}`}>
-                <input type="radio" name="variant" value={o.id} checked={o.id === v.id} onChange={() => setVid(o.id)} disabled={!o.inStock} className="sr-only" />
+                <input type="radio" name="variant" value={o.id} checked={o.id === v.id} onChange={() => { setVid(o.id); onVariantChange?.(variants.findIndex((item) => item.id === o.id)); }} disabled={!o.inStock} className="sr-only" />
                 <span className="text-[15px] font-semibold">{o.label}</span>
                 <span className="text-sm text-neutral-600">{o.inStock ? naira(o.price) : "Out of stock"}</span>
               </label>
