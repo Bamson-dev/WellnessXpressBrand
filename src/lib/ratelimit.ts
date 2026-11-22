@@ -1,16 +1,30 @@
 const hits = new Map<string, number[]>();
-/** Simple in-memory limiter: max `limit` requests per `windowMs` per key. */
+const MAX_KEYS = 5000;
+
+/** Process-local limiter: max `limit` requests per `windowMs` per key. */
 export function limited(key: string, limit = 8, windowMs = 60_000) {
   const now = Date.now();
   const arr = (hits.get(key) || []).filter((t) => now - t < windowMs);
   arr.push(now);
   hits.set(key, arr);
-  if (hits.size > 5000) hits.clear();
+
+  // Keep memory bounded without clearing every active user's limits at once.
+  if (hits.size > MAX_KEYS) {
+    for (const [k, timestamps] of hits) {
+      if (!timestamps.length || now - timestamps[timestamps.length - 1] >= windowMs) hits.delete(k);
+    }
+    if (hits.size > MAX_KEYS) {
+      const oldest = [...hits.entries()].sort((a, b) => (a[1][0] || 0) - (b[1][0] || 0));
+      for (const [k] of oldest.slice(0, hits.size - MAX_KEYS)) hits.delete(k);
+    }
+  }
   return arr.length > limit;
 }
+
 /**
- * Client address for rate limiting. Cloudflare sets cf-connecting-ip. Otherwise use the LAST X-Forwarded-For entry,
- * which our own reverse proxy (Traefik) appends; earlier entries come from the client and can be faked.
+ * Client address for rate limiting. Cloudflare sets cf-connecting-ip.
+ * Otherwise use the LAST X-Forwarded-For entry, which our own reverse proxy (Traefik) appends;
+ * earlier entries come from the client and can be faked.
  */
 export const ipOf = (req: Request | { headers: Headers }) => {
   const cf = req.headers.get("cf-connecting-ip");
@@ -26,7 +40,7 @@ export function sameOrigin(req: Request) {
   try {
     const o = new URL(origin);
     const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-    return o.host === host;
+    return !!host && o.host.toLowerCase() === host.toLowerCase();
   } catch {
     return false;
   }
