@@ -71,6 +71,7 @@ export default function CartDrawer() {
         )}
       </aside>
     </div>,
-    document.body
+    // Render inside the store wrapper so the drawer keeps the store font (the font variable is set there, not on <body>).
+    document.getElementById("store-root") || document.body
   );
 }
