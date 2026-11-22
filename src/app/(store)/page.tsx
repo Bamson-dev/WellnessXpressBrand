@@ -95,7 +95,7 @@ export default async function Home(props: { searchParams: Promise<{ bannerPrevie
           {categories.map((c) => (
             <Link key={c.slug} href={`/category/${c.slug}`} className="group card flex items-center gap-4 overflow-hidden p-4 transition hover:-translate-y-0.5 hover:shadow-lg sm:gap-6 sm:p-5">
               <div className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-xl bg-brand-50 sm:w-36">
-                {c.image ? <Image src={c.image} alt="" fill sizes="144px" className="object-contain" /> : <div className="grid h-full place-items-center text-xs text-neutral-500">Browse products</div>}
+                {(c.slug === "individual" ? singles.find((product) => product.images[0])?.images[0] : c.slug === "combos" ? combos.find((product) => product.images[0])?.images[0] : c.image) ? <Image src={c.slug === "individual" ? singles.find((product) => product.images[0])!.images[0] : c.slug === "combos" ? combos.find((product) => product.images[0])!.images[0] : c.image} alt="" fill sizes="144px" className="object-contain" /> : <div className="grid h-full place-items-center text-xs text-neutral-500">Browse products</div>}
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-xl">{c.name}</h3>
