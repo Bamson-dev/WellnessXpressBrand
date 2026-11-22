@@ -167,12 +167,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               </div>
               <div>
                 <label htmlFor="city" className="label">Area / city</label>
-                {state === "Office Pickup" ? (
-                  <select id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} aria-invalid={!!errors.city}>
-                    <option value="">Select pickup destination</option>
-                    {OFFICE_PICKUP_DESTINATIONS.map((place) => <option key={place} value={place}>{place.replace(/\b\w/g, (letter) => letter.toUpperCase())}</option>)}
-                  </select>
-                ) : state === "Lagos" ? (
+                {state === "Lagos" ? (
                   <select id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} aria-invalid={!!errors.city}>
                     <option value="">Select your Lagos area</option>
                     {LAGOS_DELIVERY_AREAS.map((area) => <option key={area} value={area}>{area.replace(/\b\w/g, (letter) => letter.toUpperCase())}</option>)}
@@ -183,8 +178,8 @@ export default function CheckoutForm({ states }: { states: string[] }) {
                 {errors.city ? <p className="err">{errors.city}</p> : state === "Lagos" ? <p className="hint">Choose your area to calculate the delivery fee.</p> : null}
               </div>
               <div className="sm:col-span-2">
-                <label htmlFor="address" className="label">{state === "Office Pickup" ? "Address (optional)" : "Full delivery address"}</label>
-                <textarea id="address" name="address" rows={3} autoComplete="street-address" className={`field ${errors.address ? "border-red-500" : ""}`} aria-invalid={!!errors.address} placeholder={state === "Office Pickup" ? "Optional" : "House number, street, area, nearest landmark"} />
+                <label htmlFor="address" className="label">{ "Full delivery address" }</label>
+                <textarea id="address" name="address" rows={3} autoComplete="street-address" className={`field ${errors.address ? "border-red-500" : ""}`} aria-invalid={!!errors.address} placeholder="House number, street, area, nearest landmark" />
                 {errors.address ? <p className="err">{errors.address}</p> : null}
               </div>
               <div className="sm:col-span-2">
