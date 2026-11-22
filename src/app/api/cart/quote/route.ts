@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const items = Array.isArray(b?.items) ? b.items : [];
   const lines = quoteLines(items.map((i: { variantId: unknown; qty: unknown }) => ({ variantId: Number(i?.variantId), qty: Number(i?.qty) })));
   const subtotal = lines.filter((l) => l.available).reduce((s, l) => s + l.lineTotal, 0);
-  const state = typeof b?.state === "string" && (NIGERIAN_STATES.includes(b.state) || b.state === "Office Pickup") ? b.state : null;
+  const state = typeof b?.state === "string" && NIGERIAN_STATES.includes(b.state) ? b.state : null;
   const city = typeof b?.city === "string" ? b.city.trim().slice(0, 80) : "";
   const delivery = state ? deliveryQuote(state, subtotal, city) : null;
   return Response.json(
