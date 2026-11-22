@@ -156,7 +156,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="state" className="label">State</label>
-                <select id="state" name="state" value={state} onChange={(e) => { setState(e.target.value); setErrors((er) => ({ ...er, state: "" })); }} className={`field ${errors.state ? "border-red-500" : ""}`} aria-invalid={!!errors.state} autoComplete="address-level1">
+                <select id="state" name="state" value={state} onChange={(e) => { setState(e.target.value); setCity(""); setErrors((er) => ({ ...er, state: "" })); }} className={`field ${errors.state ? "border-red-500" : ""}`} aria-invalid={!!errors.state} autoComplete="address-level1">
                   <option value="">Choose your state</option>
                   {states.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
