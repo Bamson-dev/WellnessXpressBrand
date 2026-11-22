@@ -4,7 +4,9 @@ import Image from "next/image";
 import { notFound, permanentRedirect } from "next/navigation";
 import { effective, getCategories, getProduct, inStock, priceRange, relatedProducts } from "@/lib/catalog";
 import { getContact } from "@/lib/settings";
-import ProductVariantGallery from "@/components/ProductVariantGallery";
+import Gallery from "@/components/Gallery";
+import { PurchaseBox } from "@/components/AddToCart";
+import { VariantImageProvider } from "@/components/VariantImageContext";
 import ProductCard from "@/components/ProductCard";
 
 import ReviewForm from "@/components/ReviewForm";
@@ -81,10 +83,11 @@ export default async function ProductPage(
         <span className="text-ink">{p.name}</span>
       </nav>
 
+      <VariantImageProvider initialIndex={Math.max(0, variants.findIndex((v) => v.inStock))}>
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         <div>
           {preview ? <p className="mb-3 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-900 lg:col-span-2">Preview: this product is {p.status.replace("_", " ")} and hidden from customers.</p> : null}
-          <ProductVariantGallery images={productImages} name={p.name} meta={mediaMeta(productImages)} product={{ slug: p.slug, name: p.name, image: productImages[0] || null }} variants={variants} />
+          <Gallery images={productImages} name={p.name} meta={mediaMeta(productImages)} />
           {p.slug === "tummy-set" ? (
             <p className="mt-3 rounded-xl border border-brand-100 bg-brand-50/70 px-4 py-3 text-sm font-semibold text-brand-900">
               Set contents: Tummy Balance Big + Detox Seed
@@ -96,7 +99,7 @@ export default async function ProductPage(
           <h1 className="mt-2 text-3xl leading-tight sm:text-4xl">{p.name}</h1>
           <p className="mt-3 text-lg text-neutral-700">{p.shortDescription}</p>
           <div className="mt-6">
-            
+            <PurchaseBox product={{ slug: p.slug, name: p.name, image: productImages[0] || null }} variants={variants} />
           </div>
 
           {p.type === "combo" && p.items.length ? (
@@ -127,6 +130,7 @@ export default async function ProductPage(
           {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#12703a] hover:underline"><IconWhatsApp /> Questions about {p.name}? Ask us on WhatsApp</a> : null}
         </div>
       </div>
+      </VariantImageProvider>
 
       <div className="mt-12 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">
