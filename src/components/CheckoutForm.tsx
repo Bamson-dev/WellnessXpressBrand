@@ -233,7 +233,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Total delivery charge</dt><dd className="text-right font-semibold">{deliveryBlocked ? "Fee unavailable" : deliveryFee != null ? naira(deliveryFee) : "…"}</dd></div>
               <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">Total to pay</dt><dd className="font-bold">{quote ? naira(orderTotal) : "…"}</dd></div>
             </dl>
-            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>Delivery fees are shown above. Orders of ₦50,000 or more qualify for free delivery, except Abuja, which has a fixed ₦5,000 fee.</strong></span></p>
+            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>Delivery fees are shown above. Orders of ₦50,000 or more qualify for free delivery.</strong></span></p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
             <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0 || deliveryBlocked} className="btn btn-primary mt-5 w-full text-base">
