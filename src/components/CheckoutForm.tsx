@@ -163,7 +163,11 @@ export default function CheckoutForm({ states }: { states: string[] }) {
                   <p className="hint">Delivery to {state}: {payNow >= 50000 ? <strong className="text-brand-700">FREE (₦50,000+ orders)</strong> : <strong>{delivery.baseFee != null ? naira(delivery.baseFee) : "Fee not configured"}</strong>}{delivery.eta ? ` · ${delivery.eta}` : ""}</p>
                 ) : null}
               </div>
-              {field("city", "City or local government area", { autoComplete: "address-level2" })}
+              <div>
+                <label htmlFor="city" className="label">Area / city</label>
+                <input id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} autoComplete="address-level2" aria-invalid={!!errors.city} placeholder={state === "Lagos" ? "Type your Lagos delivery area" : "Enter city or local area"} />
+                {errors.city ? <p className="err">{errors.city}</p> : state === "Lagos" ? <p className="hint">Enter the area listed in our Lagos delivery zones. Your fee updates automatically.</p> : null}
+              </div>
               <div className="sm:col-span-2">
                 <label htmlFor="address" className="label">Full delivery address</label>
                 <textarea id="address" name="address" rows={3} autoComplete="street-address" className={`field ${errors.address ? "border-red-500" : ""}`} aria-invalid={!!errors.address} placeholder="House number, street, area, nearest landmark" />
