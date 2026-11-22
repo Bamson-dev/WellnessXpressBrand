@@ -8,6 +8,7 @@ import { useQuote } from "@/components/useQuote";
 import { track } from "@/components/pixel";
 import { IconBank, IconShield, IconTruck } from "@/components/icons";
 import { naira } from "@/lib/site";
+import { LAGOS_DELIVERY_AREAS } from "@/lib/delivery-rates";
 
 type Errors = Record<string, string>;
 type AppliedCoupon = { code: string; discountAmount: number; eligibleSubtotal: number };
@@ -166,8 +167,15 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               </div>
               <div>
                 <label htmlFor="city" className="label">Area / city</label>
-                <input id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} autoComplete="address-level2" aria-invalid={!!errors.city} placeholder={state === "Lagos" ? "Type your Lagos delivery area" : "Enter city or local area"} />
-                {errors.city ? <p className="err">{errors.city}</p> : state === "Lagos" ? <p className="hint">Enter the area listed in our Lagos delivery zones. Your fee updates automatically.</p> : null}
+                {state === "Lagos" ? (
+                  <select id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} aria-invalid={!!errors.city}>
+                    <option value="">Select your Lagos area</option>
+                    {LAGOS_DELIVERY_AREAS.map((area) => <option key={area} value={area}>{area.replace(/\\b\\w/g, (letter) => letter.toUpperCase())}</option>)}
+                  </select>
+                ) : (
+                  <input id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} autoComplete="address-level2" aria-invalid={!!errors.city} placeholder="Enter city or local area" />
+                )}
+                {errors.city ? <p className="err">{errors.city}</p> : state === "Lagos" ? <p className="hint">Choose your area to calculate the delivery fee.</p> : null}
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="address" className="label">Full delivery address</label>
