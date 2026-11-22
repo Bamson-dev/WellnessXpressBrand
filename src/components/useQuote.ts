@@ -7,11 +7,11 @@ export type DeliveryInfo = { state: string; available: boolean; fee: number | nu
 export type Quote = { lines: QuoteLine[]; subtotal: number; deliveryFee: number | null; total: number | null; state: string | null; delivery?: DeliveryInfo | null };
 
 /** Fetches server prices for the cart (and delivery fee for a state). The browser's stored prices are only a preview. */
-export function useQuote(state?: string) {
+export function useQuote(state?: string, city?: string) {
   const { lines, ready, replacePrices } = useCart();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
-  const key = JSON.stringify(lines.map((l) => [l.variantId, l.qty])) + "|" + (state || "");
+  const key = JSON.stringify(lines.map((l) => [l.variantId, l.qty])) + "|" + (state || "") + "|" + (city || "");
   useEffect(() => {
     if (!ready) return;
     if (!lines.length) {
@@ -24,7 +24,7 @@ export function useQuote(state?: string) {
     fetch("/api/cart/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })), state }),
+      body: JSON.stringify({ items: lines.map((l) => ({ variantId: l.variantId, qty: l.qty })), state, city }),
       signal: ctl.signal,
     })
       .then(async (r) => {
