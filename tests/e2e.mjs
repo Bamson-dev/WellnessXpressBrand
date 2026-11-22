@@ -80,7 +80,8 @@ await step("delivery admin", async () => {
   ok((await admin.locator('input[name^="active_"]').count()) === 37 && (await admin.locator('input[name^="fee_"]').count()) === 37, "delivery page lists all 37 locations with configurable fee fields");
   ok(q1("SELECT COUNT(*) c FROM delivery_zones").c === 37 && q1("SELECT COUNT(*) c FROM delivery_zones WHERE active=1").c === 37, "all 37 locations covered by default");
   ok(q1("SELECT COUNT(*) c FROM delivery_zones WHERE fee IS NOT NULL").c === 0, "no delivery fee stored");
-  await admin.fill('input[name="fee_Lagos"]', "4500");\n  await admin.fill('input[name="eta_Lagos"]', "1–2 working days");
+  await admin.fill('input[name="fee_Lagos"]', "4500");
+  await admin.fill('input[name="eta_Lagos"]', "1–2 working days");
   await admin.fill('input[name="internal_Lagos"]', "Rider pickup at 10am");
   await admin.locator('input[name="active_Kano"]').uncheck();
   await go(admin, admin.locator("button:has-text('Save delivery settings')").first());
@@ -93,8 +94,8 @@ await step("delivery admin", async () => {
   await go(admin, admin.locator("button:has-text('Apply to ticked states')").first());
   ok(qa("SELECT eta FROM delivery_zones WHERE state IN ('Oyo','Osun')").every((r) => r.eta === "2–4 working days"), "bulk update sets delivery time");
   const csv = await (await admin.request.get(B + "/api/admin/delivery-export")).text();
-  ok(csv.trim().split(/\r?\n/).length === 38 && /State,Enabled,ETA,Note,Internal note/.test(csv) && /Kano,,no/.test(csv), "delivery CSV export includes fee column and 37 rows");
-  const bad = path.join(SHOTS, "bad.csv"); fs.writeFileSync(bad, "State,Enabled,ETA,Note,Internal note\nEkiti,maybe,,,\nAtlantis,yes,,,\n");
+  ok(csv.trim().split(/\r?\n/).length === 38 && /State,Fee,Enabled,ETA,Note,Internal note/.test(csv) && /Kano,,no/.test(csv), "delivery CSV export includes fee column and 37 rows");
+  const bad = path.join(SHOTS, "bad.csv"); fs.writeFileSync(bad, "State,Fee,Enabled,ETA,Note,Internal note\nEkiti,maybe,,,\nAtlantis,yes,,,\n");
   await admin.setInputFiles('input[name="file"]', bad); await go(admin, admin.locator("button:has-text('Preview import')").first());
   ok(await admin.locator("text=Fix these problems").waitFor({ timeout: 8000 }).then(() => true, () => false), "import preview reports invalid rows");
   ok(q1("SELECT eta FROM delivery_zones WHERE state='Ekiti'").eta === "", "invalid import saves nothing");
