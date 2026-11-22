@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { appendRecord } from "@/lib/storage";
 import { isEmail, str } from "@/lib/validate";
-import { ipOf, limited } from "@/lib/ratelimit";
+import { ipOf, limited, sameOrigin } from "@/lib/ratelimit";
 
 export const dynamic = "force-dynamic";
 const file = path.join(process.env.DATA_DIR || path.join(process.cwd(), "data"), "newsletter.jsonl");
@@ -18,6 +18,7 @@ async function exists(email: string) {
 }
 
 export async function POST(req: Request) {
+  if (!sameOrigin(req)) return Response.json({ error: "Invalid request." }, { status: 403 });
   if (limited("nl:" + ipOf(req))) return Response.json({ error: "Too many requests. Try again shortly." }, { status: 429 });
   const body = await req.json().catch(() => null);
   if (str(body?.company, 100)) return Response.json({ ok: true }); // honeypot: bots fill this field
