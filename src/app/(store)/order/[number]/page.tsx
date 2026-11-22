@@ -135,7 +135,7 @@ export default async function OrderPage(
             <>
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{naira(o.delivery_fee || 0)} · Included</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Payment status</dt><dd>{o.payment_status === "paid" ? "Confirmed" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
-              <div className="flex justify-between text-lg font-bold"><dt>Total to pay WellnessXpressBrand</dt><dd>{naira(o.total)}</dd></div>
+              <div className="flex justify-between text-lg font-bold"><dt>Total to pay WellnessXpressBrand</dt><dd>{naira(o.total ?? (o.subtotal + (o.delivery_fee || 0)))}</dd></div>
             </>
           ) : freeDelivery ? (
             <>
