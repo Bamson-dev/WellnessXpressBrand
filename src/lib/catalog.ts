@@ -37,6 +37,11 @@ const parse = <T,>(s: unknown, d: T): T => {
   try { return JSON.parse(String(s)) as T; } catch { return d; }
 };
 
+function parseStringArray(value: unknown): string[] {
+  const parsed = parse<unknown>(value, []);
+  return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+}
+
 function mapVariant(r: Record<string, unknown>): Variant {
   return {
     id: Number(r.id), productId: Number(r.product_id), label: String(r.label), size: String(r.size), duration: String(r.duration),
@@ -67,8 +72,8 @@ function mapProduct(r: Record<string, unknown>, opts: { allVariants?: boolean } 
   return {
     id, slug: String(r.slug), name: String(r.name), type: r.type as "single" | "combo", category: String(r.category),
     shortDescription: String(r.short_description), description: String(r.description), information: String(r.information),
-    ingredients: String(r.ingredients), directions: String(r.directions), faqs: parse<Faq[]>(r.faqs, []), images: parse<string[]>(r.images, []),
-    related: parse<string[]>(r.related, []), status: String(r.status), featured: Number(r.featured) === 1, sort: Number(r.sort),
+    ingredients: String(r.ingredients), directions: String(r.directions), faqs: parse<Faq[]>(r.faqs, []).filter((f) => f && typeof f.q === "string" && typeof f.a === "string"), images: parseStringArray(r.images),
+    related: parseStringArray(r.related), status: String(r.status), featured: Number(r.featured) === 1, sort: Number(r.sort),
     reviewNote: String(r.review_note), createdAt: String(r.created_at), updatedAt: String(r.updated_at),
     seoTitle: String(r.seo_title || ""), metaDescription: String(r.meta_description || ""), ogImage: String(r.og_image || ""), noindex: Number(r.noindex || 0) === 1, variants, items,
   };
