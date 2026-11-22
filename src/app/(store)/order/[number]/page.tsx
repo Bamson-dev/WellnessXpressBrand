@@ -57,7 +57,7 @@ export default async function OrderPage(
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="card p-4"><p className="text-sm text-neutral-500">Order number</p><p className="mt-1 flex items-center gap-2 text-lg font-bold">{o.number}<CopyButton text={o.number} label="Copy order number" small /></p></div>
         <div className="card p-4"><p className="text-sm text-neutral-500">Status</p><p className="mt-1 text-lg font-bold text-brand-700">{status}</p></div>
-        <div className="card p-4"><p className="text-sm text-neutral-500">{bundledDelivery ? "Total payment" : "Product payment"}</p><p className="mt-1 text-lg font-bold">{naira(bundledDelivery ? o.total : o.subtotal)}</p></div>
+        <div className="card p-4"><p className="text-sm text-neutral-500">{bundledDelivery ? "Total payment" : "Product payment"}</p><p className="mt-1 text-lg font-bold">{naira(bundledDelivery ? (o.total ?? o.subtotal) : o.subtotal)}</p></div>
       </div>
 
       {o.fulfilment_status !== "cancelled" && bundledDelivery ? (
@@ -94,7 +94,7 @@ export default async function OrderPage(
           <p className="mt-2 text-neutral-700">Please transfer the exact amount below.{bundledDelivery ? " Delivery is included in this total. We handle the delivery agent payment." : freeDelivery ? " Delivery is free." : " Delivery is paid separately."}</p>
           {bankIsComplete(bank) ? (
             <dl className="mt-5 divide-y divide-neutral-200 rounded-xl border border-neutral-200 text-[16px]">
-              <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">{bundledDelivery ? "Total payment" : "Product payment"}</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(bundledDelivery ? o.total : o.subtotal)}<CopyButton text={String(bundledDelivery ? o.total : o.subtotal)} label="Copy amount" small /></dd></div>
+              <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">{bundledDelivery ? "Total payment" : "Product payment"}</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(bundledDelivery ? o.total : o.subtotal)}<CopyButton text={String(bundledDelivery ? (o.total ?? o.subtotal) : o.subtotal)} label="Copy amount" small /></dd></div>
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Bank</dt><dd className="font-semibold">{bank.bank}</dd></div>
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Account name</dt><dd className="text-right font-semibold">{bank.accountName}</dd></div>
               <div className="flex flex-wrap items-center justify-between gap-3 bg-brand-50 p-4"><dt className="text-neutral-600">Account number</dt><dd className="flex items-center gap-3"><span className="text-2xl font-bold tracking-wider tabular-nums">{bank.accountNumber}</span><CopyButton text={bank.accountNumber} label="Copy account number" /></dd></div>
