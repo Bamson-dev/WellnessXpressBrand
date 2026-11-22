@@ -29,27 +29,23 @@ export async function POST(req: Request, props: { params: Promise<{ number: stri
   const errors: Record<string, string> = {};
   if (payerName.length < 2) errors.payerName = "Enter the name on the account you paid from.";
 
+  if (Object.keys(errors).length) return Response.json({ errors }, { status: 400 });
+
   let receiptPath = "";
   const file = form.get("receipt");
   if (file && typeof file !== "string" && file.size > 0) {
-    if (file.size > MAX) errors.receipt = "The receipt must be 5 MB or smaller.";
-    else {
-      const buf = Buffer.from(await file.arrayBuffer());
-      const type = sniffType(buf);
-      if (!type) errors.receipt = "Upload a JPG, PNG, WebP or PDF file.";
-      else {
-        const name = `${order.number}-${randomBytes(6).toString("hex")}.${type}`;
-        await fs.mkdir(RECEIPT_DIR, { recursive: true });
-        await fs.writeFile(path.join(RECEIPT_DIR, name), buf, { mode: 0o600 });
-        receiptPath = name;
-      }
-    }
+    if (file.size > MAX) return Response.json({ errors: { receipt: "The receipt must be 5 MB or smaller." } }, { status: 400 });
+    const buf = Buffer.from(await file.arrayBuffer());
+    const type = sniffType(buf);
+    if (!type) return Response.json({ errors: { receipt: "Upload a JPG, PNG, WebP or PDF file." } }, { status: 400 });
+    receiptPath = `${order.number}-${randomBytes(6).toString("hex")}.${type}`;
+    await fs.mkdir(RECEIPT_DIR, { recursive: true });
+    await fs.writeFile(path.join(RECEIPT_DIR, receiptPath), buf, { mode: 0o600 });
   }
-  if (Object.keys(errors).length) return Response.json({ errors }, { status: 400 });
 
   db().prepare(
-    `UPDATE orders SET payment_status = 'awaiting_verification', payer_name = ?, payment_submitted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
-  ).run(payerName, order.id);
+    `UPDATE orders SET payment_status = 'awaiting_verification', payer_name = ?, receipt_path = CASE WHEN ? != '' THEN ? ELSE receipt_path END, payment_submitted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
+  ).run(payerName, receiptPath, receiptPath, order.id);
   logEvent(order.id, "customer", "payment_confirmation_submitted", "Payer name submitted.");
   return Response.json({ ok: true });
 }
