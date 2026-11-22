@@ -57,7 +57,8 @@ export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""):
   const feeConfigured = configuredRate != null || r?.fee != null;
   if (discountedSubtotal < FREE_DELIVERY_THRESHOLD && !feeConfigured) return { ...none, message: `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` };
   const baseFee = configuredRate != null ? configuredRate : r?.fee == null ? null : Number(r.fee);
-  const isAbuja = state === "FCT (Abuja)";\n  const fee = isAbuja ? 5000 : state !== "Lagos" ? 0 : discountedSubtotal >= FREE_DELIVERY_THRESHOLD ? 0 : baseFee;
+  const isAbuja = state === "FCT (Abuja)";
+  const fee = isAbuja ? 5000 : state !== "Lagos" ? 0 : discountedSubtotal >= FREE_DELIVERY_THRESHOLD ? 0 : baseFee;
   return { state, available: fee != null, free: fee === 0, fee, baseFee, eta: areaRate?.eta || (r ? String(r.eta || "") : ""), note: areaRate?.note || (r ? String(r.note || "") : ""), message: fee == null ? `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` : "" };
 }
 
