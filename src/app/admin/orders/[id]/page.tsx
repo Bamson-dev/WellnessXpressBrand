@@ -125,6 +125,14 @@ export default async function OrderDetail(
                 {row("Estimated time", String(o.delivery_eta || "Not set"))}
                 {row("Dispatched", o.dispatched_at ? String(o.dispatched_at) : "Not yet")}
               </dl>
+              {bundledDelivery && o.payment_status !== "paid" && o.fulfilment_status !== "cancelled" ? (
+                <AdminForm action={setDeliveryFeeAction} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                  <input type="hidden" name="id" value={o.id} />
+                  <label htmlFor="bundledfee" className="text-neutral-600">Change delivery fee</label>
+                  <input id="bundledfee" name="fee" inputMode="numeric" defaultValue={o.delivery_fee ?? ""} className="admin-input w-32" required />
+                  <button className="admin-btn-ghost">Update fee</button>
+                </AdminForm>
+              ) : null}
               <AdminForm action={saveDispatchAction} className="mt-3 grid gap-2 sm:grid-cols-2">
                 <input type="hidden" name="id" value={o.id} />
                 <label className="text-xs font-semibold text-neutral-600">Courier or rider<input name="courier" defaultValue={String(o.courier || "")} maxLength={80} className="admin-input mt-1" /></label>
@@ -137,7 +145,8 @@ export default async function OrderDetail(
           ) : null}
 
           {!freeDelivery && !bundledDelivery ? <section className="rounded-xl border border-neutral-200 bg-white p-5">
-            <h2 className="text-lg">Delivery payment (order placed before free delivery)</h2>
+            <h2 className="text-lg">Delivery payment (older order)</h2>
+            <p className="mt-1 text-xs text-neutral-500">Saving the delivery fee below includes it in the order total, so the customer pays one amount to the store.</p>
             <dl className="mt-2 text-sm">
               {row("Delivery fee", o.delivery_fee == null ? "Not set" : naira(o.delivery_fee))}
               {row("Status", DELIVERY_PAYMENT_STATUS[String(o.delivery_payment_status)] || String(o.delivery_payment_status))}
