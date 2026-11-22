@@ -7,7 +7,8 @@ import UnsavedGuard from "@/components/admin/UnsavedGuard";
 import { listMedia } from "@/lib/media";
 import { addFromLibraryAction, deleteProductAction, deleteVariantAction, imageOrderAction, saveMediaMetaAction, saveComboItemsAction, saveProductAction, saveVariantAction } from "@/app/admin/actions";
 import AdminForm from "@/components/admin/AdminForm";
-import ReplaceImageUpload from "@/components/admin/ReplaceImageUpload";\nimport ProductImageUpload from "@/components/admin/ProductImageUpload";
+import ReplaceImageUpload from "@/components/admin/ReplaceImageUpload";
+import ProductImageUpload from "@/components/admin/ProductImageUpload";
 
 export const metadata = { title: "Edit product" };
 
