@@ -40,7 +40,7 @@ export default async function OrderPage(
   const submitted = o.payment_status === "awaiting_verification";
   const wa = (m: string) => (contact.whatsapp ? `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(m)}` : null);
   const help = wa(`Hello WellnessXpressBrand. I need help with my order ${o.number}.`);
-  const receiptWa = wa(`Hello WellnessXpressBrand. I have paid for the products in order ${o.number}. Amount: ${naira(o.total)}. Here is my payment receipt.`);
+  const receiptWa = wa(`Hello WellnessXpressBrand. I have paid for the products in order ${o.number}. Amount: ${naira(o.total ?? (o.subtotal + (o.delivery_fee || 0)))}. Here is my payment receipt.`);
 
   return (
     <div className="container-x max-w-4xl py-8 sm:py-12">
@@ -94,7 +94,7 @@ export default async function OrderPage(
           <p className="mt-2 text-neutral-700">Please transfer the exact amount below.{bundledDelivery ? " Delivery is included in this total. We handle the delivery agent payment." : freeDelivery ? " Delivery is free." : " Delivery is paid separately."}</p>
           {bankIsComplete(bank) ? (
             <dl className="mt-5 divide-y divide-neutral-200 rounded-xl border border-neutral-200 text-[16px]">
-              <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">{bundledDelivery ? "Total payment" : "Product payment"}</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(bundledDelivery ? o.total : o.subtotal)}<CopyButton text={String(bundledDelivery ? (o.total ?? o.subtotal) : o.subtotal)} label="Copy amount" small /></dd></div>
+              <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">{bundledDelivery ? "Total payment" : "Product payment"}</dt><dd className="flex items-center gap-2 text-xl font-bold">{naira(bundledDelivery ? (o.total ?? (o.subtotal + (o.delivery_fee || 0))) : o.subtotal)}<CopyButton text={String(bundledDelivery ? (o.total ?? o.subtotal) : o.subtotal)} label="Copy amount" small /></dd></div>
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Bank</dt><dd className="font-semibold">{bank.bank}</dd></div>
               <div className="flex items-center justify-between gap-3 p-4"><dt className="text-neutral-600">Account name</dt><dd className="text-right font-semibold">{bank.accountName}</dd></div>
               <div className="flex flex-wrap items-center justify-between gap-3 bg-brand-50 p-4"><dt className="text-neutral-600">Account number</dt><dd className="flex items-center gap-3"><span className="text-2xl font-bold tracking-wider tabular-nums">{bank.accountNumber}</span><CopyButton text={bank.accountNumber} label="Copy account number" /></dd></div>
