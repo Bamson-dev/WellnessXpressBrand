@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   lines.push(["Summary", "Delivery fees collected", "", String(data.summary.delivery_collected || 0)]);
   lines.push(["Summary", "Total collected", "", String(data.summary.total_collected)]);
   lines.push(["Summary", "Coupon discounts given", "", String(data.summary.discounts)]);
-  lines.push(["Summary", "Product payments not yet confirmed", "", String(data.summary.pending_amount)]);
+  lines.push(["Summary", "Customer payments not yet confirmed", "", String(data.summary.pending_amount)]);
   lines.push(["Summary", "Delivery fees not yet paid", "", String(data.summary.delivery_pending)]);
   lines.push(["Summary", "Paid orders", String(data.summary.paid), ""]);
   lines.push(["Summary", "Cancelled orders", String(data.summary.cancelled), ""]);
