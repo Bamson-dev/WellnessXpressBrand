@@ -15,7 +15,7 @@ export type Invoice = {
   number: string; createdAt: string; order: OrderRow;
   lines: { name: string; label: string; sku: string; qty: number; unitPrice: number; lineTotal: number; discount: number }[];
   itemsSubtotal: number; discount: number; couponCode: string; productTotal: number;
-  freeDelivery: boolean; deliveryFee: number | null; total: number; amountPaid: number; balance: number;
+  freeDelivery: boolean; bundledDelivery: boolean; deliveryFee: number | null; total: number; amountPaid: number; balance: number;
   status: InvoiceStatus; productPaidAt: string | null; deliveryPaidAt: string | null;
   bank: { bank: string; accountName: string; accountNumber: string };
 };
@@ -43,7 +43,7 @@ export function invoiceFor(orderId: number): Invoice | null {
   const lines = items.map((i) => ({ name: i.name, label: i.variant_label, sku: i.sku, qty: i.qty, unitPrice: i.unit_price, lineTotal: i.line_total, discount: Number(i.discount_amount || 0) }));
   const itemsSubtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
   const discount = Number(o.discount_amount || 0);
-  const freeDelivery = o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required";
+  const bundledDelivery = o.delivery_fee_source === "included_in_order";\n  const freeDelivery = !bundledDelivery && (o.delivery_fee_source === "free_delivery" || o.delivery_payment_status === "not_required");
   const deliveryFee = freeDelivery ? 0 : o.delivery_fee == null ? null : Number(o.delivery_fee);
   const productTotal = Number(o.subtotal);
   const total = productTotal + (deliveryFee || 0);
@@ -54,7 +54,7 @@ export function invoiceFor(orderId: number): Invoice | null {
     : productPaid && deliveryPaid && deliveryFee !== null ? "paid" : amountPaid > 0 ? "part_paid" : "unpaid";
   return {
     number: String(inv.number), createdAt: String(inv.created_at), order: o, lines, itemsSubtotal, discount, couponCode: String(o.coupon_code || ""),
-    productTotal, freeDelivery, deliveryFee, total, amountPaid, balance: Math.max(0, total - amountPaid), status,
+    productTotal, freeDelivery, bundledDelivery, deliveryFee, total, amountPaid, balance: Math.max(0, total - amountPaid), status,
     productPaidAt: o.paid_at ? String(o.paid_at) : null, deliveryPaidAt: o.delivery_paid_at ? String(o.delivery_paid_at) : null, bank: bankOf(o),
   };
 }
@@ -152,7 +152,7 @@ export async function invoicePdf(inv: Invoice): Promise<Uint8Array> {
   text("Payment", M, y, { b: true }); y -= 14;
   if (inv.productPaidAt && inv.order.payment_status === "paid") { text(`Product payment verified on ${inv.productPaidAt.slice(0, 16)} UTC.`, M, y); y -= 13; }
   else { text(`Pay by bank transfer: ${inv.bank.bank}, ${inv.bank.accountName}, ${inv.bank.accountNumber}. Narration: ${inv.order.number}.`.slice(0, 110), M, y); y -= 13; }
-  if (!inv.freeDelivery && inv.deliveryFee) { text(inv.deliveryPaidAt ? `Delivery payment verified on ${inv.deliveryPaidAt.slice(0, 16)} UTC.` : "Delivery fee is payable separately.", M, y); y -= 13; }
+  if (inv.bundledDelivery) { text("Delivery is included in the customer payment. WellnessXpressBrand settles the delivery agent.", M, y, { color: green }); y -= 13; }\n  else if (!inv.freeDelivery && inv.deliveryFee) { text(inv.deliveryPaidAt ? `Delivery payment verified on ${inv.deliveryPaidAt.slice(0, 16)} UTC.` : "Delivery fee is payable separately.", M, y); y -= 13; }
   if (inv.freeDelivery) { text("Free delivery across Nigeria.", M, y, { color: green }); y -= 13; }
   text("A payment shows as paid only after we verify it in our bank account.", M, 60, { size: 8, color: grey });
   text(`${site.name} · ${site.url.replace(/^https?:\/\//, "")}`, W - M, 60, { size: 8, color: grey, right: true });
