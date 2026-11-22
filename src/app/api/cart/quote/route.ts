@@ -1,7 +1,7 @@
 import { quoteLines } from "@/lib/catalog";
 import { deliveryQuote } from "@/lib/settings";
 import { NIGERIAN_STATES } from "@/lib/site";
-import { ipOf, limited } from "@/lib/ratelimit";
+import { ipOf, limited, sameOrigin } from "@/lib/ratelimit";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
  * Product payment (subtotal) and delivery payment (fee) stay separate amounts.
  */
 export async function POST(req: Request) {
+  if (!sameOrigin(req)) return Response.json({ error: "Invalid request." }, { status: 403 });
   if (limited("q:" + ipOf(req), 60)) return Response.json({ error: "Too many requests." }, { status: 429 });
   const b = await req.json().catch(() => null);
   const items = Array.isArray(b?.items) ? b.items : [];
