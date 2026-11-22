@@ -60,7 +60,6 @@ export default async function ProductPage(
     offers: r ? {
       "@type": "AggregateOffer", priceCurrency: "NGN", lowPrice: r.min, highPrice: r.max, offerCount: p.variants.length,
       availability: p.variants.some(inStock) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `${site.url}/product/${p.slug}`,
-      shippingDetails: { "@type": "OfferShippingDetails", shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "NGN" }, shippingDestination: { "@type": "DefinedRegion", addressCountry: "NG" } },
     } : undefined,
     aggregateRating: reviews.length ? { "@type": "AggregateRating", ratingValue: (reviews.reduce((t, x) => t + Number(x.rating), 0) / reviews.length).toFixed(1), reviewCount: reviews.length } : undefined,
   };
@@ -125,7 +124,7 @@ export default async function ProductPage(
 
           <ul className="mt-8 grid gap-3 text-[15px] text-neutral-700 sm:grid-cols-2">
             <li className="flex gap-3 rounded-xl bg-brand-50/70 p-4"><IconBank className="h-5 w-5 shrink-0 text-brand-700" /> Pay by bank transfer. We confirm your payment before we process your order.</li>
-            <li className="flex gap-3 rounded-xl bg-brand-50/70 p-4"><IconTruck className="h-5 w-5 shrink-0 text-brand-700" /> <span><strong className="text-brand-900">Free delivery across Nigeria.</strong> All 36 states and Abuja, no minimum order.</span></li>
+            <li className="flex gap-3 rounded-xl bg-brand-50/70 p-4"><IconTruck className="h-5 w-5 shrink-0 text-brand-700" /> <span><strong className="text-brand-900">Free delivery on orders of ₦50,000 or more.</strong> Below ₦50,000, delivery fees depend on your location.</span></li>
           </ul>
           {wa ? <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 font-semibold text-[#12703a] hover:underline"><IconWhatsApp /> Questions about {p.name}? Ask us on WhatsApp</a> : null}
         </div>
