@@ -91,7 +91,7 @@ export function createOrder(input: CheckoutInput) {
     const deliveryForOrder = deliveryQuote(state, subtotal, city);
     if (!deliveryForOrder.available || deliveryForOrder.fee == null) throw new Error("delivery_fee_missing");
     const fee = deliveryForOrder.fee;
-    const deliveryStatus = fee === 0 ? "not_required" : "pending";
+    const deliveryStatus = "not_required";
     const total = subtotal + fee;
     const lineDiscounts = new Map<number, number>();
     if (coupon?.ok) {
@@ -126,7 +126,7 @@ export function createOrder(input: CheckoutInput) {
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       )
       .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, deliveryStatus,
-        deliveryForOrder.eta, fee === 0 ? "free_delivery" : "admin", clientKey, JSON.stringify(bank), JSON.stringify(trackingOf(input)), discountAmount, coupon?.ok ? coupon.code : "");
+        deliveryForOrder.eta, "included_in_order", clientKey, JSON.stringify(bank), JSON.stringify(trackingOf(input)), discountAmount, coupon?.ok ? coupon.code : "");
     const oid = Number(r.lastInsertRowid);
     if (coupon?.ok) {
       const couponRow = d.prepare("SELECT id FROM coupons WHERE code = ?").get(coupon.code);
@@ -141,7 +141,7 @@ export function createOrder(input: CheckoutInput) {
       if (tracked) recordMovement(d, l.variantId, -l.qty, "order_reserved", `Order ${number}`, "customer", oid);
     }
     d.prepare("INSERT INTO order_events (order_id,actor,action,note) VALUES (?,?,?,?)").run(
-      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Products: ₦${subtotal.toLocaleString("en-NG")}. Delivery: ${fee === 0 ? "free" : "₦" + fee.toLocaleString("en-NG")} to ${state}.`
+      oid, "customer", "order_placed", `${coupon?.ok ? `Coupon ${coupon.code} saved ₦${discountAmount.toLocaleString("en-NG")}. ` : ""}Products: ₦${subtotal.toLocaleString("en-NG")}. Delivery: ${fee === 0 ? "free" : "₦" + fee.toLocaleString("en-NG")} to ${state}. Included in total customer payment.`
     );
     notifyAdmin(`order:${oid}:created`, "new_order", "New order received", `${number} · ${name} · ${state}`, `/admin/orders/${oid}`);
     return { ok: true as const, duplicate: false, number, token, total, subtotal, itemsSubtotal, discountAmount, couponCode: coupon?.ok ? coupon.code : "", fee };
