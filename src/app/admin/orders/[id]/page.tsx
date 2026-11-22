@@ -91,7 +91,7 @@ export default async function OrderDetail(
               <p className="mt-3 text-xs text-neutral-500">You can view this order. Payment verification needs the Payment verification permission.</p>
             ) : o.payment_status !== "paid" ? (
               <div className="mt-4 rounded-lg bg-neutral-50 p-4">
-                <p className="text-sm font-semibold">Check your {bank.bank} account for the full customer payment of {naira(bundledDelivery ? o.total : o.subtotal)} before you confirm.</p>
+                <p className="text-sm font-semibold">Check your {bank.bank} account for the full customer payment of {naira(bundledDelivery ? (o.total ?? o.subtotal) : o.subtotal)} before you confirm.</p>
                 <p className="mt-1 text-xs text-neutral-500">A receipt or reference from the customer is not proof of payment. Confirm only when you see the money in the account.</p>
                 <AdminForm action={verifyPaymentAction} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={o.id} />
