@@ -1,5 +1,6 @@
 import { requirePerm } from "@/lib/auth";
 import { deliveryZones } from "@/lib/settings";
+import { getStateDeliveryFee, LAGOS_DELIVERY_AREAS, getLagosDelivery, FREE_DELIVERY_THRESHOLD } from "@/lib/delivery-rates";
 import { bulkDeliveryAction, saveDeliveryAction } from "@/app/admin/actions";
 import Flash from "@/components/admin/Flash";
 import DeliveryImport from "@/components/admin/DeliveryImport";
@@ -13,14 +14,15 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
   await requirePerm("delivery");
   const zones = deliveryZones();
   const covered = zones.filter((z) => z.active).length;
-  const missingFees = zones.filter((z) => z.active && (z.fee == null || z.fee < 1)).length;
+  const lagosFees = LAGOS_DELIVERY_AREAS.map((a) => getLagosDelivery(a)?.fee || 0);
+  const rate = (state: string) => state === "Lagos" ? `By area: ₦${Math.min(...lagosFees).toLocaleString("en-NG")} to ₦${Math.max(...lagosFees).toLocaleString("en-NG")}` : getStateDeliveryFee(state) != null ? `₦${getStateDeliveryFee(state)!.toLocaleString("en-NG")}` : "Not set";
   return (
     <div>
       <Flash msg={searchParams.msg} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl">Delivery coverage</h1>
-          <p className="mt-1 max-w-3xl text-sm text-neutral-600">Free delivery applies to product subtotals of ₦50,000 and above. Orders below that threshold pay the state delivery fee configured here. Use this page to set fees, switch delivery on or off, add delivery times, and keep customer and internal notes.</p>
+          <p className="mt-1 max-w-3xl text-sm text-neutral-600">Delivery fees follow the approved rate list shown in the Delivery fee column. Lagos is priced by the area the customer chooses. Orders whose product subtotal after discounts reaches ₦{FREE_DELIVERY_THRESHOLD.toLocaleString("en-NG")} get free delivery, except Abuja (FCT), which is always ₦5,000. The customer pays the delivery fee to the store together with the products. Use this page to switch delivery on or off, add delivery times, and keep customer and internal notes.</p>
         </div>
         <a href="/api/admin/delivery-export" className="admin-btn-ghost">Export CSV</a>
       </div>
@@ -28,7 +30,6 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
         Delivery is enabled for {covered} of 37 locations.{covered < 37 ? " Customers in switched-off states cannot check out." : ""}
       </p>
 
-      {missingFees > 0 ? <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">{missingFees} enabled locations still need a delivery fee. Orders below ₦50,000 cannot be placed for these locations until you set the fee. Orders of ₦50,000 and above qualify for free delivery.</p> : null}
 
       <AdminForm action={bulkDeliveryAction} id="bulk" className="mt-4 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 sm:grid-cols-[auto_1fr_auto]">
         <select name="op" className="admin-input w-auto" aria-label="Bulk action">
@@ -52,7 +53,7 @@ export default async function Delivery(props: { searchParams: Promise<{ msg?: st
                 <tr key={z.state} className="border-t border-neutral-100">
                   <td className="p-2 pl-3"><input type="checkbox" name="states" value={z.state} form="bulk" className="h-4 w-4 accent-brand-700" aria-label={`Select ${z.state}`} /></td>
                   <td className="p-2 font-medium">{z.state}</td>
-                  <td className="p-2"><input type="number" min="1" step="1" name={`fee_${z.state}`} defaultValue={z.fee ?? ""} placeholder="Required below ₦50k" className="admin-input w-36" aria-label={`Delivery fee for ${z.state}`} /></td>
+                  <td className="p-2 whitespace-nowrap">{rate(z.state)}</td>
                   <td className="p-2"><input type="checkbox" name={`active_${z.state}`} defaultChecked={z.active} className="h-4 w-4 accent-brand-700" aria-label={`Deliver to ${z.state}`} /></td>
                   <td className="p-2"><input name={`eta_${z.state}`} defaultValue={z.eta} placeholder="Not set" maxLength={80} className="admin-input w-40" aria-label={`Delivery time for ${z.state}`} /></td>
                   <td className="p-2"><input name={`note_${z.state}`} defaultValue={z.note} maxLength={160} className="admin-input w-48" aria-label={`Customer note for ${z.state}`} /></td>

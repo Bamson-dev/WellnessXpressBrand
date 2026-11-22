@@ -72,6 +72,11 @@ export function createOrder(input: CheckoutInput) {
   if (!lines.length) errors.items = "Your cart is empty.";
   const bad = lines.find((l) => !l.available);
   if (bad) errors.items = `${bad.name} (${bad.label}): ${bad.reason}. Update your cart and try again.`;
+  if (!errors.state && !errors.items) {
+    // A coupon can only lower the subtotal, so a location that cannot be served at the full subtotal cannot be served at all.
+    const q = deliveryQuote(state, lines.reduce((s, l) => s + l.lineTotal, 0), city);
+    if (!q.available) errors[state === "Lagos" && /Lagos delivery area/.test(q.message) ? "city" : "state"] = q.message;
+  }
   if (Object.keys(errors).length) return { ok: false as const, errors };
 
   const itemsSubtotal = lines.reduce((s, l) => s + l.lineTotal, 0);

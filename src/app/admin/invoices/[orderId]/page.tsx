@@ -40,14 +40,15 @@ export default async function InvoicePage(props: { params: Promise<{ orderId: st
         <dl className="ml-auto mt-4 max-w-xs">
           {row("Products subtotal", naira(inv.itemsSubtotal))}
           {inv.discount ? row(`Discount${inv.couponCode ? ` (${inv.couponCode})` : ""}`, `−${naira(inv.discount)}`) : null}
-          {row("Delivery", inv.freeDelivery ? "FREE (₦0)" : inv.deliveryFee == null ? "To be confirmed" : naira(inv.deliveryFee))}
+          {row("Delivery", inv.freeDelivery || (inv.bundledDelivery && inv.deliveryFee === 0) ? "FREE (₦0)" : inv.deliveryFee == null ? "To be confirmed" : naira(inv.deliveryFee))}
           {row("Total", naira(inv.total), true)}
           {row("Amount paid (verified)", naira(inv.amountPaid))}
           {row("Balance due", naira(inv.balance), true)}
         </dl>
         <section className="mt-6 text-neutral-700">
           {o.payment_status === "paid" && inv.productPaidAt ? <p>Product payment verified on {inv.productPaidAt.slice(0, 16)} UTC.</p> : <p>Pay by bank transfer: {inv.bank.bank}, {inv.bank.accountName}, {inv.bank.accountNumber}. Narration: {o.number}.</p>}
-          {!inv.freeDelivery && inv.deliveryFee ? <p>{inv.deliveryPaidAt ? `Delivery payment verified on ${inv.deliveryPaidAt.slice(0, 16)} UTC.` : "Delivery fee is payable separately."}</p> : null}
+          {inv.bundledDelivery ? <p>Delivery is included in the customer payment. WellnessXpressBrand settles the delivery agent.</p> : null}
+          {!inv.freeDelivery && !inv.bundledDelivery && inv.deliveryFee ? <p>{inv.deliveryPaidAt ? `Delivery payment verified on ${inv.deliveryPaidAt.slice(0, 16)} UTC.` : "Delivery fee is payable separately."}</p> : null}
           {inv.freeDelivery ? <p className="font-semibold text-brand-800">Free delivery across Nigeria.</p> : null}
           <p className="mt-4 text-xs text-neutral-500">A payment shows as paid only after it is verified in the bank account.</p>
         </section>

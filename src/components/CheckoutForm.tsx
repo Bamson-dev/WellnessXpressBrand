@@ -8,7 +8,7 @@ import { useQuote } from "@/components/useQuote";
 import { track } from "@/components/pixel";
 import { IconBank, IconShield, IconTruck } from "@/components/icons";
 import { naira } from "@/lib/site";
-import { LAGOS_DELIVERY_AREAS } from "@/lib/delivery-rates";
+import { LAGOS_DELIVERY_AREAS, FREE_DELIVERY_THRESHOLD, chargedDeliveryFee } from "@/lib/delivery-rates";
 
 type Errors = Record<string, string>;
 type AppliedCoupon = { code: string; discountAmount: number; eligibleSubtotal: number };
@@ -62,9 +62,11 @@ export default function CheckoutForm({ states }: { states: string[] }) {
   const activeCoupon = couponCartKey === cartKey ? couponPreview : null;
   const discount = activeCoupon?.discountAmount || 0;
   const payNow = quote ? Math.max(0, quote.subtotal - discount) : 0;
-  const deliveryFee = delivery?.available ? delivery.fee : null;
-  const deliveryBlocked = !!state && !!delivery && (!delivery.available || (payNow < 50000 && delivery.baseFee == null));
-  const deliveryMessage = delivery?.message || (payNow < 50000 && delivery?.baseFee == null ? `Delivery fee for ${state} is not configured. Please contact us on WhatsApp.` : "");
+  // The server quote is for the cart before any coupon. Apply the same threshold rule to the discounted subtotal,
+  // exactly as order creation does, so the total shown here is the total the order will store.
+  const deliveryFee = delivery?.available ? chargedDeliveryFee(state, delivery.baseFee, payNow) : null;
+  const deliveryBlocked = !!state && !!delivery && (!delivery.available || deliveryFee == null);
+  const deliveryMessage = delivery?.message || (payNow < FREE_DELIVERY_THRESHOLD && delivery?.baseFee == null ? `Delivery fee for ${state} is not configured. Please contact us on WhatsApp.` : "");
   const orderTotal = quote ? payNow + (deliveryFee ?? 0) : 0;
 
   async function applyCoupon() {

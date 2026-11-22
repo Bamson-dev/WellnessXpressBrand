@@ -40,7 +40,7 @@ export default async function OrderPage(
   const submitted = o.payment_status === "awaiting_verification";
   const wa = (m: string) => (contact.whatsapp ? `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(m)}` : null);
   const help = wa(`Hello WellnessXpressBrand. I need help with my order ${o.number}.`);
-  const receiptWa = wa(`Hello WellnessXpressBrand. I have paid for the products in order ${o.number}. Amount: ${naira(o.total ?? (o.subtotal + (o.delivery_fee || 0)))}. Here is my payment receipt.`);
+  const receiptWa = wa(`Hello WellnessXpressBrand. I have paid for order ${o.number}. Amount: ${naira(o.total ?? (o.subtotal + (o.delivery_fee || 0)))}. Here is my payment receipt.`);
 
   return (
     <div className="container-x max-w-4xl py-8 sm:py-12">
@@ -61,9 +61,13 @@ export default async function OrderPage(
       </div>
 
       {o.fulfilment_status !== "cancelled" && bundledDelivery ? (
-        <section className="mt-6 rounded-2xl border border-brand-100 bg-brand-50 p-5 sm:p-6">
+        <section className="mt-6 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 p-5 sm:p-6">
           <IconTruck className="h-6 w-6 shrink-0 text-brand-700" />
-          <div><h2 className="text-xl text-brand-900">Delivery included in your payment</h2><p className="mt-1 text-neutral-700">Delivery to {o.state}: <strong>{naira(o.delivery_fee || 0)}</strong>. Pay the total shown below to WellnessXpressBrand. We handle payment to the delivery agent.{o.delivery_eta ? ` Estimated delivery time: ${String(o.delivery_eta)}.` : ""}</p></div>
+          <div>
+            <h2 className="text-xl text-brand-900">Delivery included in your payment</h2>
+            <p className="mt-1 text-neutral-700">Delivery to {o.state}: <strong>{o.delivery_fee ? naira(o.delivery_fee) : "FREE"}</strong>. Pay the total shown below to WellnessXpressBrand. We handle payment to the delivery agent.{o.delivery_eta ? ` Estimated delivery time: ${String(o.delivery_eta)}.` : ""}</p>
+            {o.dispatched_at || o.tracking_reference ? <p className="mt-2 text-neutral-700">Dispatched{o.dispatched_at ? ` on ${String(o.dispatched_at).slice(0, 10)}` : ""}{o.courier ? ` with ${String(o.courier)}` : ""}.{o.tracking_reference ? <> Tracking reference: <strong>{String(o.tracking_reference)}</strong></> : null}</p> : null}
+          </div>
         </section>
       ) : o.fulfilment_status !== "cancelled" && freeDelivery ? (
         <section className="mt-6 flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 p-5 sm:p-6">
@@ -133,7 +137,7 @@ export default async function OrderPage(
           {discountAmount ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Product payment after discount</dt><dd>{naira(o.subtotal)}</dd></div> : null}
           {bundledDelivery ? (
             <>
-              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{naira(o.delivery_fee || 0)} · Included</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery ({o.state})</dt><dd>{o.delivery_fee ? `${naira(o.delivery_fee)} · Included` : "FREE"}</dd></div>
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">Payment status</dt><dd>{o.payment_status === "paid" ? "Confirmed" : o.payment_status === "awaiting_verification" ? "Being verified" : "Not paid yet"}</dd></div>
               <div className="flex justify-between text-lg font-bold"><dt>Total to pay WellnessXpressBrand</dt><dd>{naira(o.total ?? (o.subtotal + (o.delivery_fee || 0)))}</dd></div>
             </>

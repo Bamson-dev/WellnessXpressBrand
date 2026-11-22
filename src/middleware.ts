@@ -51,5 +51,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|_next/data|images/).*)"],
+  matcher: ["/((?!_next/static|_next/image|_next/data|images/|api/admin/products/upload-images|api/admin/products/replace-image).*)"],
 };

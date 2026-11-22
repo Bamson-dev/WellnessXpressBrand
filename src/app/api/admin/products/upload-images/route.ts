@@ -4,6 +4,7 @@ import { db, tx } from "@/lib/db";
 import { saveImageUpload, MAX_IMAGE_BYTES } from "@/lib/media";
 import { logAdminActivity } from "@/lib/admin-events";
 import { revalidatePath } from "next/cache";
+import { sameOrigin } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -12,12 +13,7 @@ const MAX_TOTAL_BYTES = 24 * 1024 * 1024;
 
 export async function POST(request: Request) {
   try {
-    const origin = request.headers.get("origin");
-    const allowedHosts = new Set(["wellnessxpressbrand.com", "www.wellnessxpressbrand.com"]);
-    if (origin) {
-      const host = new URL(origin).hostname.toLowerCase();
-      if (!allowedHosts.has(host)) return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
-    }
+    if (!sameOrigin(request)) return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
     const admin = await currentAdmin();
     if (!admin || !can(admin, "products")) return NextResponse.json({ error: "Your admin session has expired or lacks product permission. Sign in again." }, { status: 401 });
 
