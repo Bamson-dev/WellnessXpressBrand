@@ -30,7 +30,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setLines((JSON.parse(raw) as CartLine[]).filter((l) => Number.isInteger(l.variantId) && l.qty > 0));
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const cleanLines = parsed.flatMap((item): CartLine[] => {
+            if (!item || typeof item !== "object") return [];
+            const l = item as Partial<CartLine>;
+            if (!Number.isSafeInteger(l.variantId) || Number(l.variantId) <= 0 || !Number.isFinite(Number(l.qty)) || Number(l.qty) <= 0) return [];
+            const qty = Math.min(MAX_QTY, Math.max(1, Math.floor(Number(l.qty))));
+            const slug = typeof l.slug === "string" ? l.slug.slice(0, 160) : "";
+            const name = typeof l.name === "string" ? l.name.slice(0, 200) : "";
+            const label = typeof l.label === "string" ? l.label.slice(0, 120) : "";
+            const price = Number.isFinite(Number(l.price)) && Number(l.price) >= 0 ? Number(l.price) : 0;
+            const image = typeof l.image === "string" ? l.image.slice(0, 1000) : null;
+            const sku = typeof l.sku === "string" ? l.sku.slice(0, 100) : undefined;
+            return [{ variantId: Number(l.variantId), qty, slug, name, label, price, image, sku }];
+          });
+          setLines(cleanLines);
+        }
+      }
     } catch {}
     setReady(true);
   }, []);
