@@ -52,8 +52,6 @@ export function createOrder(input: CheckoutInput) {
   if (waRaw && !whatsapp) errors.whatsapp = "Enter a valid WhatsApp number, or leave this empty.";
   if (email && !isEmail(email)) errors.email = "Enter a valid email address, or leave this empty.";
   if (!NIGERIAN_STATES.includes(state)) errors.state = "Choose your state.";
-  const delivery = deliveryQuote(state, 50_000);
-  if (NIGERIAN_STATES.includes(state) && !delivery.available) errors.state = delivery.message;
   const clientKey = /^[A-Za-z0-9_-]{16,64}$/.test(String(input.clientKey || "")) ? String(input.clientKey) : "";
   if (clientKey) {
     // Repeated submission of the same checkout (double tap, retry): return the existing order instead of creating another.
@@ -125,10 +123,10 @@ export function createOrder(input: CheckoutInput) {
       .prepare(
         `INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,delivery_payment_status,
            delivery_eta,delivery_fee_source,client_key,bank_snapshot,tracking,discount_amount,coupon_code)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'free_delivery',?,?,?,?,?)`
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       )
       .run(number, token, name, phone, whatsapp, email, state, city, address, instructions, subtotal, fee, total, deliveryStatus,
-        delivery.eta, clientKey, JSON.stringify(bank), JSON.stringify(trackingOf(input)), discountAmount, coupon?.ok ? coupon.code : "");
+        deliveryForOrder.eta, fee === 0 ? "free_delivery" : "admin", clientKey, JSON.stringify(bank), JSON.stringify(trackingOf(input)), discountAmount, coupon?.ok ? coupon.code : "");
     const oid = Number(r.lastInsertRowid);
     if (coupon?.ok) {
       const couponRow = d.prepare("SELECT id FROM coupons WHERE code = ?").get(coupon.code);
