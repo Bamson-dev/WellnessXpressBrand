@@ -36,7 +36,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     contactPoint: c.whatsapp ? [{ "@type": "ContactPoint", telephone: "+" + c.whatsapp, contactType: "customer service", areaServed: "NG" }] : undefined,
   };
   return (
-    <div className={`${outfit.variable} font-sans`}>
+    <div id="store-root" className={`${outfit.variable} font-sans`}>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-white focus:p-3 focus:shadow">Skip to content</a>
       <CartProvider>
         <Header />
