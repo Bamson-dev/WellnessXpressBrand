@@ -61,7 +61,7 @@ await step("security", async () => {
   ok((await anon.request.get(B + "/product-images/abc.png")).status() === 404, "non-generated image names rejected");
   const x = await anon.request.post(B + "/api/orders", { headers: { origin: "https://evil.example" }, data: { name: "x" } });
   ok(x.status() === 403, "cross-site order POST rejected");
-  ok((await anon.request.get(B + "/product/detox-seed?preview=1")).status() === 404, "hidden product preview not available to the public");
+  ok((await anon.request.get(B + "/product/mini-combo-set?preview=1")).status() === 404, "hidden product preview not available to the public");
 });
 
 // ---------------- admin login ----------------
@@ -77,17 +77,18 @@ await step("admin login", async () => {
 // ---------------- delivery settings ----------------
 await step("delivery admin", async () => {
   await admin.goto(B + "/admin/delivery");
-  ok((await admin.locator('input[name^="active_"]').count()) === 37 && (await admin.locator('input[name^="fee_"]').count()) === 37, "delivery page lists all 37 locations with configurable fee fields");
+  const dtxt = await admin.locator("main").innerText();
+  ok((await admin.locator('input[name^="active_"]').count()) === 37 && (await admin.locator('input[name^="fee_"]').count()) === 0 && /FCT \(Abuja\)\s*₦5,000/.test(dtxt) && /Lagos\s*By area: ₦3,000 to ₦6,000/.test(dtxt) && /Ogun\s*₦5,500/.test(dtxt), "delivery page lists all 37 locations with the approved rates (read-only)");
   ok(q1("SELECT COUNT(*) c FROM delivery_zones").c === 37 && q1("SELECT COUNT(*) c FROM delivery_zones WHERE active=1").c === 37, "all 37 locations covered by default");
   ok(q1("SELECT COUNT(*) c FROM delivery_zones WHERE fee IS NOT NULL").c === 0, "no delivery fee stored");
-  await admin.fill('input[name="fee_Lagos"]', "4500");
   await admin.fill('input[name="eta_Lagos"]', "1–2 working days");
   await admin.fill('input[name="internal_Lagos"]', "Rider pickup at 10am");
   await admin.locator('input[name="active_Kano"]').uncheck();
   await go(admin, admin.locator("button:has-text('Save delivery settings')").first());
   ok(/switched off for: Kano/.test(await flash(admin)), "switching a state off is confirmed");
   const lag = q1("SELECT * FROM delivery_zones WHERE state='Lagos'");
-  ok(lag.active === 1 && lag.eta === "1–2 working days" && lag.internal_note === "Rider pickup at 10am" && lag.fee === 4500, "delivery fee, time and internal note saved");
+  ok(lag.active === 1 && lag.eta === "1–2 working days" && lag.internal_note === "Rider pickup at 10am" && lag.fee === null, "delivery time and internal note saved; no stray ₦0 fee written");
+  ok(q1("SELECT COUNT(*) c FROM delivery_zones WHERE fee = 0").c === 0, "saving the page never turns a blank fee into ₦0");
   await admin.goto(B + "/admin/delivery");
   for (const st of ["Oyo", "Osun"]) await admin.check(`input[name="states"][value="${st}"]`);
   await admin.selectOption('select[name="op"]', "eta"); await admin.fill('input[name="bulkEta"]', "2–4 working days");
@@ -132,6 +133,7 @@ await step("inventory", async () => {
 // ---------------- media library ----------------
 await step("media", async () => {
   await admin.goto(B + "/admin/media");
+
   await admin.setInputFiles('input[name="images"]', [path.join(FIX, "fixture-product.png"), path.join(FIX, "fixture-not-image.png")]);
   await go(admin, admin.locator("button:has-text('Upload')").first());
   const m = await flash(admin);
@@ -152,8 +154,9 @@ await step("media", async () => {
   // replace the new photo (index 1) with a second upload
   await admin.goto(B + `/admin/products/${tb}`);
   const idx = JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images).indexOf(med.url);
-  const rep = admin.locator(`form:has(input[name=index][value="${idx}"]):has(input[name=image])`);
-  await rep.locator('input[name="image"]').setInputFiles(path.join(FIX, "fixture-product-2.png")); await go(admin, rep.locator("button:has-text('Replace')"));
+  const rep = admin.locator("div.flex.gap-3", { has: admin.locator(`img[src="${med.url}"]`) }).locator("form", { has: admin.locator('input[name="image"]') });
+  await rep.locator('input[name="image"]').setInputFiles(path.join(FIX, "fixture-product-2.png"));
+  await Promise.all([admin.waitForURL(/msg=/, { timeout: 30000 }), rep.locator("button:has-text('Replace')").click()]); await admin.waitForLoadState("networkidle");
   const imgs = JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images);
   ok(!imgs.includes(med.url) && imgs[idx].startsWith("/product-images/"), "gallery image replaced");
   await admin.goto(B + "/admin/media");
@@ -166,6 +169,34 @@ await step("media", async () => {
   ok(JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images)[0] === imgs[idx], "gallery reorder: make main");
   await go(admin, admin.locator(`form:has(input[name=index][value="0"]):has(input[name=op][value=down]) button`));
   ok(JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images)[1] === imgs[idx], "gallery reorder: move down");
+  // Product editor upload: four ~5 MB photos (about 20 MB in one request) must arrive whole.
+  ok(!/^\\n$/m.test(await admin.locator("main").innerText()), "product editor shows no stray \\n text");
+  const big = [0, 1, 2, 3].map((i) => path.join(SHOTS, `big-${i}.png`));
+  {
+    const zlib = await import("zlib"); const crypto = await import("crypto");
+    const chunk = (t, dta) => { const l = Buffer.alloc(4); l.writeUInt32BE(dta.length); const c = Buffer.alloc(4); c.writeUInt32BE(zlib.crc32 ? zlib.crc32(Buffer.concat([Buffer.from(t), dta])) >>> 0 : 0); return Buffer.concat([l, Buffer.from(t), dta, c]); };
+    const w = 1200, h = 1350; const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+    for (const f of big) { const raw = Buffer.concat(Array.from({ length: h }, () => Buffer.concat([Buffer.from([0]), crypto.randomBytes(w * 3)]))); fs.writeFileSync(f, Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(raw, { level: 0 })), chunk("IEND", Buffer.alloc(0))])); }
+  }
+  const before = JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images).length;
+  await admin.goto(B + `/admin/products/${tb}`);
+  await admin.setInputFiles('input[aria-label="Upload photos"]', big);
+  const [resp] = await Promise.all([admin.waitForResponse((r) => r.url().includes("/api/admin/products/upload-images"), { timeout: 60000 }), admin.locator("button:has-text('Upload photos')").click()]);
+  await admin.waitForURL(/msg=/, { timeout: 30000 }).catch(() => {});
+  const after = JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images);
+  ok(resp.status() === 200 && after.length === before + 4, `four 5 MB photos upload in one request (${resp.status()}, ${after.length - before} added)`);
+  const last = q1("SELECT original_name n, alt FROM media ORDER BY id DESC LIMIT 1");
+  ok(last.n === "big-3.png" && last.alt === "big 3", `uploaded file keeps a readable name and alt text (${last.n} / ${last.alt})`);
+  await admin.reload(); ok((await admin.locator(`img[src="${after[after.length - 1]}"]`).count()) === 1, "uploaded photo shows in the editor after refresh");
+  ok((await anon.request.get(B + after[after.length - 1])).status() === 200, "uploaded photo is served to the storefront");
+  for (let i = 0; i < 4; i++) { await admin.goto(B + `/admin/products/${tb}`); const n = JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images).length; await go(admin, admin.locator(`form:has(input[name=index][value="${n - 1}"]):has(input[name=op][value=remove]) button`)); }
+  ok(JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images).length === before, "removing photos from the product works");
+  const mediaBefore = q1("SELECT COUNT(*) c FROM media").c, filesBefore = fs.readdirSync(path.join(DATA, "product-images")).length;
+  await admin.goto(B + `/admin/products/${tb}`);
+  await admin.setInputFiles('input[aria-label="Upload photos"]', [path.join(FIX, "fixture-not-image.png")]);
+  await admin.locator("button:has-text('Upload photos')").click();
+  ok(await admin.locator("text=not a JPG, PNG or WebP").waitFor({ timeout: 10000 }).then(() => true, () => false), "a fake image is refused with a clear message");
+  ok(q1("SELECT COUNT(*) c FROM media").c === mediaBefore && fs.readdirSync(path.join(DATA, "product-images")).length === filesBefore, "a refused upload leaves no database record and no file");
 });
 
 // ---------------- products ----------------
@@ -216,36 +247,42 @@ await step("checkout", async () => {
   await p.getByRole("dialog", { name: "Your cart" }).waitFor();
   await p.goto(B + "/cart"); await p.locator("button[aria-label='Increase quantity']").first().click(); await p.waitForTimeout(600);
   ok((await p.locator("aside").innerText()).includes("30,000"), "cart quantity change updates subtotal (2 × ₦15,000)");
-  ok(/Delivery\s*FREE/.test(await p.locator("aside").innerText()), "cart shows delivery as FREE");
+  ok(/Delivery\s*Calculated at checkout/.test(await p.locator("aside").innerText()), "cart says delivery is calculated at checkout");
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
   ok((await p.locator("#state option").count()) === 37 && !(await p.locator('#state option[value="Kano"]').count()), "checkout lists the 36 covered locations (Kano switched off)");
   const pick = async (st) => { await p.selectOption("#state", st); await p.waitForTimeout(700); return p.locator("aside").innerText(); };
   let t = await pick("Lagos");
-  ok(/Delivery fee \(Lagos\)\s*FREE/.test(t) && /Total delivery charge\s*₦0/.test(t) && t.includes("1–2 working days"), "Lagos: delivery FREE, ₦0 charge, delivery time shown");
-  ok(/Total to pay\s*₦30,000/.test(t), "total to pay equals the product subtotal");
-  for (const st of ["Ogun", "Oyo", "Rivers", "FCT (Abuja)", "Zamfara"]) { t = await pick(st); ok(/FREE/.test(t) && /Total to pay\s*₦30,000/.test(t) && await p.getByRole("button", { name: "Place order" }).isEnabled(), `${st}: free delivery, checkout open`); }
-  await pick("Lagos");
+  ok(!(await p.getByRole("button", { name: "Place order" }).isEnabled()) && (await p.locator("select#city").count()) === 1, "Lagos: an area must be chosen before the fee is known");
+  await p.selectOption("#city", "ikeja"); await p.waitForTimeout(700); t = await p.locator("aside").innerText();
+  ok(/Delivery fee \(Lagos\)\s*₦3,000/.test(t) && /Total delivery charge\s*₦3,000/.test(t) && t.includes("1–3 working days"), "Lagos (Ikeja): ₦3,000 delivery, delivery time shown");
+  ok(/Total to pay\s*₦33,000/.test(t), "total to pay = products ₦30,000 + delivery ₦3,000");
+  await p.selectOption("#city", "lekki phase 1"); await p.waitForTimeout(700);
+  ok(/Total to pay\s*₦34,000/.test(await p.locator("aside").innerText()), "Lagos (Lekki Phase 1): ₦4,000 delivery");
+  for (const [st, fee, tot] of [["Ogun", "5,500", "35,500"], ["Oyo", "5,500", "35,500"], ["Rivers", "6,500", "36,500"], ["FCT (Abuja)", "5,000", "35,000"], ["Zamfara", "7,500", "37,500"]]) {
+    t = await pick(st);
+    ok(new RegExp(`Delivery fee \\(${st.replace(/[()]/g, "\\$&")}\\)\\s*₦${fee}`).test(t) && new RegExp(`Total to pay\\s*₦${tot}`).test(t) && await p.getByRole("button", { name: "Place order" }).isEnabled(), `${st}: ₦${fee} delivery, total ₦${tot}, checkout open`);
+  }
   await p.fill("#name", "Ada Test"); await p.fill("#phone", "0803 123 4567"); await p.fill("#city", ""); await p.fill("#address", "12 Test Street, Allen Avenue");
   await p.getByRole("button", { name: "Place order" }).click();
   ok(await p.locator("#city[aria-invalid=true]").count() === 1 && (await p.inputValue("#name")) === "Ada Test", "validation error shown beside field; other answers kept");
-  await p.fill("#city", "Ikeja");
+  await pick("Lagos"); await p.selectOption("#city", "ikeja"); await p.waitForTimeout(700);
   await p.screenshot({ path: path.join(SHOTS, "mobile-checkout.png"), fullPage: true });
   await p.getByRole("button", { name: "Place order" }).click();
   await p.waitForURL(/\/order\/WX/); await p.waitForLoadState("networkidle");
   orderNumber = p.url().match(/WX\d{6}-[A-Z0-9]{5}/)[0];
   order.url = p.url().replace(B, "").replace("&new=1", "");
   const body = await p.locator("main").innerText();
-  ok(body.includes("2930024274") && /Product payment\s*₦30,000/.test(body), "bank transfer instructions show the amount to pay");
-  ok(/Free delivery to Lagos/.test(body) && /Delivery charge: ₦0/.test(body) && /Delivery \(Lagos\)\s*FREE/.test(body) && /Total\s*₦30,000/.test(body), "order confirmation shows free delivery and ₦30,000 total");
-  ok(!/paid separately|separate payment/i.test(body), "no separate delivery payment mentioned on a free-delivery order");
+  ok(body.includes("2930024274") && /Total payment\s*₦33,000/.test(body), "bank transfer instructions show the full amount to pay (products + delivery)");
+  ok(/Delivery included in your payment/.test(body) && /Delivery \(Lagos\)\s*₦3,000 · Included/.test(body) && /Total to pay WellnessXpressBrand\s*₦33,000/.test(body), "order confirmation shows ₦3,000 delivery included and ₦33,000 total");
+  ok(!/paid separately|separate payment/i.test(body), "no separate delivery payment mentioned");
   const o = q1("SELECT * FROM orders WHERE number=?", orderNumber);
-  ok(o.subtotal === 30000 && o.delivery_fee === 0 && o.total === 30000 && o.delivery_fee_source === "free_delivery" && o.delivery_eta === "1–2 working days", "order stores a ₦0 free-delivery snapshot");
+  ok(o.subtotal === 30000 && o.delivery_fee === 3000 && o.total === 33000 && o.delivery_fee_source === "included_in_order" && o.delivery_eta === "1–3 working days", "order stores products ₦30,000 + delivery ₦3,000 = ₦33,000");
   ok(o.payment_status === "pending_payment" && o.delivery_payment_status === "not_required", "product payment pending; delivery payment not required");
   ok(q1("SELECT stock FROM variants WHERE id=?", oil).stock === 3, "stock reserved by order (5 → 3)");
   ok(q1("SELECT COUNT(*) c FROM stock_movements WHERE order_id=? AND reason='order_reserved'", o.id).c === 1, "reservation recorded in stock history");
   await p.screenshot({ path: path.join(SHOTS, "mobile-order.png"), fullPage: true });
   // receipt submission does not mark paid
-  await p.click("text=I have paid"); await p.fill("#payerName", "Ada Test"); await p.fill("#reference", "REF123456");
+  await p.click("text=I have paid"); await p.fill("#payerName", "Ada Test");
   await p.click("button:has-text('Submit payment confirmation')"); await p.locator("text=Payment confirmation received").waitFor();
   ok(q1("SELECT payment_status s FROM orders WHERE number=?", orderNumber).s === "awaiting_verification", "receipt submission → Awaiting Verification, not Paid");
   ok(errs.length === 0, `no browser errors during checkout (${errs.slice(0, 2).join(" | ")})`);
@@ -258,18 +295,31 @@ await step("checkout API manipulation", async () => {
   const base = { name: "Api Test", phone: "08035556666", city: "Ikeja", address: "5 Example Street, Ikeja", items: [{ variantId: q1("SELECT id FROM variants WHERE sku='WX-TRIM-DOWN-COFFEE-1MONTH'").id, qty: 1 }] };
   const r1 = await (await api({ ...base, state: "Lagos", deliveryFee: 5000, delivery_fee: 5000, total: 1, subtotal: 1 })).json();
   const o1 = q1("SELECT subtotal, delivery_fee, total FROM orders WHERE number=?", r1.number);
-  ok(o1.subtotal === 12500 && o1.delivery_fee === 0 && o1.total === 12500 && r1.deliveryFee === 0, "browser-supplied prices and delivery fees ignored; ₦0 delivery stored");
+  ok(o1.subtotal === 10000 && o1.delivery_fee === 3000 && o1.total === 13000 && r1.deliveryFee === 3000, "browser-supplied prices and delivery fees ignored; server fee stored (Ikeja ₦3,000)");
   const quotes = [];
   for (const st of q1("SELECT group_concat(state, '|') s FROM delivery_zones").s.split("|")) {
     const q = await (await anon.request.post(B + "/api/cart/quote", { headers: { origin: B, "x-forwarded-for": "10.7.7.7" }, data: { items: base.items, state: st } })).json();
     quotes.push([st, q.delivery?.available, q.delivery?.fee]);
   }
-  ok(quotes.length === 37 && quotes.filter(([st]) => st !== "Kano").every(([, av, fee]) => av === true && fee === 0), "all 36 covered locations quote ₦0 delivery on the server");
+  const fees = Object.fromEntries(quotes.map(([st, , fee]) => [st, fee]));
+  ok(quotes.length === 37 && quotes.filter(([st]) => !["Kano", "Lagos"].includes(st)).every(([, av, fee]) => av === true && fee >= 5000), "all other covered states quote a configured delivery fee on the server");
+  ok(fees["FCT (Abuja)"] === 5000 && fees.Ogun === 5500 && fees.Rivers === 6500 && fees.Zamfara === 7500 && fees["Akwa Ibom"] === 7500, "state fees match the approved rates (Abuja ₦5,000, Ogun ₦5,500, Rivers ₦6,500, Zamfara ₦7,500)");
+  ok(quotes.find(([st]) => st === "Lagos")[1] === false, "Lagos without an area has no fee until an area is chosen");
+  const qa50 = async (st, qty, city = "") => (await (await anon.request.post(B + "/api/cart/quote", { headers: { origin: B }, data: { items: [{ variantId: base.items[0].variantId, qty }], state: st, city } })).json()).delivery;
+  ok((await qa50("Ogun", 5)).fee === 0 && (await qa50("Ogun", 4)).fee === 5500, "₦50,000 threshold: ₦50,000 gets free delivery, ₦40,000 pays ₦5,500");
+  ok((await qa50("FCT (Abuja)", 5)).fee === 5000, "Abuja stays ₦5,000 above the threshold");
+  ok((await qa50("Lagos", 5, "Ajah")).fee === 0 && (await qa50("Lagos", 1, "Ajah")).fee === 5000 && (await qa50("Lagos", 1, "Atlantis")) && !(await qa50("Lagos", 1, "Atlantis")).available, "Lagos area fees: Ajah ₦5,000, free at ₦50,000, unknown area refused");
   ok(quotes.find(([st]) => st === "Kano")[1] === false, "switched-off state (Kano) is not available");
   for (const st of ["Ogun", "Oyo", "Rivers", "FCT (Abuja)"]) {
     const r = await (await api({ ...base, phone: "0803555" + String(ipn).padStart(4, "0"), state: st, deliveryFee: 9000 })).json();
     const o = q1("SELECT delivery_fee, total, delivery_payment_status d FROM orders WHERE number=?", r.number);
-    ok(o && o.delivery_fee === 0 && o.total === 12500 && o.d === "not_required", `${st}: order created with free delivery`);
+    const want = { Ogun: 5500, Oyo: 5500, Rivers: 6500, "FCT (Abuja)": 5000 }[st];
+    ok(o && o.delivery_fee === want && o.total === 10000 + want && o.d === "not_required", `${st}: order total includes the ₦${want} delivery fee`);
+  }
+  {
+    const big = await (await api({ ...base, phone: "08035550050", state: "Ogun", items: [{ variantId: base.items[0].variantId, qty: 5 }] })).json();
+    const ob = q1("SELECT subtotal, delivery_fee, total FROM orders WHERE number=?", big.number);
+    ok(ob.subtotal === 50000 && ob.delivery_fee === 0 && ob.total === 50000, "₦50,000 order to Ogun: free delivery stored");
   }
   const r2 = await api({ ...base, state: "Kano" }); ok(r2.status() === 400 && /not delivering/i.test(JSON.stringify(await r2.json())), "API rejects a switched-off state");
   const r4 = await api({ ...base, state: "Atlantis" }); ok(r4.status() === 400, "API rejects a location outside Nigeria");
@@ -284,11 +334,12 @@ await step("admin order lifecycle", async () => {
   const o = q1("SELECT * FROM orders WHERE number=?", orderNumber);
   await admin.goto(B + `/admin/orders/${o.id}`);
   const txt = await admin.locator("main").innerText();
-  ok(/Delivery charge\s*FREE \(₦0\)/.test(txt) && !/Confirm delivery payment/.test(txt) && !/Set the delivery fee/.test(txt), "admin order shows free delivery and no delivery payment step");
+  ok(/Delivery charge\s*₦3,000 · Included in order payment/.test(txt) && !/Confirm delivery payment/.test(txt) && !/Set the delivery fee/.test(txt), "admin order shows delivery included in the payment and no separate delivery payment step");
+  ok(/Customer total\s*₦33,000/.test(txt), "admin order shows the ₦33,000 total to verify");
   await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm product payment')").first());
   ok(q1("SELECT payment_status s FROM orders WHERE id=?", o.id).s === "paid", "admin confirms product payment");
   await admin.selectOption('select[name="status"]', "processing"); await go(admin, admin.locator("button:has-text('Update status')").first());
-  ok(q1("SELECT fulfilment_status f FROM orders WHERE id=?", o.id).f === "processing", "paid free-delivery order can be processed straight away");
+  ok(q1("SELECT fulfilment_status f FROM orders WHERE id=?", o.id).f === "processing", "paid order can be processed straight away");
   await admin.fill('input[name="courier"]', "GIG Logistics"); await admin.fill('input[name="tracking"]', "GIG-TEST-123");
   await go(admin, admin.locator("button:has-text('Save dispatch details')"));
   const od = q1("SELECT courier, tracking_reference, dispatched_at FROM orders WHERE id=?", o.id);
@@ -319,6 +370,21 @@ await step("historical delivery fee order", async () => {
   ok(/delivery payment/i.test(await flash(admin)), "pre-policy order still needs its delivery payment before processing");
   const o = q1("SELECT delivery_fee, total FROM orders WHERE id=?", id);
   ok(o.delivery_fee === 4000 && o.total === 24000, "historical totals unchanged");
+  // An older unpaid order without a fee: the fee the admin sets is added to the one total the customer pays the store.
+  const d2 = new DatabaseSync(path.join(DATA, "store.db"));
+  d2.prepare(`INSERT INTO orders (number,access_token,customer_name,phone,whatsapp,email,state,city,address,instructions,subtotal,delivery_fee,total,
+    delivery_payment_status,bank_snapshot,tracking,payment_status,created_at) VALUES ('WX200102-OLD02','legacytoken000000000000000000002','Legacy Two','2348031113333','','','Lagos','Berger','2 Legacy Road, Berger','',12500,NULL,NULL,'not_set','{}','{}','pending_payment','2026-11-18 10:00:00')`).run();
+  const id2 = Number(d2.prepare("SELECT id FROM orders WHERE number='WX200102-OLD02'").get().id); d2.close();
+  await admin.goto(B + `/admin/orders/${id2}`);
+  await admin.fill('input[name="fee"]', "3500"); await go(admin, admin.locator("button:has-text('Save fee')"));
+  const o2 = q1("SELECT delivery_fee, total, delivery_fee_source s, delivery_payment_status d FROM orders WHERE id=?", id2);
+  ok(o2.delivery_fee === 3500 && o2.total === 16000 && o2.s === "included_in_order" && o2.d === "not_required", "admin-set delivery fee is included in the order total (₦12,500 + ₦3,500 = ₦16,000), no separate delivery payment");
+  const page2 = await (await anon.request.get(B + "/order/WX200102-OLD02?t=legacytoken000000000000000000002")).text();
+  ok(page2.includes("₦16,000") && page2.includes("Delivery included in your payment") && !page2.includes("paid separately"), "customer sees one total including delivery");
+  await admin.goto(B + `/admin/orders/${id2}`);
+  await admin.fill("#bundledfee", "4000"); await go(admin, admin.locator("button:has-text('Update fee')"));
+  ok(q1("SELECT total FROM orders WHERE id=?", id2).total === 16500, "admin can correct the included delivery fee before payment is confirmed");
+  await admin.selectOption('select[name="status"]', "cancelled"); await go(admin, admin.locator("button:has-text('Update status')").first());
 });
 
 // ---------------- coupons ----------------
@@ -362,7 +428,7 @@ await step("coupons", async () => {
   ok(/already in use/.test(await make({ code: "SAVE10", discountType: "fixed", discountValue: 5, active: true })), "duplicate coupon code rejected");
   ok(q1("SELECT code FROM coupons WHERE code='SAVE10'") && !q1("SELECT 1 x FROM coupons WHERE code='BAD150'"), "coupons stored; invalid one not stored");
   const v = async (code, items = [{ variantId: coffee(), qty: 2 }]) => (await postJ("/api/coupons/validate", { code, phone: "08030000001", items })).json();
-  const r1 = await v("save10"); ok(r1.discountAmount === 2500 && r1.code === "SAVE10", "SAVE10 gives 10% of ₦25,000 = ₦2,500");
+  const r1 = await v("save10"); ok(r1.discountAmount === 2000 && r1.code === "SAVE10", "SAVE10 gives 10% of ₦20,000 = ₦2,000");
   ok(/at least ₦100,000/.test((await v("FIXED500")).error || ""), "minimum order enforced");
   ok(/expired/.test((await v("OLDCODE")).error || ""), "expired coupon rejected");
   ok(/not available/.test((await v("OFFCODE")).error || ""), "inactive coupon rejected");
@@ -374,8 +440,8 @@ await step("coupons", async () => {
   // order with coupon; browser-supplied discount fields are ignored
   const r = await (await postJ("/api/orders", { ...orderBase("08030000001"), couponCode: "save10", discountAmount: 20000, subtotal: 1, total: 1 })).json();
   const o = q1("SELECT * FROM orders WHERE number=?", r.number);
-  ok(o && o.subtotal === 22500 && o.discount_amount === 2500 && o.coupon_code === "SAVE10" && o.delivery_fee === 0 && o.total === 22500, "order: ₦25,000 − ₦2,500 = ₦22,500 total; delivery free; manipulated fields ignored");
-  ok(q1("SELECT SUM(discount_amount) s FROM order_items WHERE order_id=?", o.id).s === 2500, "discount allocated to order lines");
+  ok(o && o.subtotal === 18000 && o.discount_amount === 2000 && o.coupon_code === "SAVE10" && o.delivery_fee === 3000 && o.total === 21000, "order: ₦20,000 − ₦2,000 + ₦3,000 delivery = ₦21,000; manipulated fields ignored");
+  ok(q1("SELECT SUM(discount_amount) s FROM order_items WHERE order_id=?", o.id).s === 2000, "discount allocated to order lines");
   ok(q1("SELECT COUNT(*) c FROM coupon_redemptions WHERE order_id=?", o.id).c === 1, "redemption recorded");
   const again = await postJ("/api/orders", { ...orderBase("0803 000 0001"), couponCode: "SAVE10" });
   ok(again.status() === 400 && /already used/.test(JSON.stringify(await again.json())), "per-customer limit enforced on the same phone");
@@ -386,7 +452,17 @@ await step("coupons", async () => {
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
   await p.fill("#couponCode", "save10"); await p.getByRole("button", { name: "Apply" }).click(); await p.locator("text=Coupon applied").waitFor();
   const aside = await p.locator("aside").innerText();
-  ok(/Coupon \(SAVE10\)\s*−₦1,250/.test(aside) && /Total to pay\s*₦11,250/.test(aside), "checkout shows coupon discount and reduced product payment");
+  ok(/Coupon \(SAVE10\)\s*−₦1,000/.test(aside) && /Total to pay\s*₦9,000/.test(aside), "checkout shows coupon discount and reduced product payment");
+  // Regression: a coupon that takes the order below ₦50,000 brings the delivery fee back, on screen and in the stored order.
+  await p.evaluate(() => { const c = JSON.parse(localStorage.getItem("wx_cart_v2") || "[]"); c[0].qty = 5; localStorage.setItem("wx_cart_v2", JSON.stringify(c)); });
+  await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
+  await p.selectOption("#state", "Ogun"); await p.waitForTimeout(700);
+  ok(/Delivery fee \(Ogun\)\s*FREE/.test(await p.locator("aside").innerText()), "₦50,000 cart to Ogun shows free delivery");
+  await p.fill("#couponCode", "save10"); await p.getByRole("button", { name: "Apply" }).click(); await p.locator("text=Coupon applied").waitFor(); await p.waitForTimeout(300);
+  const a2 = await p.locator("aside").innerText();
+  ok(/Delivery fee \(Ogun\)\s*₦5,500/.test(a2) && /Total to pay\s*₦50,500/.test(a2), "after a ₦5,000 coupon the cart is ₦45,000, so Ogun delivery ₦5,500 applies: total ₦50,500");
+  const rr = await (await postJ("/api/orders", { name: "Threshold Tester", phone: "08030000077", city: "Abeokuta", address: "9 Threshold Road, Abeokuta", state: "Ogun", couponCode: "save10", items: [{ variantId: coffee(), qty: 5 }] })).json();
+  ok(q1("SELECT total FROM orders WHERE number=?", rr.number)?.total === 50500, "stored order matches the checkout total (₦50,500)");
   await p.screenshot({ path: path.join(SHOTS, "mobile-checkout-coupon.png"), fullPage: true });
   await ctx.close();
   order.couponOrder = r.number;
@@ -438,7 +514,7 @@ await step("reviews", async () => {
 
 // ---------------- notifications, activity, analytics ----------------
 await step("notifications and activity", async () => {
-  const orders = q1("SELECT COUNT(*) c FROM orders WHERE number != 'WX200101-OLD01'").c;
+  const orders = q1("SELECT COUNT(*) c FROM orders WHERE number NOT LIKE 'WX2001%'").c;
   ok(q1("SELECT COUNT(*) c FROM admin_notifications WHERE type='new_order'").c === orders, "one new-order notification per order (duplicate submission did not add another)");
   ok(q1("SELECT COUNT(*) c FROM admin_notifications WHERE type='payment_update'").c >= 1, "payment confirmation notification created");
   // low stock: threshold 2 on the oil, stock 5 now
@@ -468,16 +544,17 @@ await step("notifications and activity", async () => {
 await step("analytics", async () => {
   const today = new Date().toISOString().slice(0, 10);
   const exp = q1(`SELECT COALESCE(SUM(subtotal),0) r, COUNT(*) n, COALESCE(SUM(discount_amount),0) disc FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled' AND created_at >= '${today}'`);
-  const del = q1(`SELECT COALESCE(SUM(delivery_fee),0) d FROM orders WHERE delivery_payment_status='paid' AND fulfilment_status!='cancelled' AND created_at >= '${today}'`).d;
+  const del = q1(`SELECT COALESCE(SUM(delivery_fee),0) d FROM orders WHERE (delivery_payment_status='paid' OR (delivery_fee_source='included_in_order' AND payment_status='paid')) AND fulfilment_status!='cancelled' AND created_at >= '${today}'`).d;
   await admin.goto(B + `/admin/analytics?from=${today}&to=${today}`);
   const t = await admin.locator("main, body").first().innerText();
   const n = (x) => "₦" + Number(x).toLocaleString("en-NG");
-  ok(new RegExp(`Confirmed product revenue\\s+${n(exp.r)}`).test(t) && exp.r === 22500, `confirmed revenue counts only paid, non-cancelled orders (${n(exp.r)})`);
+  ok(new RegExp(`Confirmed product revenue\\s+${n(exp.r)}`).test(t) && exp.r === 18000, `confirmed revenue counts only paid, non-cancelled orders (${n(exp.r)})`);
   ok(new RegExp(`Delivery fees collected\\s+${n(del)}`).test(t), `delivery collections shown separately (${n(del)})`);
   ok(new RegExp(`Coupon discounts given\\s+${n(exp.disc)}`).test(t), "discounts reported");
   ok(t.includes("Lagos") && t.includes("Trim Down Coffee"), "state and product reports list paid sales");
   const csv = await (await admin.request.get(B + `/api/admin/analytics/export?from=${today}&to=${today}`)).text();
-  ok(csv.includes('"Confirmed product revenue","","22500"'), "analytics CSV export");
+  ok(csv.includes('"Confirmed product revenue","","18000"'), "analytics CSV export");
+  ok(del === 3000, "delivery included in a confirmed payment counts as collected (₦3,000)");
   ok((await anon.request.get(B + "/api/admin/analytics/export")).status() === 403, "analytics export blocked when signed out");
   await admin.goto(B + "/admin/analytics?from=2020-01-01&to=2020-01-02");
   ok(/Confirmed product revenue\s+₦0\b/.test(await admin.locator("body").innerText()), "date filter excludes orders outside the range");
@@ -487,7 +564,7 @@ await step("coupon release on cancel", async () => {
   const o = q1("SELECT * FROM orders WHERE number=?", order.couponOrder);
   const setStatus = async (st) => { await admin.goto(B + `/admin/orders/${o.id}`); await admin.selectOption('select[name="status"]', st); await go(admin, admin.locator("button:has-text('Update status')").first()); };
   await setStatus("cancelled");
-  ok(q1("SELECT COUNT(*) c FROM coupon_redemptions WHERE order_id=?", o.id).c === 0 && q1("SELECT discount_amount d FROM orders WHERE id=?", o.id).d === 2500, "cancelling frees the coupon use and keeps the discount on record");
+  ok(q1("SELECT COUNT(*) c FROM coupon_redemptions WHERE order_id=?", o.id).c === 0 && q1("SELECT discount_amount d FROM orders WHERE id=?", o.id).d === 2000, "cancelling frees the coupon use and keeps the discount on record");
   await setStatus("unfulfilled");
   ok(q1("SELECT COUNT(*) c FROM coupon_redemptions WHERE order_id=?", o.id).c === 1, "reopening counts the coupon use again");
   const spoof = await anon.request.post(B + "/api/orders", { headers: { origin: B, "x-forwarded-for": "1.2.3.4, 10.9.9.9" }, data: {} });
@@ -575,7 +652,7 @@ await step("invoices", async () => {
   ok(q1("SELECT number FROM invoices WHERE order_id=?", o.id)?.number?.startsWith("INV-"), "invoice created automatically when payment was verified");
   await admin.goto(B + `/admin/invoices/${o.id}`);
   const t = await admin.locator("article").innerText();
-  ok(/PAID/.test(t) && /Products subtotal\s*₦25,000/.test(t) && /Discount \(SAVE10\)\s*−₦2,500/.test(t) && /Delivery\s*FREE \(₦0\)/.test(t) && /Total\s*₦22,500/.test(t) && /Balance due\s*₦0/.test(t), "invoice amounts match the order (₦25,000 − ₦2,500, free delivery, ₦22,500 paid)");
+  ok(/PAID/.test(t) && /Products subtotal\s*₦20,000/.test(t) && /Discount \(SAVE10\)\s*−₦2,000/.test(t) && /Delivery\s*₦3,000/.test(t) && /Total\s*₦21,000/.test(t) && /Balance due\s*₦0/.test(t) && !/payable separately/.test(t), "invoice amounts match the order (₦20,000 − ₦2,000 + ₦3,000 delivery = ₦21,000 paid)");
   const unpaid = q1("SELECT * FROM orders WHERE payment_status='pending_payment' AND fulfilment_status!='cancelled' ORDER BY id DESC LIMIT 1");
   await admin.goto(B + `/admin/invoices/${unpaid.id}`);
   const u = await admin.locator("article").innerText();
@@ -645,7 +722,7 @@ await step("banners and homepage", async () => {
   await admin.goto(B + "/admin/banners");
   await go(admin, admin.locator("tr", { hasText: "Test promo banner" }).locator("button:has-text('Switch on')"));
   const home = await (await anon.request.get(B + "/")).text();
-  ok(home.includes("Test promo banner") && home.includes('href="/category/combos"') && home.includes("FREE DELIVERY ACROSS NIGERIA"), "live banner shows on the homepage; free delivery message still shown");
+  ok(home.includes("Test promo banner") && home.includes('href="/category/combos"') && home.includes("₦50,000"), "live banner shows on the homepage; free delivery threshold message shown");
   await go(admin, admin.locator("tr", { hasText: "Test promo banner" }).locator("button:has-text('Duplicate')"));
   ok(q1("SELECT COUNT(*) c FROM banners").c === 2 && q1("SELECT active FROM banners WHERE heading LIKE '%(copy)'").active === 0, "duplicate creates a switched-off copy");
   await admin.goto(B + `/admin/banners/${bn.id}`);
