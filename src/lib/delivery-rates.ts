@@ -1,14 +1,15 @@
 export type DeliveryOption = { fee: number; eta: string; note?: string };
 
 const STATE_FEES: Record<string, number> = {
-  Niger: 0, Benue: 0, Nasarawa: 0, Plateau: 0, Kogi: 0, Jigawa: 0,
-  Kaduna: 0, Katsina: 0, Zamfara: 0, Sokoto: 0, Kebbi: 0, Gombe: 0,
-  Bauchi: 0, Yobe: 0, Kano: 0, Borno: 0, Adamawa: 0, Taraba: 0,
+  Niger: 7500, Benue: 7500, Nasarawa: 7500, Plateau: 7500, Kogi: 7500,
+  Jigawa: 7500, Kaduna: 7500, Katsina: 7500, Zamfara: 7500, Sokoto: 7500,
+  Kebbi: 7500, Gombe: 7500, Bauchi: 7500, Yobe: 7500, Kano: 7500,
+  Borno: 7500, Adamawa: 7500, Taraba: 7500,
   FCT: 5000, Abuja: 5000, "FCT (Abuja)": 5000,
-  Ogun: 0, Oyo: 0, Ekiti: 0, Osun: 0, Ondo: 0,
-  Enugu: 0, Imo: 0, Anambra: 0, Ebonyi: 0, Abia: 0, Rivers: 0,
-  Bayelsa: 0, Delta: 0, Edo: 0, Kwara: 0,
-  "Cross River": 0, "Akwa Ibom": 0,
+  Ogun: 5500, Oyo: 5500, Ekiti: 5500, Osun: 5500, Ondo: 5500,
+  Enugu: 6500, Imo: 6500, Anambra: 6500, Ebonyi: 6500, Abia: 6500,
+  Rivers: 6500, Bayelsa: 6500, Delta: 6500, Edo: 6500, Kwara: 6500,
+  "Cross River": 7500, "Akwa Ibom": 7500,
 };
 
 const LAGOS: Record<string, DeliveryOption> = {};
