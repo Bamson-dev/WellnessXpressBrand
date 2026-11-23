@@ -17,6 +17,7 @@ on:
 permissions:
   contents: read
   issues: write
+  id-token: write   # keyless Google auth (Workload Identity Federation); no service-account key is stored anywhere
 
 jobs:
   monitor:
@@ -47,13 +48,25 @@ jobs:
           elif [ -n "$existing" ]; then
             gh issue close "$existing" --comment "Resolved: the latest crawl found no CRITICAL or HIGH issues."
           fi
+      - name: Google auth (read-only Search Console and GA4)
+        id: gauth
+        if: github.event.schedule == '41 6 * * 1' || inputs.weekly
+        continue-on-error: true
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/99617839419/locations/global/workloadIdentityPools/github/providers/wellnessxpressbrand-repo
+          service_account: wellnessx-seo-reporter@wellnessxpress-seo.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/webmasters.readonly,https://www.googleapis.com/auth/analytics.readonly
+          create_credentials_file: false
       - name: Weekly report
         if: github.event.schedule == '41 6 * * 1' || inputs.weekly
         env:
           GH_TOKEN: ${{ github.token }}
+          GOOGLE_ACCESS_TOKEN: ${{ steps.gauth.outputs.access_token }}
           GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
-          GSC_SITE: ${{ vars.GSC_SITE }}
-          GA4_PROPERTY_ID: ${{ vars.GA4_PROPERTY_ID }}
+          GSC_SITE: ${{ vars.GSC_SITE || 'https://wellnessxpressbrand.com/' }}
+          GA4_PROPERTY_ID: ${{ vars.GA4_PROPERTY_ID || '565611531' }}
         run: |
           node scripts/seo-weekly-report.mjs --audit audit.json --out report.md
           gh issue create --title "Weekly SEO report $(date -u +%Y-%m-%d)" --body-file report.md

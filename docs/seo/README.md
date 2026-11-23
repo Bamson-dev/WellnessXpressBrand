@@ -37,14 +37,14 @@ Never write ingredients, benefits, results, reviews or testimonials that are not
 - MEDIUM: missing titles or descriptions, broken internal links, orphan pages, slow pages.
 - LOW: long titles, short descriptions, missing og:image.
 
-## Connecting the reporting data (one-time)
+## Reporting data connection (done 23 November 2026)
 
-The weekly report includes Search Console and GA4 numbers once these exist in the GitHub repository settings:
+The weekly report reads Search Console and GA4 with no stored key:
 
-1. Google Cloud: create a service account, enable the Search Console API and the Google Analytics Data API, download a JSON key.
-2. Search Console: add the service account email as a user (Restricted is enough) on the wellnessxpressbrand.com property.
-3. GA4: add the service account email as a Viewer on the WellnessXpressBrand property.
-4. GitHub, Settings, Secrets and variables, Actions: secret `GOOGLE_SA_JSON` (the key), variables `GSC_SITE` (`https://wellnessxpressbrand.com/` or `sc-domain:wellnessxpressbrand.com`) and `GA4_PROPERTY_ID` (numbers only).
+- Google Cloud project `wellnessxpress-seo` (number 99617839419) has the Search Console API and Analytics Data API enabled.
+- Service account `wellnessx-seo-reporter@wellnessxpress-seo.iam.gserviceaccount.com` has no project roles and no keys. It is a Restricted user on the Search Console property `https://wellnessxpressbrand.com/` and a Viewer on GA4 property 565611531.
+- Workload Identity Federation pool `github`, provider `wellnessxpressbrand-repo`, only accepts GitHub tokens from `Bamson-dev/WellnessXpressBrand`. The workflow exchanges its GitHub token for a one-hour, read-only Google token (`google-github-actions/auth`).
+- To revoke: delete the provider or remove the service account from Search Console and GA4.
 
 ## Bank transfer purchases in GA4
 
