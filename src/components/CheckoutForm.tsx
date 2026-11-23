@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { contentId, useCart } from "@/components/CartProvider";
 import { useQuote } from "@/components/useQuote";
 import { track } from "@/components/pixel";
-import { IconBank, IconShield, IconTruck } from "@/components/icons";
+import { IconBank, IconShield } from "@/components/icons";
 import { naira } from "@/lib/site";
 import { LAGOS_DELIVERY_AREAS, FREE_DELIVERY_THRESHOLD, chargedDeliveryFee } from "@/lib/delivery-rates";
 
@@ -177,7 +177,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
                 ) : (
                   <input id="city" name="city" value={city} onChange={(e) => { setCity(e.target.value); setErrors((er) => ({ ...er, city: "" })); }} className={`field ${errors.city ? "border-red-500" : ""}`} autoComplete="address-level2" aria-invalid={!!errors.city} placeholder="Enter city or local area" />
                 )}
-                {errors.city ? <p className="err">{errors.city}</p> : state === "Lagos" ? <p className="hint">Choose your area to calculate the delivery fee.</p> : null}
+                {errors.city ? <p className="err">{errors.city}</p> : null}
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="address" className="label">{ "Full delivery address" }</label>
@@ -229,13 +229,12 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="font-semibold">{quote ? naira(quote.subtotal) : "…"}</dd></div>
               {activeCoupon ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Coupon ({activeCoupon.code})</dt><dd className="font-semibold text-brand-800">−{naira(discount)}</dd></div> : null}
               <div className="flex justify-between gap-4"><dt className="text-neutral-600">{`Delivery fee${state ? ` (${state})` : ""}`}</dt>
-                <dd className="text-right">{state === "Lagos" && !city ? <span className="text-neutral-600">Choose your area</span> : deliveryBlocked ? <span className="font-medium text-red-700">Fee unavailable</span> : deliveryFee === 0 ? <span className="font-bold text-brand-700">FREE</span> : deliveryFee != null ? naira(deliveryFee) : <span className="text-neutral-600">Choose your state</span>}</dd>
+                <dd className="text-right">{state === "Lagos" && !city ? <span className="text-neutral-600">Not calculated yet</span> : deliveryBlocked ? <span className="font-medium text-red-700">Fee unavailable</span> : deliveryFee === 0 ? <span className="font-bold text-brand-700">FREE</span> : deliveryFee != null ? naira(deliveryFee) : <span className="text-neutral-600">Not calculated yet</span>}</dd>
               </div>
               {delivery?.available && delivery.eta ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery time</dt><dd className="text-right">{delivery.eta}</dd></div> : null}
               <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">{deliveryFee != null && !deliveryBlocked ? "Total to pay" : "Total before delivery"}</dt><dd className="font-bold">{quote ? naira(orderTotal) : "…"}</dd></div>
-              {quote && (deliveryFee == null || deliveryBlocked) ? <p className="text-sm text-neutral-600">{state === "Lagos" ? "Choose your Lagos area to add the delivery fee." : "Choose your state to add the delivery fee. The fee depends on your location."}</p> : null}
+              {quote && deliveryFee == null && !deliveryBlocked ? <p className="text-sm text-neutral-600">Delivery fee is calculated based on your location.</p> : null}
             </dl>
-            <p className="mt-4 flex gap-2 rounded-xl bg-brand-50 p-3 text-sm text-brand-900"><IconTruck className="h-5 w-5 shrink-0" /> <span><strong>Free delivery on orders of ₦50,000 or more after discounts. Abuja (FCT) delivery is always ₦5,000.</strong> You pay one total, products and delivery, to WellnessXpressBrand.</span></p>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
             <button type="submit" disabled={busy || !quote || unavailable.length > 0 || missing > 0 || deliveryBlocked} className="btn btn-primary mt-5 w-full text-base">
