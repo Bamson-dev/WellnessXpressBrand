@@ -815,7 +815,17 @@ await step("search visibility: sitemap, feed, llms.txt, guides, structured data"
   ok(sm.status === 200 && /\/guides\/bloating-or-belly-fat<\/loc>/.test(sm.body) && /<image:loc>/.test(sm.body) && !/\/(admin|checkout|cart|api)\b/.test(sm.body.replace(/<image:loc>[^<]*<\/image:loc>/g, "")), "sitemap lists published guides and product images, and no private pages");
   const feed = await txt("/feeds/google-merchant.xml");
   const items = (feed.body.match(/<item>/g) || []).length;
-  ok(feed.status === 200 && /xml/.test(feed.type) && items > 0 && (feed.body.match(/<g:price>\d+\.\d{2} NGN<\/g:price>/g) || []).length === items && !/\.svg</.test(feed.body) && !/<g:gtin>/.test(feed.body), "Merchant feed: one priced item per option, raster images only, no invented GTINs");
+  ok(feed.status === 200 && /xml/.test(feed.type) && items > 0 && (feed.body.match(/^\s+<g:price>\d+\.\d{2} NGN<\/g:price>/gm) || []).length === items && !/\.svg</.test(feed.body) && !/<g:gtin>/.test(feed.body), "Merchant feed: one priced item per option, raster images only, no invented GTINs");
+  // Shipping in the feed follows checkout rules: per-state fee below ₦50,000, free from ₦50,000 except Abuja ₦5,000, Lagos at its highest area fee.
+  const itemsXml = feed.body.split("<item>").slice(1);
+  const cheap = itemsXml.find((x) => /<g:price>([0-9]+)\.00 NGN/.exec(x) && Number(/<g:price>([0-9]+)\.00 NGN/.exec(x)[1]) < 50000);
+  const dear = itemsXml.find((x) => /<g:price>([0-9]+)\.00 NGN/.exec(x) && Number(/<g:price>([0-9]+)\.00 NGN/.exec(x)[1]) >= 50000);
+  const fee = (x, r) => { const m = new RegExp(`<g:region>${r}</g:region><g:service>[^<]*</g:service><g:price>([0-9.]+) NGN`).exec(x || ""); return m ? Number(m[1]) : null; };
+  ok(cheap && fee(cheap, "OG") === 5500 && fee(cheap, "FC") === 5000 && fee(cheap, "LA") === 6000 && fee(cheap, "RI") === 6500 && /<g:max_transit_time>3<\/g:max_transit_time>/.test(cheap), "feed shipping below ₦50,000: state fees, Lagos highest area fee, 1–3 day transit");
+  ok(!dear || (fee(dear, "OG") === 0 && fee(dear, "FC") === 5000 && fee(dear, "LA") === 0), "feed shipping from ₦50,000: free except Abuja ₦5,000");
+  const ret = await txt("/returns");
+  ok(/within 5 days of receiving your order/.test(ret.body) && /order number/.test(ret.body), "returns page states the 5-day return window and what to include");
+  ok(/1 to 3 working days/.test((await txt("/shipping")).body) && /1 to 3 working days/.test((await txt("/faq")).body), "shipping page and FAQ state 1 to 3 working days");
   const llms = await txt("/llms.txt");
   ok(llms.status === 200 && /^# WellnessXpressBrand/.test(llms.body) && /\/product\//.test(llms.body) && !/\/admin/.test(llms.body), "llms.txt lists public pages only");
   const g = await txt("/guides/bloating-or-belly-fat");
