@@ -929,6 +929,18 @@ await step("cart page metadata and tracking ids", async () => {
   ok(/content_ids: \[contentId\(l\)\]/.test(src("src/components/CartProvider.tsx")) && /content_ids: lines\.map\(contentId\)/.test(src("src/components/CheckoutForm.tsx")), "AddToCart and InitiateCheckout use the SKU as content_ids, like ViewContent and Purchase");
 });
 
+await step("admin on a 320 px phone", async () => {
+  const ctx = await browser.newContext({ viewport: { width: 320, height: 800 }, storageState: await admin.context().storageState() });
+  const pg = await ctx.newPage();
+  const pid = q1("SELECT id FROM products WHERE slug='tummy-balance'").id, oid = q1("SELECT id FROM orders ORDER BY id LIMIT 1").id;
+  for (const u of ["/admin", `/admin/products/${pid}`, `/admin/orders/${oid}`, "/admin/media", "/admin/settings"]) {
+    await pg.goto(B + u, { waitUntil: "networkidle" });
+    const sw = await pg.evaluate(() => document.documentElement.scrollWidth);
+    ok(sw <= 321, `admin ${u.replace(/\d+$/, ":id")} fits a 320 px screen (${sw})`);
+  }
+  await ctx.close();
+});
+
 await browser.close();
 fs.writeFileSync(path.join(SHOTS, "results.txt"), results.map((r) => r.join("  ")).join("\n") + `\n\n${pass} passed, ${fail} failed\n`);
 console.log(`\n${pass} passed, ${fail} failed`);
