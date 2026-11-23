@@ -809,6 +809,27 @@ await step("seo", async () => {
   ok(q1("SELECT COUNT(*) c FROM admin_activity WHERE action LIKE 'seo_%' OR action LIKE 'redirect_%'").c >= 5, "SEO changes logged");
 });
 
+await step("search visibility: sitemap, feed, llms.txt, guides, structured data", async () => {
+  const txt = async (u) => { const r = await anon.request.get(B + u); return { status: r.status(), body: await r.text(), type: r.headers()["content-type"] || "" }; };
+  const sm = await txt("/sitemap.xml");
+  ok(sm.status === 200 && /\/guides\/bloating-or-belly-fat<\/loc>/.test(sm.body) && /<image:loc>/.test(sm.body) && !/\/(admin|checkout|cart|api)\b/.test(sm.body.replace(/<image:loc>[^<]*<\/image:loc>/g, "")), "sitemap lists published guides and product images, and no private pages");
+  const feed = await txt("/feeds/google-merchant.xml");
+  const items = (feed.body.match(/<item>/g) || []).length;
+  ok(feed.status === 200 && /xml/.test(feed.type) && items > 0 && (feed.body.match(/<g:price>\d+\.\d{2} NGN<\/g:price>/g) || []).length === items && !/\.svg</.test(feed.body) && !/<g:gtin>/.test(feed.body), "Merchant feed: one priced item per option, raster images only, no invented GTINs");
+  const llms = await txt("/llms.txt");
+  ok(llms.status === 200 && /^# WellnessXpressBrand/.test(llms.body) && /\/product\//.test(llms.body) && !/\/admin/.test(llms.body), "llms.txt lists public pages only");
+  const g = await txt("/guides/bloating-or-belly-fat");
+  ok(g.status === 200 && /"@type":"Article"/.test(g.body) && /nhs\.uk/.test(g.body) && /<link rel="canonical" href="https:\/\/wellnessxpressbrand\.com\/guides\/bloating-or-belly-fat"/.test(g.body), "guide page renders with Article schema, sources and canonical");
+  ok((await txt("/guides/not-a-guide")).status === 404, "unknown guide returns 404");
+  const prod = await txt("/product/appetite-suppressant");
+  const ld = [...prod.body.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1])).flat().find((x) => x["@type"] === "Product");
+  ok(Array.isArray(ld?.offers) && ld.offers.length >= 1 && ld.offers.every((o) => o["@type"] === "Offer" && o.price > 0 && o.priceCurrency === "NGN"), "Product schema has one priced Offer per option");
+  ok(/Helpful guides/.test(prod.body), "product page links to guides");
+  const home = await txt("/");
+  ok(/name="google-site-verification"/.test(home.body) && /"@type":"WebSite"/.test(home.body), "homepage has Search Console verification and WebSite schema");
+  ok(!/googletagmanager\.com\/gtag/.test(home.body), "GA4 tag stays off when GA_MEASUREMENT_ID is not set");
+});
+
 await step("meta tracking regression", async () => {
   const src = (f) => fs.readFileSync(path.join(FIX, "..", f), "utf8");
   ok(/track\("InitiateCheckout"/.test(src("src/components/CheckoutForm.tsx")) && /track\("AddToCart"/.test(src("src/components/CartProvider.tsx")) && /track\("PageView"\)/.test(src("src/components/pixel.tsx")), "Pixel event names unchanged (PageView, AddToCart, InitiateCheckout)");
