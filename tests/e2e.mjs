@@ -265,7 +265,7 @@ await step("checkout", async () => {
   const pick = async (st) => { await p.selectOption("#state", st); await p.waitForTimeout(700); return p.locator("aside").innerText(); };
   let t = await pick("Lagos");
   ok(!(await p.getByRole("button", { name: "Place order" }).isEnabled()) && (await p.locator("select#city").count()) === 1, "Lagos: an area must be chosen before the fee is known");
-  ok(/Delivery fee \(Lagos\)\s*Not calculated yet/.test(t) && /Total before delivery/.test(t) && !t.includes("Fee unavailable"), "Lagos without an area shows the fee as not calculated yet, not \"Fee unavailable\"");
+  ok(/Delivery fee \(Lagos\)\s*Not calculated yet/.test(t) && /Total before delivery/.test(t) && t.includes("Delivery fee is calculated based on your location.") && !t.includes("Fee unavailable"), "Lagos without an area shows the fee as not calculated yet, not \"Fee unavailable\"");
   await p.selectOption("#city", "ikeja"); await p.waitForTimeout(700); t = await p.locator("aside").innerText();
   ok(/Delivery fee \(Lagos\)\s*₦3,000/.test(t) && /Total to pay\s*₦33,000/.test(t) && t.includes("1–3 working days"), "Lagos (Ikeja): ₦3,000 delivery, delivery time shown");
   ok(/Total to pay\s*₦33,000/.test(t), "total to pay = products ₦30,000 + delivery ₦3,000");
