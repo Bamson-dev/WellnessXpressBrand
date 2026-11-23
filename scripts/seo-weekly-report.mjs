@@ -27,6 +27,8 @@ const fmt = (n, d = 0) => (n == null || Number.isNaN(n) ? "n/a" : Number(n).toLo
 const pct = (a, b) => (!b ? "" : ` (${a >= b ? "+" : ""}${Math.round(((a - b) / b) * 100)}%)`);
 
 async function googleToken(scope) {
+  // Preferred: a short-lived token from GitHub's keyless Workload Identity Federation (scopes set in the workflow).
+  if (process.env.GOOGLE_ACCESS_TOKEN) return process.env.GOOGLE_ACCESS_TOKEN;
   const raw = process.env.GOOGLE_SA_JSON;
   if (!raw) return null;
   const sa = JSON.parse(raw);
@@ -59,7 +61,7 @@ const actions = [];
 say("## Search performance (Google Search Console)", "");
 try {
   const token = process.env.GSC_SITE ? await googleToken("https://www.googleapis.com/auth/webmasters.readonly") : null;
-  if (!token) { say("Not connected yet. Add the GOOGLE_SA_JSON secret and the GSC_SITE variable to the repository to include clicks, impressions and queries.", ""); }
+  if (!token) { say("Not connected: Google authentication failed or is not configured (see docs/seo/README.md).", ""); }
   else {
     const range = (a, b) => ({ startDate: day(a), endDate: day(b) });
     const [cur] = await gsc(token, { ...range(start, end), dimensions: [] }).then((r) => r.length ? r : [{}]);
@@ -87,7 +89,7 @@ try {
 say("## Organic traffic and revenue (Google Analytics 4)", "");
 try {
   const token = process.env.GA4_PROPERTY_ID ? await googleToken("https://www.googleapis.com/auth/analytics.readonly") : null;
-  if (!token) say("Not connected yet. Add GOOGLE_SA_JSON and GA4_PROPERTY_ID to include organic sessions, add-to-carts, checkouts and confirmed purchases.", "");
+  if (!token) say("Not connected: Google authentication failed or is not configured (see docs/seo/README.md).", "");
   else {
     const organic = { filter: { fieldName: "sessionDefaultChannelGroup", stringFilter: { value: "Organic Search" } } };
     const rows = await ga4(token, { dateRanges: [{ startDate: day(start), endDate: day(end) }], metrics: [{ name: "sessions" }, { name: "addToCarts" }, { name: "checkouts" }, { name: "ecommercePurchases" }, { name: "purchaseRevenue" }], dimensionFilter: organic });
