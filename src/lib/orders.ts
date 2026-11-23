@@ -189,7 +189,7 @@ export function logEvent(orderId: number, actor: string, action: string, note = 
   const number = String(db().prepare("SELECT number FROM orders WHERE id = ?").get(orderId)?.number || `Order ${orderId}`);
   if (actor !== "customer" && actor !== "system") logAdminActivity(actor, action, "order", orderId, `${number} ${note}`.trim());
   // One notification per submission (keyed on the event row), so a resubmission after a failed payment is not lost.
-  if (action === "payment_confirmation_submitted") notifyAdmin(`order:${orderId}:payment-submitted:${ev.lastInsertRowid}`, "payment_update", "Product payment confirmation submitted", number, `/admin/orders/${orderId}`);
+  if (action === "payment_confirmation_submitted") notifyAdmin(`order:${orderId}:payment-submitted:${ev.lastInsertRowid}`, "payment_update", "Payment confirmation submitted", number, `/admin/orders/${orderId}`);
   if (action === "delivery_payment_confirmation_submitted") notifyAdmin(`order:${orderId}:delivery-payment-submitted:${ev.lastInsertRowid}`, "payment_update", "Delivery payment confirmation submitted", number, `/admin/orders/${orderId}`);
 }
 
