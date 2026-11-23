@@ -737,6 +737,7 @@ await step("banners and homepage", async () => {
   await go(admin, admin.locator("tr", { hasText: "Test promo banner" }).locator("button:has-text('Switch on')"));
   const home = await (await anon.request.get(B + "/")).text();
   ok(home.includes("Test promo banner") && home.includes('href="/category/combos"') && home.includes("₦50,000"), "live banner shows on the homepage; free delivery threshold message shown");
+  ok(home.includes("Enjoy free delivery on orders of ₦50,000 or more. Orders below ₦50,000 attract delivery fees based on your location.") && !/Abuja delivery stays|except Abuja/.test(home), "homepage delivery promo uses the approved copy with no Abuja price mention");
   await go(admin, admin.locator("tr", { hasText: "Test promo banner" }).locator("button:has-text('Duplicate')"));
   ok(q1("SELECT COUNT(*) c FROM banners").c === 2 && q1("SELECT active FROM banners WHERE heading LIKE '%(copy)'").active === 0, "duplicate creates a switched-off copy");
   await admin.goto(B + `/admin/banners/${bn.id}`);
