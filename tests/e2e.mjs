@@ -265,10 +265,11 @@ await step("checkout", async () => {
   const pick = async (st) => { await p.selectOption("#state", st); await p.waitForTimeout(700); return p.locator("aside").innerText(); };
   let t = await pick("Lagos");
   ok(!(await p.getByRole("button", { name: "Place order" }).isEnabled()) && (await p.locator("select#city").count()) === 1, "Lagos: an area must be chosen before the fee is known");
-  ok(/Delivery fee \(Lagos\)\s*Choose your area/.test(t) && /Total before delivery/.test(t), "Lagos without an area asks for the area, not \"Fee unavailable\"");
+  ok(/Delivery fee \(Lagos\)\s*Not calculated yet/.test(t) && /Total before delivery/.test(t) && !t.includes("Fee unavailable"), "Lagos without an area shows the fee as not calculated yet, not \"Fee unavailable\"");
   await p.selectOption("#city", "ikeja"); await p.waitForTimeout(700); t = await p.locator("aside").innerText();
   ok(/Delivery fee \(Lagos\)\s*₦3,000/.test(t) && /Total to pay\s*₦33,000/.test(t) && t.includes("1–3 working days"), "Lagos (Ikeja): ₦3,000 delivery, delivery time shown");
   ok(/Total to pay\s*₦33,000/.test(t), "total to pay = products ₦30,000 + delivery ₦3,000");
+  ok(!t.includes("Delivery fee is calculated based on your location") && !/Free delivery on orders|Abuja \(FCT\)|You pay one total/.test(t), "once the fee shows, checkout drops the explanatory line and shows no policy banner");
   await p.selectOption("#city", "lekki phase 1"); await p.waitForTimeout(700);
   ok(/Total to pay\s*₦34,000/.test(await p.locator("aside").innerText()), "Lagos (Lekki Phase 1): ₦4,000 delivery");
   for (const [st, fee, tot] of [["Ogun", "5,500", "35,500"], ["Oyo", "5,500", "35,500"], ["Rivers", "6,500", "36,500"], ["FCT (Abuja)", "5,000", "35,000"], ["Zamfara", "7,500", "37,500"]]) {
@@ -465,7 +466,7 @@ await step("coupons", async () => {
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
   await p.fill("#couponCode", "save10"); await p.getByRole("button", { name: "Apply" }).click(); await p.locator("text=Coupon applied").waitFor();
   const aside = await p.locator("aside").innerText();
-  ok(/Coupon \(SAVE10\)\s*−₦1,000/.test(aside) && /Total before delivery\s*₦9,000/.test(aside) && /Delivery fee\s*Choose your state/.test(aside) && /Choose your state to add the delivery fee/.test(aside), "before a state is chosen, checkout shows the total before delivery and asks for the state");
+  ok(/Coupon \(SAVE10\)\s*−₦1,000/.test(aside) && /Total before delivery\s*₦9,000/.test(aside) && /Delivery fee\s*Not calculated yet/.test(aside) && /Delivery fee is calculated based on your location\./.test(aside) && !/50,000|Abuja|one total/.test(aside), "before a state is chosen, checkout shows the total before delivery, the fee as not calculated yet, and no policy text");
   // Regression: a coupon that takes the order below ₦50,000 brings the delivery fee back, on screen and in the stored order.
   await p.evaluate(() => { const c = JSON.parse(localStorage.getItem("wx_cart_v2") || "[]"); c[0].qty = 5; localStorage.setItem("wx_cart_v2", JSON.stringify(c)); });
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
