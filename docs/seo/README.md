@@ -9,8 +9,8 @@ How search visibility is built, measured and maintained. Start here.
 | Sitemap | `src/app/sitemap.ts` → /sitemap.xml | Built from the live catalogue on each request. Products (with images), categories, published guides and policy pages. Hidden and noindex items drop out automatically |
 | robots.txt | `src/app/robots.ts` | Allows public pages, blocks /api/, /admin, /checkout, /cart, /order/. Lists the sitemap |
 | Structured data | store layout, product, category, FAQ and guide pages | Organization (with social profiles), WebSite, Product with one Offer per size, BreadcrumbList, FAQPage, Article |
-| Merchant feed | `src/app/feeds/google-merchant.xml/route.ts` | Google Merchant Center feed, one item per size, live prices and stock, no invented GTINs |
-| llms.txt | `src/app/llms.txt/route.ts` | Short factual site map for AI assistants. Complements, never replaces, robots.txt and the sitemap |
+| Merchant feed | `src/app/feeds/google-merchant/route.ts` (served at /feeds/google-merchant.xml through a rewrite in next.config.mjs) | Google Merchant Center feed, one item per size, live prices and stock, no invented GTINs |
+| llms.txt | `src/app/llms-txt/route.ts` (served at /llms.txt through a rewrite) | Short factual site map for AI assistants. Complements, never replaces, robots.txt and the sitemap |
 | Search Console verification | `GOOGLE_SITE_VERIFICATION` in `src/lib/site.ts` (env override) | HTML tag on every store page |
 | Bing verification | `BING_SITE_VERIFICATION` env (optional) | Only needed if Bing import from Search Console is not used |
 | GA4 | `GA_MEASUREMENT_ID` runtime env in Coolify; `src/components/Analytics.tsx`, `src/components/ga.tsx` | Page views plus view_item, add_to_cart, remove_from_cart, view_cart, begin_checkout, purchase |
