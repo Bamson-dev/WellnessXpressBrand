@@ -233,7 +233,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
               </div>
               {delivery?.available && delivery.eta ? <div className="flex justify-between gap-4"><dt className="text-neutral-600">Delivery time</dt><dd className="text-right">{delivery.eta}</dd></div> : null}
               <div className="flex justify-between border-t border-neutral-200 pt-3 text-lg"><dt className="font-bold">{deliveryFee != null && !deliveryBlocked ? "Total to pay" : "Total before delivery"}</dt><dd className="font-bold">{quote ? naira(orderTotal) : "…"}</dd></div>
-              {quote && deliveryFee == null && !deliveryBlocked ? <p className="text-sm text-neutral-600">Delivery fee is calculated based on your location.</p> : null}
+              {quote && ((state === "Lagos" && !city) || (deliveryFee == null && !deliveryBlocked)) ? <p className="text-sm text-neutral-600">Delivery fee is calculated based on your location.</p> : null}
             </dl>
             {unavailable.length || missing > 0 ? <p className="err mt-3">Some items are not available. <Link href="/cart" className="underline">Update your cart</Link>.</p> : null}
             {fail ? <p className="err mt-3" role="alert">{fail}</p> : null}
