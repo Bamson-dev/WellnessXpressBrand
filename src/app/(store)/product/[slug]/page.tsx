@@ -24,7 +24,9 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
   if (!p) return { title: "Product not found", robots: { index: false } };
   const r = priceRange(p);
   const title = p.seoTitle || p.name;
-  const desc = p.metaDescription || `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Free delivery on orders of ₦50,000 or more. Order from WellnessXpressBrand.`.trim();
+  const fallback = `${p.shortDescription} ${r ? (r.min === r.max ? naira(r.min) : `From ${naira(r.min)}`) : ""}. Free delivery on orders of ₦50,000 or more. Order from WellnessXpressBrand.`.trim();
+  // Search results show about 160 characters; cut a long generated description at a word boundary.
+  const desc = p.metaDescription || (fallback.length <= 160 ? fallback : fallback.slice(0, 157).replace(/\s+\S*$/, "") + "…");
   const image = p.ogImage || p.images[0];
   return {
     title, description: desc, alternates: { canonical: `/product/${p.slug}` },

@@ -97,7 +97,7 @@ export default async function OrderDetail(
                   <input type="hidden" name="id" value={o.id} />
                   <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="confirm" value="yes" className="mt-0.5 h-4 w-4 accent-brand-700" required /> I have seen {naira(bundledDelivery ? (o.total ?? o.subtotal) : o.subtotal)} arrive for this order.</label>
                   <input name="note" placeholder="Note (optional), for example bank reference" className="admin-input" />
-                  <button className="admin-btn">Confirm product payment</button>
+                  <button className="admin-btn">{bundledDelivery || freeDelivery ? "Confirm order payment" : "Confirm product payment"}</button>
                 </AdminForm>
                 {o.payment_status !== "payment_failed" ? (
                   <AdminForm action={markPaymentFailedAction} className="mt-3 flex flex-wrap gap-2 border-t border-neutral-200 pt-3">
@@ -120,7 +120,7 @@ export default async function OrderDetail(
             <section className="rounded-xl border border-brand-100 bg-brand-50 p-5">
               <h2 className="text-lg">Delivery</h2>
               <dl className="mt-2 text-sm">
-                {row("Delivery charge", bundledDelivery ? <span>{naira(o.delivery_fee || 0)} · Included in order payment</span> : <span className="font-bold text-brand-700">FREE (₦0)</span>)}
+                {row("Delivery charge", bundledDelivery ? <span>{o.delivery_fee ? naira(o.delivery_fee) : "FREE (₦0)"} · Included in order payment</span> : <span className="font-bold text-brand-700">FREE (₦0)</span>)}
                 {row("Delivery payment", bundledDelivery ? "Included in customer payment. Settle delivery agent yourself." : "Not required")}
                 {row("Estimated time", String(o.delivery_eta || "Not set"))}
                 {row("Dispatched", o.dispatched_at ? String(o.dispatched_at) : "Not yet")}

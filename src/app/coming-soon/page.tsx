@@ -205,7 +205,7 @@ export default function ComingSoon() {
       </footer>
 
       <Motion />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org).replace(/</g, "\\u003c") }} />
     </div>
   );
 }

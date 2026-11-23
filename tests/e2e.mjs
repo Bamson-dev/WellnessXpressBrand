@@ -141,6 +141,11 @@ await step("media", async () => {
   const med = q1("SELECT * FROM media WHERE builtin=0 ORDER BY id DESC LIMIT 1");
   ok(!!med && fs.existsSync(path.join(DATA, med.file)) && med.file.startsWith("product-images/"), "upload stored under DATA_DIR/product-images");
   ok((await anon.request.get(B + med.url)).status() === 200, "uploaded image served publicly");
+  {
+    const cc = (await anon.request.get(B + med.url)).headers()["cache-control"] || "";
+    const gone = await anon.request.get(B + "/product-images/000000000000000000000000.png");
+    ok(/s-maxage=300/.test(cc) && !/immutable/.test(cc) && gone.status() === 404 && /no-store/.test(gone.headers()["cache-control"] || ""), `image cache lets shared caches drop deleted images within 5 minutes (${cc})`);
+  }
   const card = admin.locator("article", { has: admin.locator(`img[src="${med.url}"]`) });
   await card.locator('input[name="alt"]').fill("Test pouch on a light background"); await go(admin, card.locator("button:has-text('Save text')"));
   ok(q1("SELECT alt FROM media WHERE id=?", med.id).alt === "Test pouch on a light background", "alt text saved");
@@ -148,6 +153,10 @@ await step("media", async () => {
   await admin.goto(B + `/admin/products/${tb}`);
   await admin.selectOption('select[name="mediaId"]', String(med.id)); await go(admin, admin.locator("form:has(select[name=mediaId]) button").first());
   ok(JSON.parse(q1("SELECT images FROM products WHERE id=?", tb).images).includes(med.url), "image added to gallery from library");
+  {
+    const html = await (await anon.request.get(B + "/product/tummy-balance")).text();
+    ok(html.includes("/_next/image?url=%2Fproduct-images%2F") && !/<img[^>]*\ssrc="\/product-images\//.test(html), "uploaded product photos go through the image optimizer, not as the raw upload");
+  }
   await admin.goto(B + "/admin/media");
   const card2 = admin.locator("article", { has: admin.locator(`img[src="${med.url}"]`) });
   ok((await card2.locator("text=Delete").count()) === 0, "image in use cannot be deleted");
@@ -256,8 +265,9 @@ await step("checkout", async () => {
   const pick = async (st) => { await p.selectOption("#state", st); await p.waitForTimeout(700); return p.locator("aside").innerText(); };
   let t = await pick("Lagos");
   ok(!(await p.getByRole("button", { name: "Place order" }).isEnabled()) && (await p.locator("select#city").count()) === 1, "Lagos: an area must be chosen before the fee is known");
+  ok(/Delivery fee \(Lagos\)\s*Choose your area/.test(t) && /Total before delivery/.test(t), "Lagos without an area asks for the area, not \"Fee unavailable\"");
   await p.selectOption("#city", "ikeja"); await p.waitForTimeout(700); t = await p.locator("aside").innerText();
-  ok(/Delivery fee \(Lagos\)\s*₦3,000/.test(t) && /Total delivery charge\s*₦3,000/.test(t) && t.includes("1–3 working days"), "Lagos (Ikeja): ₦3,000 delivery, delivery time shown");
+  ok(/Delivery fee \(Lagos\)\s*₦3,000/.test(t) && /Total to pay\s*₦33,000/.test(t) && t.includes("1–3 working days"), "Lagos (Ikeja): ₦3,000 delivery, delivery time shown");
   ok(/Total to pay\s*₦33,000/.test(t), "total to pay = products ₦30,000 + delivery ₦3,000");
   await p.selectOption("#city", "lekki phase 1"); await p.waitForTimeout(700);
   ok(/Total to pay\s*₦34,000/.test(await p.locator("aside").innerText()), "Lagos (Lekki Phase 1): ₦4,000 delivery");
@@ -339,7 +349,7 @@ await step("admin order lifecycle", async () => {
   const txt = await admin.locator("main").innerText();
   ok(/Delivery charge\s*₦3,000 · Included in order payment/.test(txt) && !/Confirm delivery payment/.test(txt) && !/Set the delivery fee/.test(txt), "admin order shows delivery included in the payment and no separate delivery payment step");
   ok(/Customer total\s*₦33,000/.test(txt), "admin order shows the ₦33,000 total to verify");
-  await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm product payment')").first());
+  await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm order payment')").first());
   ok(q1("SELECT payment_status s FROM orders WHERE id=?", o.id).s === "paid", "admin confirms product payment");
   await admin.selectOption('select[name="status"]', "processing"); await go(admin, admin.locator("button:has-text('Update status')").first());
   ok(q1("SELECT fulfilment_status f FROM orders WHERE id=?", o.id).f === "processing", "paid order can be processed straight away");
@@ -455,7 +465,7 @@ await step("coupons", async () => {
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
   await p.fill("#couponCode", "save10"); await p.getByRole("button", { name: "Apply" }).click(); await p.locator("text=Coupon applied").waitFor();
   const aside = await p.locator("aside").innerText();
-  ok(/Coupon \(SAVE10\)\s*−₦1,000/.test(aside) && /Total to pay\s*₦9,000/.test(aside), "checkout shows coupon discount and reduced product payment");
+  ok(/Coupon \(SAVE10\)\s*−₦1,000/.test(aside) && /Total before delivery\s*₦9,000/.test(aside) && /Delivery fee\s*Choose your state/.test(aside) && /Choose your state to add the delivery fee/.test(aside), "before a state is chosen, checkout shows the total before delivery and asks for the state");
   // Regression: a coupon that takes the order below ₦50,000 brings the delivery fee back, on screen and in the stored order.
   await p.evaluate(() => { const c = JSON.parse(localStorage.getItem("wx_cart_v2") || "[]"); c[0].qty = 5; localStorage.setItem("wx_cart_v2", JSON.stringify(c)); });
   await p.goto(B + "/checkout"); await p.waitForLoadState("networkidle");
@@ -483,7 +493,7 @@ await step("reviews", async () => {
   const review = (data) => postJ("/api/reviews", { product: "trim-down-coffee", orderNumber: num, phone: "08030000001", rating: 5, review: "Arrived quickly and well packed.", ...data });
   ok((await review({})).status() === 400, "review rejected while the order is unpaid");
   await admin.goto(B + `/admin/orders/${o.id}`);
-  await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm product payment')").first());
+  await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm order payment')").first());
   ok(q1("SELECT payment_status s FROM orders WHERE id=?", o.id).s === "paid", "admin confirms product payment for the coupon order");
   ok(q1("SELECT purchase_event_status s FROM orders WHERE id=?", o.id).s === "not_configured", "Purchase event path runs only on confirmation (no Meta credentials in tests)");
   {
@@ -492,7 +502,7 @@ await step("reviews", async () => {
     await admin.goto(B + `/admin/orders/${o.id}`);
     await admin.fill("input[name=note][required]", "Testing undo"); await go(admin, admin.locator("button:has-text('Undo payment confirmation')"));
     ok(q1("SELECT payment_status s FROM orders WHERE id=?", o.id).s === "awaiting_verification", "owner can undo a payment confirmation");
-    await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm product payment')").first());
+    await admin.check("input[name=confirm][value=yes] >> nth=0"); await go(admin, admin.locator("button:has-text('Confirm order payment')").first());
     const pe = q1("SELECT payment_status s, purchase_event_status st, purchase_event_id id FROM orders WHERE id=?", o.id);
     ok(pe.s === "paid" && pe.st === "sent" && pe.id === "pu_1700000000000_keepme01", "re-confirming a payment keeps the original Purchase event (no duplicate)");
   }
@@ -593,7 +603,7 @@ await step("staff permissions and customer privacy", async () => {
   ok(/Orders/.test(nav) && !/Coupons|Analytics|Activity log|Invoices|Customers|Staff|SEO|Banners/.test(nav), "staff sees only permitted menu items");
   const target = q1("SELECT id FROM orders WHERE payment_status != 'paid' AND fulfilment_status != 'cancelled' ORDER BY id DESC LIMIT 1").id;
   await sp.goto(B + `/admin/orders/${target}`);
-  ok(sp.url().endsWith(`/admin/orders/${target}`) && (await sp.locator("text=Confirm product payment").count()) === 0 && (await sp.locator("text=Payment verification permission").count()) === 1, "staff with Orders can view an order but sees no payment verification");
+  ok(sp.url().endsWith(`/admin/orders/${target}`) && (await sp.locator("text=Confirm order payment").count()) === 0 && (await sp.locator("text=Payment verification permission").count()) === 1, "staff with Orders can view an order but sees no payment verification");
   // Forge the owner's payment form directly against the server as staff: the server must refuse.
   await admin.goto(B + `/admin/orders/${target}`);
   // Capture the owner's real server-action request (and stop it), then replay it with the staff session.
@@ -603,8 +613,8 @@ await step("staff permissions and customer privacy", async () => {
     if (req.method() === "POST" && req.headers()["next-action"]) { captured = { headers: req.headers(), body: req.postDataBuffer() }; return route.abort(); }
     return route.continue();
   });
-  await admin.locator("form:has(button:has-text('Confirm product payment')) input[name=confirm]").check();
-  await admin.locator("button:has-text('Confirm product payment')").click();
+  await admin.locator("form:has(button:has-text('Confirm order payment')) input[name=confirm]").check();
+  await admin.locator("button:has-text('Confirm order payment')").click();
   await admin.waitForTimeout(1500); await admin.unroute(`**/admin/orders/${target}`);
   ok(captured && q1("SELECT payment_status s FROM orders WHERE id=?", target).s !== "paid", "owner request captured without being sent");
   const forged = await sp.request.post(B + `/admin/orders/${target}`, { headers: { origin: B, "next-action": captured.headers["next-action"], "content-type": captured.headers["content-type"], accept: "text/x-component" }, data: captured.body, maxRedirects: 0 });
@@ -616,7 +626,7 @@ await step("staff permissions and customer privacy", async () => {
   await go(admin, card.locator("button:has-text('Save permissions')"));
   ok(JSON.parse(q1("SELECT permissions p FROM users WHERE email='staff@test.local'").p).sort().join() === "dashboard,invoices,orders,payments", "owner grants permissions");
   await sp.goto(B + "/admin/invoices"); ok(sp.url().endsWith("/admin/invoices"), "granted permission works on the next page load");
-  await sp.goto(B + `/admin/orders/${target}`); ok((await sp.locator("text=Confirm product payment").count()) === 1, "staff now sees payment verification");
+  await sp.goto(B + `/admin/orders/${target}`); ok((await sp.locator("text=Confirm order payment").count()) === 1, "staff now sees payment verification");
   await sp.request.post(B + `/admin/orders/${target}`, { headers: { origin: B, "next-action": captured.headers["next-action"], "content-type": captured.headers["content-type"], accept: "text/x-component" }, data: captured.body, maxRedirects: 0 });
   ok(q1("SELECT payment_status s, verified_by v FROM orders WHERE id=?", target).v === "staff@test.local", "the same replayed request works once the permission is granted (control check)");
   ok((await sp.request.get(B + `/api/admin/invoices/${target}`)).headers()["content-type"] === "application/pdf", "staff with Invoices can download a PDF");

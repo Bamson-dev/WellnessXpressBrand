@@ -44,7 +44,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         <Footer />
         <FloatingWhatsApp whatsapp={c.whatsapp} />
       </CartProvider>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org).replace(/</g, "\\u003c") }} />
       <Analytics />
       <StorePixel />
     </div>
