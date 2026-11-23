@@ -27,6 +27,13 @@ const nextConfig = {
   compress: true,
   images: { formats: ["image/webp"] },
   experimental: { serverActions: { bodySizeLimit: "8mb", allowedOrigins: ["wellnessxpressbrand.com", "www.wellnessxpressbrand.com"] } },
+  // Public file-style URLs served by route handlers (folder names avoid dots so they stay easy to edit on GitHub).
+  async rewrites() {
+    return [
+      { source: "/feeds/google-merchant.xml", destination: "/feeds/google-merchant" },
+      { source: "/llms.txt", destination: "/llms-txt" },
+    ];
+  },
   async headers() {
     const deploymentHeader = process.env.NEXT_DEPLOYMENT_ID
       ? [{ key: "x-nextjs-deployment-id", value: process.env.NEXT_DEPLOYMENT_ID }]
