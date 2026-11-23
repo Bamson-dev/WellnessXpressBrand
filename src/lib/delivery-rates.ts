@@ -52,3 +52,7 @@ export function getLagosDelivery(area: string): DeliveryOption | null {
   return LAGOS[area.trim().toLowerCase()] ?? null;
 }
 export const LAGOS_DELIVERY_AREAS = Object.keys(LAGOS).sort((a, b) => a.localeCompare(b));
+/** Highest Lagos area fee. Used where only a state-level price can be shown (Google Merchant Center), so Lagos is never under-quoted. */
+export const LAGOS_MAX_FEE = Math.max(...Object.values(LAGOS).map((o) => o.fee));
+/** Standard delivery time promised to customers when a location has no specific delivery time set. */
+export const DEFAULT_DELIVERY_ETA = "1–3 working days";

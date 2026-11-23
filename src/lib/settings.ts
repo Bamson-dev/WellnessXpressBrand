@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { NIGERIAN_STATES } from "@/lib/site";
 import { DEFAULT_SETTINGS } from "@/lib/seed";
-import { getStateDeliveryFee, getLagosDelivery, chargedDeliveryFee, FREE_DELIVERY_THRESHOLD } from "@/lib/delivery-rates";
+import { getStateDeliveryFee, getLagosDelivery, chargedDeliveryFee, FREE_DELIVERY_THRESHOLD, DEFAULT_DELIVERY_ETA } from "@/lib/delivery-rates";
 
 export type Bank = { bank: string; accountName: string; accountNumber: string };
 export type Contact = { whatsapp: string; email: string; instagram: string; facebook: string; tiktok: string };
@@ -57,7 +57,7 @@ export function deliveryQuote(state: string, discountedSubtotal = 0, city = ""):
   if (discountedSubtotal < FREE_DELIVERY_THRESHOLD && !feeConfigured) return { ...none, message: `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` };
   const baseFee = configuredRate != null ? configuredRate : r?.fee == null ? null : Number(r.fee);
   const fee = chargedDeliveryFee(state, baseFee, discountedSubtotal);
-  return { state, available: fee != null, free: fee === 0, fee, baseFee, eta: areaRate?.eta || (r ? String(r.eta || "") : ""), note: areaRate?.note || (r ? String(r.note || "") : ""), message: fee == null ? `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` : "" };
+  return { state, available: fee != null, free: fee === 0, fee, baseFee, eta: areaRate?.eta || (r && String(r.eta || "").trim() ? String(r.eta) : DEFAULT_DELIVERY_ETA), note: areaRate?.note || (r ? String(r.note || "") : ""), message: fee == null ? `Delivery fee for ${state} has not been configured yet. Contact us on WhatsApp.` : "" };
 }
 
 export function deliveryFeeFor(state: string): number | null {
