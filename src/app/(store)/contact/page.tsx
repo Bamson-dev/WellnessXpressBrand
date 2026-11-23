@@ -4,7 +4,7 @@ import { getContact } from "@/lib/settings";
 import { displayPhone } from "@/lib/site";
 import { IconWhatsApp } from "@/components/icons";
 
-export const metadata: Metadata = { title: "Contact", description: "Contact WellnessXpressBrand by WhatsApp or email.", alternates: { canonical: "/contact" } };
+export const metadata: Metadata = { title: "Contact", description: "Contact WellnessXpressBrand on WhatsApp or by email for product questions, order help and delivery updates across Nigeria.", alternates: { canonical: "/contact" } };
 
 export default function Contact() {
   const c = getContact();
