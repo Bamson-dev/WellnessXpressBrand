@@ -5,6 +5,7 @@ import { getOrderForCustomer, orderItems } from "@/lib/orders";
 import { bankIsComplete, getBank, getContact } from "@/lib/settings";
 import { naira, orderStatusLabel } from "@/lib/site";
 import CopyButton from "@/components/CopyButton";
+import { GaPurchase } from "@/components/ga";
 import PaymentConfirmForm from "@/components/PaymentConfirmForm";
 import { IconCheck, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 
@@ -42,8 +43,13 @@ export default async function OrderPage(
   const help = wa(`Hello WellnessXpressBrand. I need help with my order ${o.number}.`);
   const receiptWa = wa(`Hello WellnessXpressBrand. I have paid for order ${o.number}. Amount: ${naira(o.total ?? (o.subtotal + (o.delivery_fee || 0)))}. Here is my payment receipt.`);
 
+  // GA4 purchase: only for orders the store has confirmed as paid (never pending or awaiting verification).
+  const confirmedPurchase = o.payment_status === "paid" && o.fulfilment_status !== "cancelled";
+  const gaTotal = o.total ?? (o.subtotal + (bundledDelivery ? (o.delivery_fee || 0) : 0));
+
   return (
     <div className="container-x max-w-4xl py-8 sm:py-12">
+      {confirmedPurchase ? <GaPurchase transactionId={o.number} params={{ currency: "NGN", value: gaTotal, shipping: bundledDelivery ? (o.delivery_fee || 0) : 0, coupon: String(o.coupon_code || "") || undefined, items: items.map((it) => ({ item_id: it.sku || String(it.variant_id), item_name: it.name, item_variant: it.variant_label, item_brand: "WellnessXpress", price: it.unit_price, quantity: it.qty })) }} /> : null}
       {isNew ? (
         <div className="flex items-start gap-3 rounded-2xl border border-brand-100 bg-brand-50 p-4 sm:p-5">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-700 text-white"><IconCheck className="h-6 w-6" /></span>
