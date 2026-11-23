@@ -126,7 +126,7 @@ try {
   say(fresh.length ? fresh.slice(0, 30).map((f) => `- ${f}`).join("\n") : "No new suggestions this week.", "", "Autocomplete shows what people type, not how many searches each term gets.", "");
 } catch (e) { say(`Suggestions unavailable: ${e.message}`, ""); }
 
-say("## Next actions", "", ...(actions.length ? actions.slice(0, 6).map((a, i) => `${i + 1}. ${a}`) : ["1. No urgent issues. Publish the next guide from docs/seo/content-calendar.md and review new suggestions above."]), "");
+say("## Next actions", "", ...(actions.length ? actions.slice(0, 6).map((a, i) => `${i + 1}. ${a}`) : ["1. No urgent issues. Publish the next guide from docs/seo/topic-clusters.md and review new suggestions above."]), "");
 const md = out.join("\n");
 if (opt("--out")) fs.writeFileSync(opt("--out"), md + "\n");
 console.log(md);
