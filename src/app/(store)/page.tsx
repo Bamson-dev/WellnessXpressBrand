@@ -76,7 +76,7 @@ export default async function Home(props: { searchParams: Promise<{ bannerPrevie
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-brand-700 text-white"><IconTruck className="h-6 w-6" /></span>
             <div>
               <h2 id="free-delivery-h" className="text-xl font-extrabold text-brand-900 sm:text-2xl">{FREE_DELIVERY_TITLE}</h2>
-              <p className="mt-1 text-neutral-700">Enjoy free nationwide delivery when you shop for ₦50,000 or more. Ordering below ₦50,000? Your delivery fee depends on your location.</p>
+              <p className="mt-1 text-neutral-700">Free delivery when you shop for ₦50,000 or more (Abuja delivery stays ₦5,000). Ordering below ₦50,000? Your delivery fee depends on your location.</p>
             </div>
           </div>
           <Link href="/shop" className="btn btn-primary shrink-0 px-8">Shop now</Link>
