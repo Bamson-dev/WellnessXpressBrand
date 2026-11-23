@@ -14,7 +14,7 @@ export default async function Settings(props: { searchParams: Promise<{ msg?: st
   const L = ({ children }: { children: React.ReactNode }) => <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">{children}</span>;
   const content: [string, string, number][] = [
     ["announcement", "Announcement bar (top of every page)", 2], ["about", "About Us page", 8], ["productNotice", "Important product information", 5],
-    ["shippingPolicy", "Shipping and Delivery page", 8], ["returnsPolicy", "Returns and Refunds page", 6], ["privacyPolicy", "Privacy Policy page", 8], ["termsPolicy", "Terms and Conditions page", 8],
+    ["shippingPolicy", "Shipping and Delivery (not shown: the live page text is fixed in code to match Google Merchant Center)", 8], ["returnsPolicy", "Returns and Refunds (not shown: the live page text is fixed in code to match Google Merchant Center)", 6], ["privacyPolicy", "Privacy Policy page", 8], ["termsPolicy", "Terms and Conditions page", 8],
   ];
   return (
     <div>
