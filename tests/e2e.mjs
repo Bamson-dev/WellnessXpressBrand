@@ -816,13 +816,14 @@ await step("search visibility: sitemap, feed, llms.txt, guides, structured data"
   const feed = await txt("/feeds/google-merchant.xml");
   const items = (feed.body.match(/<item>/g) || []).length;
   ok(feed.status === 200 && /xml/.test(feed.type) && items > 0 && (feed.body.match(/^\s+<g:price>\d+\.\d{2} NGN<\/g:price>/gm) || []).length === items && !/\.svg</.test(feed.body) && !/<g:gtin>/.test(feed.body), "Merchant feed: one priced item per option, raster images only, no invented GTINs");
-  // Shipping in the feed follows checkout rules: per-state fee below ₦50,000, free from ₦50,000 except Abuja ₦5,000, Lagos at its highest area fee.
+  // Feed shipping: Google takes only a Nigeria-wide price, so each item carries the highest fee any customer could pay for it
+  // (₦7,500 below ₦50,000; ₦5,000 from ₦50,000 because Abuja always pays ₦5,000). No state-level region entries (Google rejects them for Nigeria).
   const itemsXml = feed.body.split("<item>").slice(1);
-  const cheap = itemsXml.find((x) => /<g:price>([0-9]+)\.00 NGN/.exec(x) && Number(/<g:price>([0-9]+)\.00 NGN/.exec(x)[1]) < 50000);
-  const dear = itemsXml.find((x) => /<g:price>([0-9]+)\.00 NGN/.exec(x) && Number(/<g:price>([0-9]+)\.00 NGN/.exec(x)[1]) >= 50000);
-  const fee = (x, r) => { const m = new RegExp(`<g:region>${r}</g:region><g:service>[^<]*</g:service><g:price>([0-9.]+) NGN`).exec(x || ""); return m ? Number(m[1]) : null; };
-  ok(cheap && fee(cheap, "OG") === 5500 && fee(cheap, "FC") === 5000 && fee(cheap, "LA") === 6000 && fee(cheap, "RI") === 6500 && /<g:max_transit_time>3<\/g:max_transit_time>/.test(cheap), "feed shipping below ₦50,000: state fees, Lagos highest area fee, 1–3 day transit");
-  ok(!dear || (fee(dear, "OG") === 0 && fee(dear, "FC") === 5000 && fee(dear, "LA") === 0), "feed shipping from ₦50,000: free except Abuja ₦5,000");
+  const priceOf = (x) => Number((/<g:sale_price>([0-9]+)\.00 NGN/.exec(x) || /^\s+<g:price>([0-9]+)\.00 NGN/m.exec(x) || [])[1]);
+  const shipOf = (x) => { const m = /<g:shipping><g:country>NG<\/g:country><g:service>[^<]*<\/g:service><g:price>([0-9.]+) NGN/.exec(x); return m ? Number(m[1]) : null; };
+  const badShip = itemsXml.filter((x) => shipOf(x) !== (priceOf(x) >= 50000 ? 5000 : 7500)).map((x) => `${(/<g:id>([^<]+)/.exec(x) || [])[1]} ${priceOf(x)} ${shipOf(x)}`);
+  if (badShip.length) console.log("   feed shipping mismatches:", badShip.join("; "));
+  ok(itemsXml.length > 0 && badShip.length === 0 && !/<g:region>/.test(feed.body) && /<g:min_handling_time>0<\/g:min_handling_time><g:max_handling_time>0<\/g:max_handling_time><g:min_transit_time>1<\/g:min_transit_time><g:max_transit_time>[3-9]<\/g:max_transit_time>/.test(feed.body), "feed shipping: Nigeria-wide upper-bound fee per item, delivery time from the longest state ETA, no region entries");
   const ret = await txt("/returns");
   ok(/within 5 days of receiving your order/.test(ret.body) && /order number/.test(ret.body), "returns page states the 5-day return window and what to include");
   ok(/1 to 3 working days/.test((await txt("/shipping")).body) && /1 to 3 working days/.test((await txt("/faq")).body), "shipping page and FAQ state 1 to 3 working days");
