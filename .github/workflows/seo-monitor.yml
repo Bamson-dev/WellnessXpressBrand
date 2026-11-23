@@ -1,0 +1,68 @@
+name: SEO monitor
+
+# Daily live crawl of wellnessxpressbrand.com, plus a weekly report every Monday.
+# Read-only against the website. Opens or updates one GitHub issue when a CRITICAL or HIGH problem appears,
+# closes it when the site is healthy again, and posts the weekly report as an issue.
+on:
+  schedule:
+    - cron: "17 5 * * *"   # daily 06:17 Lagos time
+    - cron: "41 6 * * 1"   # Monday 07:41 Lagos time: weekly report
+  workflow_dispatch:
+    inputs:
+      weekly:
+        description: "Also build the weekly report"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Live SEO audit
+        id: audit
+        run: |
+          set +e
+          node scripts/seo-audit.mjs https://wellnessxpressbrand.com --json audit.json --md audit.md
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+      - name: Content quality gate
+        run: node --experimental-strip-types scripts/content-check.mjs --live https://wellnessxpressbrand.com
+      - name: Alert on CRITICAL or HIGH issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="SEO monitor: action needed"
+          existing=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ "${{ steps.audit.outputs.code }}" = "2" ]; then
+            if [ -n "$existing" ]; then gh issue comment "$existing" --body-file audit.md
+            else gh issue create --title "$title" --body-file audit.md; fi
+          elif [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "Resolved: the latest crawl found no CRITICAL or HIGH issues."
+          fi
+      - name: Weekly report
+        if: github.event.schedule == '41 6 * * 1' || inputs.weekly
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+          GSC_SITE: ${{ vars.GSC_SITE }}
+          GA4_PROPERTY_ID: ${{ vars.GA4_PROPERTY_ID }}
+        run: |
+          node scripts/seo-weekly-report.mjs --audit audit.json --out report.md
+          gh issue create --title "Weekly SEO report $(date -u +%Y-%m-%d)" --body-file report.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seo-audit
+          path: |
+            audit.json
+            audit.md
+            report.md
+          if-no-files-found: ignore

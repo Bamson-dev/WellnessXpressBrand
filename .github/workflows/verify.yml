@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run typecheck
+      - name: Guide quality gate
+        run: node --experimental-strip-types scripts/content-check.mjs
       - name: Production build
         env:
           NEXT_DEPLOYMENT_ID: ci-${{ github.sha }}
