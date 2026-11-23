@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getSetting } from "@/lib/settings";
 
-export const metadata: Metadata = { title: "About Us", description: "About WellnessXpressBrand.", alternates: { canonical: "/about" } };
+export const metadata: Metadata = { title: "About Us", description: "WellnessXpressBrand sells WellnessXpress weight-management and wellness products online in Nigeria, with bank transfer payment and delivery nationwide.", alternates: { canonical: "/about" } };
 
 export default function About() {
   const text = getSetting<string>("about");

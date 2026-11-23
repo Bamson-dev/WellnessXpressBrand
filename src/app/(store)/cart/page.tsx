@@ -6,12 +6,21 @@ import { useQuote } from "@/components/useQuote";
 import QtyControl from "@/components/QtyControl";
 import { IconCart, IconTrash } from "@/components/icons";
 import { naira } from "@/lib/site";
+import { useEffect, useRef } from "react";
+import { gaEvent, gaItem } from "@/components/ga";
 
 export default function CartPage() {
   const { lines, setQty, remove, ready } = useCart();
   const { quote } = useQuote();
   const q = (id: number) => quote?.lines.find((l) => l.variantId === id);
   const blocked = quote?.lines.some((l) => !l.available) || (quote && quote.lines.length < lines.length);
+  const viewed = useRef(false);
+  useEffect(() => {
+    if (!ready || !lines.length || viewed.current) return;
+    viewed.current = true;
+    const snapshot = lines;
+    setTimeout(() => gaEvent("view_cart", { currency: "NGN", value: snapshot.reduce((s, l) => s + l.price * l.qty, 0), items: snapshot.map((l) => gaItem(l)) }), 600);
+  }, [ready, lines]);
 
   // Same reserved height while the saved cart loads and when it is empty, so the page does not jump (layout shift).
   if (!ready) return <div className="container-x min-h-[70vh] py-8 sm:py-12" aria-busy="true"><h1 className="text-3xl sm:text-4xl">Your cart</h1><p className="mt-6 text-neutral-500">Loading your cart…</p></div>;

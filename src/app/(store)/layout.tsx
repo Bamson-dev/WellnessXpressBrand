@@ -6,7 +6,7 @@ import { CartProvider } from "@/components/CartProvider";
 import { StorePixel } from "@/components/pixel";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { getContact } from "@/lib/settings";
-import { site } from "@/lib/site";
+import { GOOGLE_SITE_VERIFICATION, site } from "@/lib/site";
 import type { Metadata } from "next";
 import { getSeo } from "@/lib/seo";
 
@@ -23,6 +23,10 @@ export function generateMetadata(): Metadata {
     openGraph: { type: "website", siteName: site.name, url: site.url, locale: "en_NG", description: seo.defaultDescription || site.description, images: [{ url: image, alt: site.name }] },
     twitter: { card: "summary_large_image", images: [image] },
     robots: seo.noindexSite ? { index: false, follow: false } : undefined,
+    verification: {
+      google: process.env.GOOGLE_SITE_VERIFICATION || GOOGLE_SITE_VERIFICATION,
+      other: process.env.BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION } : undefined,
+    },
   };
 }
 
@@ -33,8 +37,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const org = {
     "@context": "https://schema.org", "@type": "Organization", name: site.name, url: site.url, logo: `${site.url}/brand/logo-1000.webp`,
     slogan: site.tagline, email: c.email || undefined,
-    contactPoint: c.whatsapp ? [{ "@type": "ContactPoint", telephone: "+" + c.whatsapp, contactType: "customer service", areaServed: "NG" }] : undefined,
+    contactPoint: c.whatsapp ? [{ "@type": "ContactPoint", telephone: "+" + c.whatsapp, contactType: "customer service", areaServed: "NG", availableLanguage: "en" }] : undefined,
+    sameAs: [c.instagram, c.facebook, c.tiktok].filter((u) => /^https:\/\//.test(u || "")),
   };
+  const website = { "@context": "https://schema.org", "@type": "WebSite", name: site.name, alternateName: site.shortName, url: site.url, inLanguage: "en-NG", publisher: { "@type": "Organization", name: site.name, url: site.url } };
   return (
     <div id="store-root" className={`${outfit.variable} font-sans`}>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-white focus:p-3 focus:shadow">Skip to content</a>
@@ -44,7 +50,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         <Footer />
         <FloatingWhatsApp whatsapp={c.whatsapp} />
       </CartProvider>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(org).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([org, website]).replace(/</g, "\\u003c") }} />
       <Analytics />
       <StorePixel />
     </div>

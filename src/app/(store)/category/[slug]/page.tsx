@@ -11,8 +11,10 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     const target = getCategoryRedirect(params.slug);
     if (target) redirect(`/category/${target}`);
   }
-  return c ? { title: c.seoTitle || c.name, description: c.metaDescription || c.description, alternates: { canonical: `/category/${c.slug}` },
-    openGraph: { title: c.seoTitle || c.name, description: c.metaDescription || c.description, url: `${site.url}/category/${c.slug}`, images: c.image ? [{ url: c.image, alt: c.name }] : undefined },
+  // Short category blurbs make weak search snippets; extend them with what the page offers until a meta description is set in SEO settings.
+  const desc = c ? (c.metaDescription || (c.description.length >= 70 ? c.description : `${c.description.replace(/\.?\s*$/, ".")} Shop ${c.name.toLowerCase()} from WellnessXpressBrand online in Nigeria and pay by bank transfer.`.trim())) : "";
+  return c ? { title: c.seoTitle || c.name, description: desc, alternates: { canonical: `/category/${c.slug}` },
+    openGraph: { title: c.seoTitle || c.name, description: desc, url: `${site.url}/category/${c.slug}`, images: c.image ? [{ url: c.image, alt: c.name }] : undefined },
     robots: c.noindex ? { index: false, follow: true } : undefined } : {};
 }
 

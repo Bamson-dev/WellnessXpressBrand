@@ -15,6 +15,8 @@ import RichText, { plainText } from "@/components/RichText";
 import { currentAdmin } from "@/lib/auth";
 import { mediaMeta } from "@/lib/media";
 import { TrackView } from "@/components/pixel";
+import { GaView } from "@/components/ga";
+import { guidesForProduct } from "@/lib/guides";
 import { IconBank, IconChevron, IconInfo, IconTruck, IconWhatsApp } from "@/components/icons";
 import { naira, site } from "@/lib/site";
 
@@ -50,6 +52,7 @@ export default async function ProductPage(
   const contact = getContact();
   const productImages = p.images;
   const related = relatedProducts(p);
+  const guides = guidesForProduct(p.slug).slice(0, 3);
   const reviews = db().prepare("SELECT customer_name,rating,review_text,created_at FROM product_reviews WHERE product_id=? AND status='approved' AND verified_purchase=1 ORDER BY created_at DESC LIMIT 20").all(p.id);
   const r = priceRange(p);
   const variants = p.variants.map((v) => ({
@@ -59,10 +62,13 @@ export default async function ProductPage(
   const ld = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, description: plainText(p.description), sku: p.variants[0]?.sku,
     image: productImages.map((i) => site.url + i), brand: { "@type": "Brand", name: "WellnessXpress" },
-    offers: r ? {
-      "@type": "AggregateOffer", priceCurrency: "NGN", lowPrice: r.min, highPrice: r.max, offerCount: p.variants.length,
-      availability: p.variants.some(inStock) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `${site.url}/product/${p.slug}`,
-    } : undefined,
+    url: `${site.url}/product/${p.slug}`, category: p.type === "combo" ? "Combo set" : "Individual product",
+    // One Offer per size/option, with the same price and stock the page shows.
+    offers: r ? p.variants.map((v) => ({
+      "@type": "Offer", sku: v.sku, name: `${p.name} (${v.label})`, price: effective(v), priceCurrency: "NGN",
+      availability: inStock(v) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", itemCondition: "https://schema.org/NewCondition",
+      url: `${site.url}/product/${p.slug}`, seller: { "@type": "Organization", name: site.name },
+    })) : undefined,
     aggregateRating: reviews.length ? { "@type": "AggregateRating", ratingValue: (reviews.reduce((t, x) => t + Number(x.rating), 0) / reviews.length).toFixed(1), reviewCount: reviews.length } : undefined,
   };
   const cat = getCategories().find((c) => c.slug === p.category);
@@ -165,6 +171,12 @@ export default async function ProductPage(
           <div className="flex items-center gap-2"><IconInfo className="h-5 w-5 text-brand-700" /><h2 className="text-lg">Before you use</h2></div>
           <p className="mt-3 text-neutral-700">Read the product label before use. If you are pregnant, breastfeeding, taking medication or have a medical condition, speak to a healthcare professional first.</p>
           <Link href="/product-information" className="mt-3 inline-block font-semibold text-brand-700 hover:underline">Important product information</Link>
+          {guides.length ? (
+            <div className="mt-5 border-t border-brand-100 pt-4">
+              <h2 className="text-base font-bold">Helpful guides</h2>
+              <ul className="mt-2 space-y-1.5">{guides.map((g) => <li key={g.slug}><Link href={`/guides/${g.slug}`} className="text-[15px] font-semibold text-brand-700 hover:underline">{g.title}</Link></li>)}</ul>
+            </div>
+          ) : null}
         </aside>
       </div>
 
@@ -175,6 +187,7 @@ export default async function ProductPage(
         </section>
       ) : null}
 
+      <GaView event="view_item" params={{ currency: "NGN", value: r?.min || 0, items: p.variants.map((v) => ({ item_id: v.sku, item_name: p.name, item_variant: v.label, item_brand: "WellnessXpress", price: effective(v), quantity: 1 })) }} />
       <TrackView event="ViewContent" data={{ content_ids: p.variants.map((v) => v.sku), content_type: "product", currency: "NGN", value: r?.min || 0 }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbs).replace(/</g, "\\u003c") }} />

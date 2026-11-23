@@ -11,6 +11,9 @@ export const site = {
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "wellnessxpressglobal@gmail.com",
 };
 
+/** Google Search Console HTML-tag verification for https://wellnessxpressbrand.com/ (public value, safe to commit). */
+export const GOOGLE_SITE_VERIFICATION = "4sRGqnfyKqDX15k6A9GTYSaWv_y_hNPpdvJ5IQh-_T0";
+
 export function whatsappLink(message = "Hello WellnessXpressBrand. I need help with my order.") {
   return site.whatsapp ? `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(message)}` : null;
 }

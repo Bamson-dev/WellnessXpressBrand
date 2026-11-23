@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { contentId, useCart } from "@/components/CartProvider";
+import { gaEvent, gaItem } from "@/components/ga";
 import { useQuote } from "@/components/useQuote";
 import { track } from "@/components/pixel";
 import { IconBank, IconShield } from "@/components/icons";
@@ -41,6 +42,7 @@ export default function CheckoutForm({ states }: { states: string[] }) {
   useEffect(() => {
     if (ready && lines.length && !tracked.current) {
       tracked.current = true;
+      gaEvent("begin_checkout", { currency: "NGN", value: lines.reduce((s, l) => s + l.price * l.qty, 0), items: lines.map((l) => gaItem(l)) });
       track("InitiateCheckout", { currency: "NGN", value: lines.reduce((s, l) => s + l.price * l.qty, 0), num_items: lines.length, content_ids: lines.map(contentId), content_type: "product" });
     }
   }, [ready, lines]);
