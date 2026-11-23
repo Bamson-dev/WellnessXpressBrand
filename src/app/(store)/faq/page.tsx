@@ -21,7 +21,7 @@ export default function Faq() {
         ))}
       </div>
       <p className="mt-8 text-neutral-700">Still need help? <Link href="/contact" className="font-semibold text-brand-700 hover:underline">Contact us</Link>.</p>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
     </div>
   );
 }
