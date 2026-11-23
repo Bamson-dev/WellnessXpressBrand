@@ -1,6 +1,7 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { track } from "@/components/pixel";
+import { gaEvent, gaItem } from "@/components/ga";
 
 export type CartLine = { variantId: number; qty: number; slug: string; name: string; label: string; price: number; image: string | null; sku?: string };
 /** Meta content id for a cart line: the SKU, the same id ViewContent and the server Purchase event use. */
@@ -24,6 +25,8 @@ export const MAX_QTY = 20;
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const linesRef = useRef<CartLine[]>([]);
+  linesRef.current = lines;
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -64,12 +67,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, { ...l, qty: Math.min(MAX_QTY, qty) }];
     });
     track("AddToCart", { currency: "NGN", value: l.price * qty, content_ids: [contentId(l)], content_type: "product" });
+    gaEvent("add_to_cart", { currency: "NGN", value: l.price * qty, items: [gaItem({ ...l, qty })] });
     setOpen(true);
   }, []);
   const setQty = useCallback((id: number, qty: number) => {
     setLines((prev) => (qty < 1 ? prev.filter((p) => p.variantId !== id) : prev.map((p) => (p.variantId === id ? { ...p, qty: Math.min(MAX_QTY, qty) } : p))));
   }, []);
-  const remove = useCallback((id: number) => setLines((prev) => prev.filter((p) => p.variantId !== id)), []);
+  const remove = useCallback((id: number) => {
+    const gone = linesRef.current.find((p) => p.variantId === id);
+    if (gone) gaEvent("remove_from_cart", { currency: "NGN", value: gone.price * gone.qty, items: [gaItem(gone)] });
+    setLines((prev) => prev.filter((p) => p.variantId !== id));
+  }, []);
   const clear = useCallback(() => setLines([]), []);
   const replacePrices = useCallback((prices: Record<number, number>) => {
     setLines((prev) => {

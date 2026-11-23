@@ -6,7 +6,7 @@ import { IconWhatsApp } from "@/components/icons";
 
 const cols = [
   { title: "Shop", links: [{ href: "/shop", label: "All products" }, { href: "/category/individual", label: "Individual Products" }, { href: "/category/combos", label: "Combo Sets" }, { href: "/cart", label: "Cart" }] },
-  { title: "Company", links: [{ href: "/about", label: "About Us" }, { href: "/contact", label: "Contact" }, { href: "/faq", label: "FAQs" }, { href: "/product-information", label: "Product information" }] },
+  { title: "Company", links: [{ href: "/about", label: "About Us" }, { href: "/contact", label: "Contact" }, { href: "/faq", label: "FAQs" }, { href: "/guides", label: "Guides" }, { href: "/product-information", label: "Product information" }] },
   { title: "Policies", links: [{ href: "/shipping", label: "Shipping and Delivery" }, { href: "/returns", label: "Returns and Refunds" }, { href: "/privacy", label: "Privacy Policy" }, { href: "/terms", label: "Terms and Conditions" }] },
 ];
 
