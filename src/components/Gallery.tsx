@@ -3,7 +3,9 @@ import Image from "next/image";
 import { useState } from "react";
 import { useVariantImage } from "@/components/VariantImageContext";
 
-const isLocal = (s: string) => s.startsWith("/images/");
+// Built-in images and uploaded product photos are both served by this site, so both go through the image optimizer
+// (an uploaded photo can be a 2 MB PNG; the optimizer sends a resized WebP instead).
+const isLocal = (s: string) => s.startsWith("/images/") || s.startsWith("/product-images/") || s.startsWith("/media/");
 
 export default function Gallery({ images, name, meta = {}, selectedIndex, onSelect }: { images: string[]; name: string; meta?: Record<string, { alt: string; caption: string }>; selectedIndex?: number; onSelect?: (index: number) => void }) {
   const context = useVariantImage();
