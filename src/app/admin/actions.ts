@@ -142,7 +142,7 @@ export async function setFulfilmentAction(f: FormData) {
   const st = s(f, "status", 20);
   const o = getOrderById(id);
   if (!o || !["unfulfilled", "processing", "shipped", "delivered", "cancelled"].includes(st)) return fail(`/admin/orders/${id}`);
-  if (["processing", "shipped", "delivered"].includes(st) && o.payment_status !== "paid") return fail(`/admin/orders/${id}`, "Confirm the product payment before you process or ship this order.");
+  if (["processing", "shipped", "delivered"].includes(st) && o.payment_status !== "paid") return fail(`/admin/orders/${id}`, "Confirm the order payment before you process or ship this order.");
   if (["processing", "shipped", "delivered"].includes(st) && !["paid", "not_required"].includes(String(o.delivery_payment_status))) return fail(`/admin/orders/${id}`, "Confirm the delivery payment before you process or ship this order.");
   if (st === o.fulfilment_status) return fail(`/admin/orders/${id}`);
   const err = tx((d) => {
