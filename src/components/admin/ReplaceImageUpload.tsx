@@ -45,7 +45,7 @@ export default function ReplaceImageUpload({ productId, index, returnPath }: Pro
 
   return (
     <form onSubmit={submit} className="flex flex-wrap items-center gap-1 text-xs">
-      <input ref={ref} type="file" name="image" accept="image/jpeg,image/png,image/webp" className="max-w-[180px] text-xs" aria-label="Replacement image" required disabled={busy} />
+      <input ref={ref} type="file" name="image" accept="image/jpeg,image/png,image/webp" className="w-full min-w-0 max-w-[180px] text-xs" aria-label="Replacement image" required disabled={busy} />
       <button type="submit" disabled={busy} className="text-brand-700 underline disabled:opacity-50">{busy ? "Replacing…" : "Replace"}</button>
       {message ? <p role="status" className={error ? "w-full text-red-700" : "w-full text-green-700"}>{message}</p> : null}
     </form>
