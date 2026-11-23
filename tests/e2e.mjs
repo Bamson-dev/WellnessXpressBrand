@@ -825,7 +825,7 @@ await step("search visibility: sitemap, feed, llms.txt, guides, structured data"
   if (badShip.length) console.log("   feed shipping mismatches:", badShip.join("; "));
   ok(itemsXml.length > 0 && badShip.length === 0 && !/<g:region>/.test(feed.body) && /<g:min_handling_time>0<\/g:min_handling_time><g:max_handling_time>0<\/g:max_handling_time><g:min_transit_time>1<\/g:min_transit_time><g:max_transit_time>[3-9]<\/g:max_transit_time>/.test(feed.body), "feed shipping: Nigeria-wide upper-bound fee per item, delivery time from the longest state ETA, no region entries");
   const ret = await txt("/returns");
-  ok(/within 5 days of receiving your order/.test(ret.body) && /order number/.test(ret.body), "returns page states the 5-day return window and what to include");
+  ok(/within 24 hours of delivery/.test(ret.body) && /cannot accept returns of products that have been opened/.test(ret.body) && /order number/.test(ret.body) && !/5 days/.test(ret.body), "returns page: no returns of opened products, 24-hour report window for damaged, incorrect or missing items");
   ok(/1 to 3 working days/.test((await txt("/shipping")).body) && /1 to 3 working days/.test((await txt("/faq")).body), "shipping page and FAQ state 1 to 3 working days");
   const llms = await txt("/llms.txt");
   ok(llms.status === 200 && /^# WellnessXpressBrand/.test(llms.body) && /\/product\//.test(llms.body) && !/\/admin/.test(llms.body), "llms.txt lists public pages only");

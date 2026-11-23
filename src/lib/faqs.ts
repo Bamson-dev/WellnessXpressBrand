@@ -7,6 +7,6 @@ export const faqs = [
   { q: "How long does delivery take?", a: "Delivery takes 1 to 3 working days after we confirm your payment." },
   { q: "Is a product in stock?", a: "Products you can add to your cart are available to order. If something becomes unavailable after you order, we contact you before we process your order." },
   { q: "How do I check my order?", a: "Use the link on your order confirmation page. Save it, or message us on WhatsApp with your order number and we will update you." },
-  { q: "What if there is a problem with my order?", a: "Contact us on WhatsApp or by email with your order number and a short description. You can request a return within 5 days of receiving your order. Read our Returns and Refunds page for more." },
+  { q: "What if there is a problem with my order?", a: "Contact us on WhatsApp or by email with your order number and a short description. Please inspect your order on delivery and report damaged, incorrect or missing items within 24 hours. Opened or unsealed products cannot be returned. Read our Returns and Refunds page for more." },
   { q: "Where can I find directions for use?", a: "Read the product label, and message us on WhatsApp before you order if you have questions about a product." },
 ];
