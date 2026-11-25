@@ -4,6 +4,7 @@ import type { Permission } from "@/lib/permissions";
 export const ADMIN_NAV: { href: string; label: string; perm: Permission }[] = [
   { href: "/admin", label: "Dashboard", perm: "dashboard" },
   { href: "/admin/orders", label: "Orders", perm: "orders" },
+  { href: "/admin/payment-confirmations", label: "Payment forms", perm: "payments" },
   { href: "/admin/invoices", label: "Invoices", perm: "invoices" },
   { href: "/admin/customers", label: "Customers", perm: "customers" },
   { href: "/admin/notifications", label: "Notifications", perm: "notifications" },
