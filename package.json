@@ -1,1 +1,42 @@
-ewogICJuYW1lIjogIndlbGxuZXNzeHByZXNzYnJhbmQiLAogICJ2ZXJzaW9uIjogIjEuMC4wIiwKICAicHJpdmF0ZSI6IHRydWUsCiAgInNjcmlwdHMiOiB7CiAgICAiZGV2IjogIm5leHQgZGV2IiwKICAgICJidWlsZCI6ICJuZXh0IGJ1aWxkIiwKICAgICJzdGFydCI6ICJub2RlIC5uZXh0L3N0YW5kYWxvbmUvc2VydmVyLmpzIiwKICAgICJsaW50IjogIm5leHQgbGludCIsCiAgICAidHlwZWNoZWNrIjogInRzYyAtLW5vRW1pdCIsCiAgICAidGVzdDplMmUiOiAibm9kZSB0ZXN0cy9lMmUubWpzIiwKICAgICJ0ZXN0OmF0dHJpYnV0aW9uIjogIm5vZGUgdGVzdHMvYXR0cmlidXRpb24tcmVncmVzc2lvbi5tanMiLAogICAgInRlc3Q6dHJhY2tpbmciOiAibm9kZSB0ZXN0cy90cmFja2luZy1yZWdyZXNzaW9uLm1qcyIsCiAgICAidGVzdDphcGkiOiAibm9kZSB0ZXN0cy9hcGktaW50ZWdyYXRpb24ubWpzIiwKICAgICJ0ZXN0OmNvbmZpcm0iOiAibm9kZSB0ZXN0cy9jb25maXJtLXBheW1lbnQtaW50ZWdyYXRpb24ubWpzIiwKICAgICJ0ZXN0OnVuaXQiOiAibm9kZSB0ZXN0cy9hdHRyaWJ1dGlvbi1yZWdyZXNzaW9uLm1qcyAmJiBub2RlIHRlc3RzL3RyYWNraW5nLXJlZ3Jlc3Npb24ubWpzIgogIH0sCiAgImRlcGVuZGVuY2llcyI6IHsKICAgICJAcGRmLWxpYi9mb250a2l0IjogIjEuMS4xIiwKICAgICJuZXh0IjogIjE1LjUuMjkiLAogICAgInBkZi1saWIiOiAiXjEuMTcuMSIsCiAgICAicmVhY3QiOiAiMTkuMi45IiwKICAgICJyZWFjdC1kb20iOiAiMTkuMi45IiwKICAgICJzZXJ2ZXItb25seSI6ICJeMC4wLjEiCiAgfSwKICAiZGV2RGVwZW5kZW5jaWVzIjogewogICAgIkB0eXBlcy9ub2RlIjogIjIwLjE5LjQzIiwKICAgICJAdHlwZXMvcmVhY3QiOiAiMTkuMi43IiwKICAgICJAdHlwZXMvcmVhY3QtZG9tIjogIjE5LjIuMyIsCiAgICAiYXV0b3ByZWZpeGVyIjogIjEwLjYuMiIsCiAgICAiZXNsaW50IjogIjguNTcuMSIsCiAgICAiZXNsaW50LWNvbmZpZy1uZXh0IjogIjE1LjUuMjkiLAogICAgInBvc3Rjc3MiOiAiOC41LjMyIiwKICAgICJ0YWlsd2luZGNzcyI6ICIzLjQuMTkiLAogICAgInR5cGVzY3JpcHQiOiAiNS45LjMiCiAgfSwKICAib3ZlcnJpZGVzIjogewogICAgIm5leHQiOiB7CiAgICAgICJwb3N0Y3NzIjogIjguNS4zMiIKICAgIH0KICB9Cn0K
+{
+  "name": "wellnessxpressbrand",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node .next/standalone/server.js",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "node tests/e2e.mjs",
+    "test:attribution": "node tests/attribution-regression.mjs",
+    "test:tracking": "node tests/tracking-regression.mjs",
+    "test:api": "node tests/api-integration.mjs",
+    "test:confirm": "node tests/confirm-payment-integration.mjs",
+    "test:unit": "node tests/attribution-regression.mjs && node tests/tracking-regression.mjs"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "1.1.1",
+    "next": "15.5.29",
+    "pdf-lib": "^1.17.1",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "autoprefixer": "10.6.2",
+    "eslint": "8.57.1",
+    "eslint-config-next": "15.5.29",
+    "postcss": "8.5.32",
+    "tailwindcss": "3.4.19",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.32"
+    }
+  }
+}
