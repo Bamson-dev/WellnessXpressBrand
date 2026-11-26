@@ -1,1 +1,49 @@
-InVzZSBzZXJ2ZXIiOwppbXBvcnQgeyByZWRpcmVjdCB9IGZyb20gIm5leHQvbmF2aWdhdGlvbiI7CmltcG9ydCB7IHJldmFsaWRhdGVQYXRoIH0gZnJvbSAibmV4dC9jYWNoZSI7CmltcG9ydCB7IHJlcXVpcmVQZXJtIH0gZnJvbSAiQC9saWIvYXV0aCI7CmltcG9ydCB7IGNvbmZpcm1hdGlvbnNEYiB9IGZyb20gIkAvbGliL3BheW1lbnQtY29uZmlybWF0aW9ucyI7CmltcG9ydCB7IHNlbmRDb25maXJtYXRpb25QdXJjaGFzZSB9IGZyb20gIkAvbGliL21ldGEtY29uZmlybWF0aW9uIjsKaW1wb3J0IHsgc2VuZFRpa1Rva1B1cmNoYXNlIH0gZnJvbSAiQC9saWIvY2FwaS1mdW5uZWwiOwppbXBvcnQgeyBsb2dBZG1pbkFjdGl2aXR5IH0gZnJvbSAiQC9saWIvYWRtaW4tZXZlbnRzIjsKaW1wb3J0IHsgc2l0ZSB9IGZyb20gIkAvbGliL3NpdGUiOwoKY29uc3QgVVJMX0xJU1QgPSAiL2FkbWluL3BheW1lbnQtY29uZmlybWF0aW9ucyI7CmNvbnN0IGdvID0gKG1zZzogc3RyaW5nKSA9PiByZWRpcmVjdChgJHtVUkxfTElTVH0/bXNnPSR7ZW5jb2RlVVJJQ29tcG9uZW50KG1zZyl9YCk7CgovKioKICogTWFya3MgYSBwYXltZW50IGNvbmZpcm1hdGlvbiBmb3JtIHN1Ym1pc3Npb24gYXMgUEFJRCBhZnRlciB0aGUgYWRtaW4gaGFzIHNlZW4gdGhlIG1vbmV5IGluIHRoZSBiYW5rIGFjY291bnQuCiAqIFRoaXMgaXMgdGhlIG9ubHkgcGxhY2UgYSBQdXJjaGFzZSBpcyBzZW50IHRvIE1ldGEgZm9yIHRoZXNlIHN1Ym1pc3Npb25zLCBhbmQgaXQgaXMgc2VudCBvbmNlIHBlciBzdWJtaXNzaW9uLgogKi8KZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIG1hcmtDb25maXJtYXRpb25QYWlkQWN0aW9uKGY6IEZvcm1EYXRhKSB7CiAgY29uc3QgYSA9IGF3YWl0IHJlcXVpcmVQZXJtKCJwYXltZW50cyIpOwogIGNvbnN0IGQgPSBjb25maXJtYXRpb25zRGIoKTsKICBjb25zdCBpZCA9IE51bWJlcihmLmdldCgiaWQiKSk7CiAgY29uc3Qgcm93ID0gZC5wcmVwYXJlKCJTRUxFQ1QgKiBGUk9NIHBheW1lbnRfY29uZmlybWF0aW9ucyBXSEVSRSBpZCA9ID8iKS5nZXQoaWQpOwogIGlmICghcm93KSByZXR1cm4gZ28oIlN1Ym1pc3Npb24gbm90IGZvdW5kLiIpOwogIGlmIChmLmdldCgiY29uZmlybSIpICE9PSAieWVzIikgcmV0dXJuIGdvKCJUaWNrIHRoZSBib3ggdG8gY29uZmlybSB5b3UgaGF2ZSBzZWVuIHRoZSBtb25leSBpbiB0aGUgYmFuayBhY2NvdW50LiIpOwogIGlmIChyb3cuc3RhdHVzID09PSAicGFpZCIpIHJldHVybiBnbygiVGhpcyBzdWJtaXNzaW9uIGlzIGFscmVhZHkgbWFya2VkIHBhaWQuIik7CiAgY29uc3QgYW1vdW50ID0gTWF0aC5yb3VuZChOdW1iZXIoU3RyaW5nKGYuZ2V0KCJ2ZXJpZmllZEFtb3VudCIpID8/ICIiKS5yZXBsYWNlKC9b4oKmLFxzXS9nLCAiIikpKTsKICBpZiAoIU51bWJlci5pc0Zpbml0ZShhbW91bnQpIHx8IGFtb3VudCA8IDEgfHwgYW1vdW50ID4gMTAwXzAwMF8wMDApIHJldHVybiBnbygiRW50ZXIgdGhlIGFtb3VudCB5b3UgdmVyaWZpZWQgaW4gdGhlIGJhbmsgYWNjb3VudC4iKTsKICBjb25zdCBub3RlID0gU3RyaW5nKGYuZ2V0KCJub3RlIikgPz8gIiIpLnJlcGxhY2UoL1tcdTAwMDAtXHUwMDFmXHUwMDdmXS9nLCAiICIpLnRyaW0oKS5zbGljZSgwLCAzMDApOwogIC8vIEF0b21pYyBjbGFpbTogb25seSB0aGUgZmlyc3QgTWFyay1hcy1QYWlkIHdpbnM7IGEgY29uY3VycmVudCBkdXBsaWNhdGUgZ2V0cyBjaGFuZ2VzPTAgYW5kIHNlbmRzIG5vIFB1cmNoYXNlLgogIGNvbnN0IGNsYWltZWQgPSBkLnByZXBhcmUoIlVQREFURSBwYXltZW50X2NvbmZpcm1hdGlvbnMgU0VUIHN0YXR1cyA9ICdwYWlkJywgdmVyaWZpZWRfYW1vdW50ID0gPywgdmVyaWZpZWRfYnkgPSA/LCBwYWlkX2F0ID0gZGF0ZXRpbWUoJ25vdycpLCBhZG1pbl9ub3RlID0gPyBXSEVSRSBpZCA9ID8gQU5EIHN0YXR1cyAhPSAncGFpZCciKS5ydW4oYW1vdW50LCBhLmVtYWlsLCBub3RlLCBpZCk7CiAgaWYgKE51bWJlcihjbGFpbWVkLmNoYW5nZXMpICE9PSAxKSByZXR1cm4gZ28oIlRoaXMgc3VibWlzc2lvbiBpcyBhbHJlYWR5IG1hcmtlZCBwYWlkLiIpOwogIGxvZ0FkbWluQWN0aXZpdHkoYS5lbWFpbCwgImNvbmZpcm1hdGlvbl9tYXJrZWRfcGFpZCIsICJwYXltZW50X2NvbmZpcm1hdGlvbiIsIGlkLCBgVmVyaWZpZWQg4oKmJHthbW91bnR9YCk7CiAgY29uc3QgZXYgPSBhd2FpdCBzZW5kQ29uZmlybWF0aW9uUHVyY2hhc2UoeyBpZCwgcGhvbmU6IFN0cmluZyhyb3cucGhvbmUpLCBhbW91bnQsIHRyYWNraW5nOiBTdHJpbmcocm93LnRyYWNraW5nIHx8ICJ7fSIpLCB1cmw6IGAke3NpdGUudXJsfS9jb25maXJtLXBheW1lbnRgIH0pOwogIGQucHJlcGFyZSgiVVBEQVRFIHBheW1lbnRfY29uZmlybWF0aW9ucyBTRVQgcHVyY2hhc2VfZXZlbnRfaWQgPSA/LCBwdXJjaGFzZV9ldmVudF9zdGF0dXMgPSA/IFdIRVJFIGlkID0gPyIpLnJ1bihldi5ldmVudElkLCBldi5zdGF0dXMsIGlkKTsKICAvLyBUaWtUb2sgUHVyY2hhc2UgZm9yIHRoaXMgc3VibWlzc2lvbiB0b28sIHdpdGggdGhlIHNhbWUgc3RhYmxlIGV2ZW50IGlkIGFzIE1ldGEgKCJwY188aWQ+IiksIHRyYWNrZWQgaW4gaXRzCiAgLy8gb3duIGNvbHVtbiBzbyB0aGUgdHdvIHBsYXRmb3JtcyBuZXZlciBvdmVyd3JpdGUgZWFjaCBvdGhlci4gT25seSBhbiBleGFjdCBwcmlvciAic2VudCIgc3VwcHJlc3NlcyBhIHJlc2VuZDsKICAvLyBhIFRpa1RvayBmYWlsdXJlIG5ldmVyIGFmZmVjdHMgdGhlIHBheW1lbnQgY29uZmlybWF0aW9uIG9yIHRoZSBNZXRhIHJlc3VsdC4KICBsZXQgdHRTdGF0dXMgPSBTdHJpbmcocm93LnRpa3Rva19ldmVudF9zdGF0dXMgfHwgIiIpOwogIGlmICh0dFN0YXR1cyAhPT0gInNlbnQiKSB7CiAgICBjb25zdCB0dCA9IGF3YWl0IHNlbmRUaWtUb2tQdXJjaGFzZSh7IG5hbWU6ICJQdXJjaGFzZSIsIGV2ZW50SWQ6IGV2LmV2ZW50SWQsIG51bWJlcjogIlBDIiArIGlkLCBwaG9uZTogU3RyaW5nKHJvdy5waG9uZSksIHZhbHVlOiBhbW91bnQsIHVybDogYCR7c2l0ZS51cmx9L2NvbmZpcm0tcGF5bWVudGAsIHRyYWNraW5nOiBTdHJpbmcocm93LnRyYWNraW5nIHx8ICJ7fSIpIH0pOwogICAgdHRTdGF0dXMgPSB0dDsKICAgIGQucHJlcGFyZSgiVVBEQVRFIHBheW1lbnRfY29uZmlybWF0aW9ucyBTRVQgdGlrdG9rX2V2ZW50X3N0YXR1cyA9ID8gV0hFUkUgaWQgPSA/IikucnVuKHR0U3RhdHVzLCBpZCk7CiAgfQogIHJldmFsaWRhdGVQYXRoKFVSTF9MSVNUKTsKICAvLyBTdHJpY3Qgc3RhdHVzIG1hdGNoaW5nOiAic2VudCIgaXMgYSBwcm9kdWN0aW9uIFB1cmNoYXNlOyAic2VudF90ZXN0IiB3ZW50IHRvIE1ldGEgVGVzdCBFdmVudHMgb25seSBhbmQgaXMgTk9UIGEgcmVhbCBwdXJjaGFzZS4KICBjb25zdCBtZXRhTXNnID0gZXYuc3RhdHVzID09PSAic2VudCIgPyAiUHVyY2hhc2Ugc2VudCB0byBNZXRhLiIgOiBldi5zdGF0dXMgPT09ICJzZW50X3Rlc3QiID8gIlB1cmNoYXNlIHNlbnQgdG8gTWV0YSBURVNUIEV2ZW50cyBvbmx5IChNRVRBX1BVUkNIQVNFX1RFU1RfRVZFTlRfQ09ERSBpcyBzZXQpIOKAlCB0aGlzIGlzIG5vdCBhIHByb2R1Y3Rpb24gcHVyY2hhc2UuIiA6IGV2LnN0YXR1cyA9PT0gIm5vdF9jb25maWd1cmVkIiA/ICJNZXRhIFB1cmNoYXNlIG5vdCBzZW50OiB0aGUgQ29udmVyc2lvbnMgQVBJIHRva2VuIGlzIG5vdCBzZXQuIiA6ICJNZXRhIFB1cmNoYXNlIGZhaWxlZCAoIiArIGV2LnN0YXR1cyArICIpLiI7CiAgY29uc3QgdHRNc2cgPSB0dFN0YXR1cyA9PT0gInNlbnQiID8gIiBQdXJjaGFzZSBzZW50IHRvIFRpa1Rvay4iIDogdHRTdGF0dXMgPT09ICJzZW50X3Rlc3QiID8gIiBUaWtUb2sgZXZlbnQgd2VudCB0byBUaWtUb2sgVEVTVCBldmVudHMgb25seS4iIDogdHRTdGF0dXMgPT09ICJub3RfY29uZmlndXJlZCIgPyAiIFRpa1RvayBQdXJjaGFzZSBub3Qgc2VudDogVGlrVG9rIGlzIG5vdCBjb25maWd1cmVkLiIgOiAiIFRpa1RvayBQdXJjaGFzZSBmYWlsZWQgKCIgKyB0dFN0YXR1cyArICIpLiI7CiAgZ28oIk1hcmtlZCBhcyBQQUlELiAiICsgbWV0YU1zZyArIHR0TXNnKTsKfQo=
+"use server";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { requirePerm } from "@/lib/auth";
+import { confirmationsDb } from "@/lib/payment-confirmations";
+import { sendConfirmationPurchase } from "@/lib/meta-confirmation";
+import { sendTikTokPurchase } from "@/lib/capi-funnel";
+import { logAdminActivity } from "@/lib/admin-events";
+import { site } from "@/lib/site";
+
+const URL_LIST = "/admin/payment-confirmations";
+const go = (msg: string) => redirect(`${URL_LIST}?msg=${encodeURIComponent(msg)}`);
+
+/**
+ * Marks a payment confirmation form submission as PAID after the admin has seen the money in the bank account.
+ * This is the only place a Purchase is sent to Meta for these submissions, and it is sent once per submission.
+ */
+export async function markConfirmationPaidAction(f: FormData) {
+  const a = await requirePerm("payments");
+  const d = confirmationsDb();
+  const id = Number(f.get("id"));
+  const row = d.prepare("SELECT * FROM payment_confirmations WHERE id = ?").get(id);
+  if (!row) return go("Submission not found.");
+  if (f.get("confirm") !== "yes") return go("Tick the box to confirm you have seen the money in the bank account.");
+  if (row.status === "paid") return go("This submission is already marked paid.");
+  const amount = Math.round(Number(String(f.get("verifiedAmount") ?? "").replace(/[₦,\s]/g, "")));
+  if (!Number.isFinite(amount) || amount < 1 || amount > 100_000_000) return go("Enter the amount you verified in the bank account.");
+  const note = String(f.get("note") ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 300);
+  // Atomic claim: only the first Mark-as-Paid wins; a concurrent duplicate gets changes=0 and sends no Purchase.
+  const claimed = d.prepare("UPDATE payment_confirmations SET status = 'paid', verified_amount = ?, verified_by = ?, paid_at = datetime('now'), admin_note = ? WHERE id = ? AND status != 'paid'").run(amount, a.email, note, id);
+  if (Number(claimed.changes) !== 1) return go("This submission is already marked paid.");
+  logAdminActivity(a.email, "confirmation_marked_paid", "payment_confirmation", id, `Verified ₦${amount}`);
+  const ev = await sendConfirmationPurchase({ id, phone: String(row.phone), amount, tracking: String(row.tracking || "{}"), url: `${site.url}/confirm-payment` });
+  d.prepare("UPDATE payment_confirmations SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
+  // TikTok Purchase for this submission too, with the same stable event id as Meta ("pc_<id>"), tracked in its
+  // own column so the two platforms never overwrite each other. Only an exact prior "sent" suppresses a resend;
+  // a TikTok failure never affects the payment confirmation or the Meta result.
+  let ttStatus = String(row.tiktok_event_status || "");
+  if (ttStatus !== "sent") {
+    const tt = await sendTikTokPurchase({ name: "Purchase", eventId: ev.eventId, number: "PC" + id, phone: String(row.phone), value: amount, url: `${site.url}/confirm-payment`, tracking: String(row.tracking || "{}") });
+    ttStatus = tt;
+    d.prepare("UPDATE payment_confirmations SET tiktok_event_status = ? WHERE id = ?").run(ttStatus, id);
+  }
+  revalidatePath(URL_LIST);
+  // Strict status matching: "sent" is a production Purchase; "sent_test" went to Meta Test Events only and is NOT a real purchase.
+  const metaMsg = ev.status === "sent" ? "Purchase sent to Meta." : ev.status === "sent_test" ? "Purchase sent to Meta TEST Events only (META_PURCHASE_TEST_EVENT_CODE is set) — this is not a production purchase." : ev.status === "not_configured" ? "Meta Purchase not sent: the Conversions API token is not set." : "Meta Purchase failed (" + ev.status + ").";
+  const ttMsg = ttStatus === "sent" ? " Purchase sent to TikTok." : ttStatus === "sent_test" ? " TikTok event went to TikTok TEST events only." : ttStatus === "not_configured" ? " TikTok Purchase not sent: TikTok is not configured." : " TikTok Purchase failed (" + ttStatus + ").";
+  go("Marked as PAID. " + metaMsg + ttMsg);
+}
