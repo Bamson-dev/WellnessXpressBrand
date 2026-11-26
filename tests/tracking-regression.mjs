@@ -1,1 +1,81 @@
-LyoKICogUmVncmVzc2lvbiB0ZXN0cyBmb3IgdGhlIHBheW1lbnQgLyB0cmFja2luZyBydWxlcyB0aGF0IG11c3QgbmV2ZXIgYnJlYWsgYWdhaW46CiAqICAtIFB1cmNoYXNlIGZpcmVzIG9ubHkgYWZ0ZXIgYW4gYWRtaW4gY29uZmlybXMgcGF5bWVudCwgbmV2ZXIgb24gb3JkZXIgY3JlYXRpb24gb3IgcmVjZWlwdCB1cGxvYWQuCiAqICAtIEEgdGVzdCBldmVudCAoInNlbnRfdGVzdCIpIGlzIG5ldmVyIHRyZWF0ZWQgYXMgYSBwcm9kdWN0aW9uIFB1cmNoYXNlICgic2VudCIpLgogKiAgLSBNYXJrLWFzLVBhaWQgaXMgYW4gYXRvbWljIGNsYWltIChjb25kaXRpb25hbCBVUERBVEUpLCBzbyBjb25jdXJyZW50IGNvbmZpcm1hdGlvbnMgY2Fubm90IGRvdWJsZS1zZW5kLgogKiAgLSBQdXJjaGFzZSBldmVudCBpZHMgYXJlIHN0YWJsZSBwZXIgb3JkZXIsIHNvIHJldHJpZXMgYXJlIGRlZHVwbGljYXRlZCBieSBNZXRhIC8gVGlrVG9rLgogKiBSdW4gd2l0aDogbm9kZSB0ZXN0cy90cmFja2luZy1yZWdyZXNzaW9uLm1qcyAgIChubyBzZXJ2ZXIgbmVlZGVkKQogKi8KaW1wb3J0IGZzIGZyb20gIm5vZGU6ZnMiOwppbXBvcnQgYXNzZXJ0IGZyb20gIm5vZGU6YXNzZXJ0L3N0cmljdCI7Cgpjb25zdCByZWFkID0gKGYpID0+IGZzLnJlYWRGaWxlU3luYyhmLCAidXRmOCIpOwpjb25zdCBhZG1pbiA9IHJlYWQoInNyYy9hcHAvYWRtaW4vYWN0aW9ucy50cyIpOwpjb25zdCBjb25mQWN0aW9ucyA9IHJlYWQoInNyYy9hcHAvYWRtaW4vY29uZmlybWF0aW9uLWFjdGlvbnMudHMiKTsKY29uc3QgbWV0YSA9IHJlYWQoInNyYy9saWIvbWV0YS50cyIpOwpjb25zdCBjYXBpRnVubmVsID0gcmVhZCgic3JjL2xpYi9jYXBpLWZ1bm5lbC50cyIpOwpjb25zdCBtZXRhQ29uZiA9IHJlYWQoInNyYy9saWIvbWV0YS1jb25maXJtYXRpb24udHMiKTsKY29uc3Qgb3JkZXJzUm91dGUgPSByZWFkKCJzcmMvYXBwL2FwaS9vcmRlcnMvcm91dGUudHMiKTsKY29uc3QgZnVubmVsUm91dGUgPSByZWFkKCJzcmMvYXBwL2FwaS9mdW5uZWwvb3JkZXIvcm91dGUudHMiKTsKY29uc3Qgb3JkZXJQYXltZW50Um91dGUgPSByZWFkKCJzcmMvYXBwL2FwaS9vcmRlcnMvW251bWJlcl0vcGF5bWVudC9yb3V0ZS50cyIpOwpjb25zdCBjb25maXJtUm91dGUgPSByZWFkKCJzcmMvYXBwL2FwaS9jb25maXJtLXBheW1lbnQvcm91dGUudHMiKTsKY29uc3QgcGl4ZWwgPSByZWFkKCJzcmMvY29tcG9uZW50cy9waXhlbC50c3giKTsKY29uc3QgdGlrdG9rID0gcmVhZCgic3JjL2NvbXBvbmVudHMvdGlrdG9rLnRzeCIpOwpjb25zdCBlbnZFeGFtcGxlID0gcmVhZCgiLmVudi5leGFtcGxlIik7CgovLyAtLS0gdGVzdCB2cyBwcm9kdWN0aW9uIHNlcGFyYXRpb24gLS0tCmFzc2VydC5vayghL3N0YXJ0c1dpdGhcKCJzZW50IlwpLy50ZXN0KGFkbWluKSwgImFkbWluIGFjdGlvbnMgbXVzdCBub3QgdHJlYXQgc2VudF90ZXN0IGFzIHNlbnQgKHN0YXJ0c1dpdGgpIik7CmFzc2VydC5vayghL1wuc3RhcnRzV2l0aFwoInNlbnQiXCkvLnRlc3QoY29uZkFjdGlvbnMpLCAiY29uZmlybWF0aW9uIGFjdGlvbnMgbXVzdCBub3QgdHJlYXQgc2VudF90ZXN0IGFzIHNlbnQiKTsKYXNzZXJ0Lm1hdGNoKGNvbmZBY3Rpb25zLCAvZXZcLnN0YXR1cyA9PT0gInNlbnQiLywgImNvbmZpcm1hdGlvbiBtZXNzYWdlIGtleXMgb24gZXhhY3QgcHJvZHVjdGlvbiBzdGF0dXMiKTsKYXNzZXJ0Lm1hdGNoKGNvbmZBY3Rpb25zLCAvZXZcLnN0YXR1cyA9PT0gInNlbnRfdGVzdCIvLCAiY29uZmlybWF0aW9uIG1lc3NhZ2UgZGlzdGluZ3Vpc2hlcyB0ZXN0IGV2ZW50cyIpOwphc3NlcnQubWF0Y2gobWV0YUNvbmYsIC90ZXN0IFw/ICJzZW50X3Rlc3QiIDogInNlbnQiLywgImNvbmZpcm1hdGlvbiBQdXJjaGFzZSBrZWVwcyB0ZXN0L3Byb2Qgc3RhdHVzZXMgZGlzdGluY3QiKTsKYXNzZXJ0Lm1hdGNoKGNhcGlGdW5uZWwsIC90ZXN0IFw/ICJzZW50X3Rlc3QiIDogInNlbnQiLywgImZ1bm5lbCBNZXRhIFB1cmNoYXNlIGtlZXBzIHRlc3QvcHJvZCBzdGF0dXNlcyBkaXN0aW5jdCIpOwoKLy8gLS0tIGF0b21pYywgaWRlbXBvdGVudCBtYXJrLWFzLXBhaWQgLS0tCmFzc2VydC5tYXRjaChhZG1pbiwgL1dIRVJFIGlkID0gXD8gQU5EIHBheW1lbnRfc3RhdHVzICE9ICdwYWlkJy8sICJvcmRlciB2ZXJpZnkgdXNlcyBhIGNvbmRpdGlvbmFsIFVQREFURSBjbGFpbSIpOwphc3NlcnQubWF0Y2goYWRtaW4sIC9OdW1iZXJcKGNsYWltZWRcLmNoYW5nZXNcKSAhPT0gMS8sICJvcmRlciB2ZXJpZnkgYWJvcnRzIHdoZW4gdGhlIGNsYWltIHdhcyBhbHJlYWR5IHRha2VuIik7CmFzc2VydC5tYXRjaChjb25mQWN0aW9ucywgL1dIRVJFIGlkID0gXD8gQU5EIHN0YXR1cyAhPSAncGFpZCcvLCAiY29uZmlybWF0aW9uIG1hcmstcGFpZCB1c2VzIGEgY29uZGl0aW9uYWwgVVBEQVRFIGNsYWltIik7CmFzc2VydC5tYXRjaChjb25mQWN0aW9ucywgL051bWJlclwoY2xhaW1lZFwuY2hhbmdlc1wpICE9PSAxLywgImNvbmZpcm1hdGlvbiBtYXJrLXBhaWQgYWJvcnRzIHdoZW4gYWxyZWFkeSBjbGFpbWVkIik7CgovLyAtLS0gc3RhYmxlIGV2ZW50IGlkcyAocGxhdGZvcm0gZGVkdXBsaWNhdGlvbikgLS0tCmFzc2VydC5tYXRjaChtZXRhLCAvZXZlbnRJZCA9ICJwdV8iIFwrIG9cLm51bWJlci8sICJzdG9yZSBQdXJjaGFzZSBldmVudCBpZCBpcyBzdGFibGUgcGVyIG9yZGVyIik7CmFzc2VydC5vayghL2V2ZW50SWQgPSAicHVfIiBcKyBEYXRlXC5ub3cvLnRlc3QobWV0YSksICJzdG9yZSBQdXJjaGFzZSBldmVudCBpZCBtdXN0IG5vdCBiZSByYW5kb20gcGVyIGNhbGwiKTsKYXNzZXJ0Lm1hdGNoKGNhcGlGdW5uZWwsIC9ldmVudElkOiAicHVfIiBcKyBvXC5udW1iZXIvLCAiZnVubmVsIFB1cmNoYXNlIGV2ZW50IGlkIGlzIHN0YWJsZSBwZXIgb3JkZXIiKTsKYXNzZXJ0Lm1hdGNoKG1ldGFDb25mLCAvZXZlbnRJZCA9ICJwY18iIFwrIGNcLmlkLywgImNvbmZpcm1hdGlvbiBQdXJjaGFzZSBldmVudCBpZCBpcyBzdGFibGUgcGVyIHN1Ym1pc3Npb24iKTsKYXNzZXJ0Lm1hdGNoKGNhcGlGdW5uZWwsIC9Qcm9taXNlXC5yZXNvbHZlXCgiYWxyZWFkeV9zZW50IlwpLywgInNraXBwZWQgcGxhdGZvcm1zIG5ldmVyIHJlcG9ydCBhIGZyZXNoICdzZW50JyIpOwoKLy8gLS0tIFB1cmNoYXNlIG9ubHkgYWZ0ZXIgYWRtaW4gY29uZmlybWF0aW9uIC0tLQphc3NlcnQub2soIS9QdXJjaGFzZS8udGVzdChvcmRlcnNSb3V0ZSksICJzdG9yZSBvcmRlciBjcmVhdGlvbiByb3V0ZSBuZXZlciBzZW5kcyBhIFB1cmNoYXNlIik7CmFzc2VydC5vayghL25hbWU6ICJQdXJjaGFzZSIvLnRlc3QoZnVubmVsUm91dGUpICYmICEvc2VuZEZ1bm5lbFB1cmNoYXNlLy50ZXN0KGZ1bm5lbFJvdXRlKSwgImZ1bm5lbCBvcmRlciByb3V0ZSBzZW5kcyBubyBQdXJjaGFzZSIpOwphc3NlcnQubWF0Y2goZnVubmVsUm91dGUsIC9uYW1lOiAiTGVhZCIvLCAiZnVubmVsIG9yZGVyIGNyZWF0aW9uIHNlbmRzIExlYWQgb25seSIpOwphc3NlcnQub2soIS9wYXltZW50X3N0YXR1cyA9ICdwYWlkJy8udGVzdChvcmRlclBheW1lbnRSb3V0ZSksICJjdXN0b21lciBwYXltZW50IHJvdXRlIGNhbiBuZXZlciBtYXJrIGFuIG9yZGVyIHBhaWQiKTsKYXNzZXJ0Lm1hdGNoKG9yZGVyUGF5bWVudFJvdXRlLCAvYXdhaXRpbmdfdmVyaWZpY2F0aW9uLywgImN1c3RvbWVyIHBheW1lbnQgcm91dGUgb25seSBtb3ZlcyBvcmRlcnMgdG8gYXdhaXRpbmdfdmVyaWZpY2F0aW9uIik7CmFzc2VydC5vayghL3N0YXR1cyA9ICdwYWlkJy8udGVzdChjb25maXJtUm91dGUpLCAiY29uZmlybS1wYXltZW50IHJvdXRlIGNhbiBuZXZlciBtYXJrIGEgc3VibWlzc2lvbiBwYWlkIik7CgovLyAtLS0gcmVjZWlwdCBkdXBsaWNhdGUgcHJvdGVjdGlvbiAtLS0KYXNzZXJ0Lm1hdGNoKGNvbmZpcm1Sb3V0ZSwgL3JlY2VpcHRfaGFzaC8sICJjb25maXJtLXBheW1lbnQgc3RvcmVzIGEgcmVjZWlwdCBoYXNoIik7CmFzc2VydC5tYXRjaChjb25maXJtUm91dGUsIC9zdGF0dXM6IDQwOS8sICJkdXBsaWNhdGUgcmVjZWlwdCBzdWJtaXNzaW9uIGlzIHJlamVjdGVkIik7CgovLyAtLS0gcGl4ZWxzOiBzaW5nbGUgaW5pdCwgbm8gYnJvd3NlciBQdXJjaGFzZSAtLS0KYXNzZXJ0LnN0cmljdEVxdWFsKChwaXhlbC5tYXRjaCgvZmJxXCgnaW5pdCcvZykgfHwgW10pLmxlbmd0aCwgMSwgImV4YWN0bHkgb25lIE1ldGEgUGl4ZWwgaW5pdCBpbiB0aGUgc3RvcmUgcGl4ZWwgY29tcG9uZW50Iik7CmFzc2VydC5vayghL3RyYWNrXCgiUHVyY2hhc2UiLy50ZXN0KHBpeGVsKSAmJiAhL3RyYWNrXCgiUHVyY2hhc2UiLy50ZXN0KHRpa3RvayksICJicm93c2VyIHBpeGVscyBuZXZlciBmaXJlIFB1cmNoYXNlIik7CmFzc2VydC5tYXRjaCh0aWt0b2ssIC9ORVhUX1BVQkxJQ19USUtUT0tfUElYRUxfQ09ERS8sICJUaWtUb2sgYnJvd3NlciBwaXhlbCBpcyBlbnYtZ2F0ZWQiKTsKCi8vIC0tLSBlbnYgZG9jdW1lbnRhdGlvbiAtLS0KZm9yIChjb25zdCB2IG9mIFsiTUVUQV9TVE9SRV9DQVBJX1RPS0VOIiwgIk1FVEFfQ0FQSV9BQ0NFU1NfVE9LRU5fV0hBVFNBUFAiLCAiTUVUQV9QSVhFTF9JRF9XSEFUU0FQUCIsICJNRVRBX1BVUkNIQVNFX1RFU1RfRVZFTlRfQ09ERSIsICJUSUtUT0tfUElYRUxfQ09ERSIsICJUSUtUT0tfRVZFTlRTX0FDQ0VTU19UT0tFTiIsICJUSUtUT0tfVEVTVF9FVkVOVF9DT0RFIiwgIkFETUlOX1NFU1NJT05fU0VDUkVUIiwgIk5FWFRfUFVCTElDX1RJS1RPS19QSVhFTF9DT0RFIl0pIHsKICBhc3NlcnQub2soZW52RXhhbXBsZS5pbmNsdWRlcyh2ICsgIj0iKSwgYC5lbnYuZXhhbXBsZSBkb2N1bWVudHMgJHt2fWApOwp9CgovLyBUaWtUb2sgUHVyY2hhc2UgY29tcGxldGlvbjogc3RvcmUgb3JkZXJzIGFuZCBwYXltZW50IGNvbmZpcm1hdGlvbnMuCmFzc2VydC5vayhhZG1pbi5pbmNsdWRlcygicHVyY2hhc2VfZXZlbnRzX3Rpa3RvayIpICYmIGFkbWluLmluY2x1ZGVzKCdldmVudElkOiAicHVfIiArIG8ubnVtYmVyJyksICJzdG9yZSBvcmRlcnMgc2VuZCBhIFRpa1RvayBQdXJjaGFzZSBhdCBNYXJrLWFzLVBhaWQgd2l0aCB0aGUgc3RhYmxlIHB1XyBldmVudCBpZCIpOwphc3NlcnQub2soY29uZkFjdGlvbnMuaW5jbHVkZXMoInNlbmRUaWtUb2tQdXJjaGFzZSIpICYmIGNvbmZBY3Rpb25zLmluY2x1ZGVzKCdudW1iZXI6ICJQQyIgKyBpZCcpLCAicGF5bWVudCBjb25maXJtYXRpb25zIHNlbmQgYSBUaWtUb2sgUHVyY2hhc2UgYXQgTWFyay1hcy1QYWlkIik7CmFzc2VydC5vayhjb25mQWN0aW9ucy5pbmNsdWRlcygidGlrdG9rX2V2ZW50X3N0YXR1cyIpLCAiY29uZmlybWF0aW9uIFRpa1RvayBzdGF0dXMgaXMgc3RvcmVkIHNlcGFyYXRlbHkgZnJvbSBNZXRhIik7CgovLyBQYXltZW50IGNvbmZpcm1hdGlvbnMgYXJlIGJvdW5kIHRvIGEgcmVhbCBvcmRlci4KYXNzZXJ0Lm9rKGNvbmZpcm1Sb3V0ZS5pbmNsdWRlcygiZ2V0T3JkZXJCeU51bWJlciIpICYmIGNvbmZpcm1Sb3V0ZS5pbmNsdWRlcygiZXJyb3JzLm9yZGVyUmVmZXJlbmNlIiksICJjb25maXJtLXBheW1lbnQgcmVxdWlyZXMgYW5kIHZhbGlkYXRlcyBhbiBvcmRlciByZWZlcmVuY2Ugc2VydmVyLXNpZGUiKTsKYXNzZXJ0Lm9rKGNvbmZpcm1Sb3V0ZS5pbmNsdWRlcygibWF0Y2hlZE9yZGVyLnRvdGFsID8/IG1hdGNoZWRPcmRlci5zdWJ0b3RhbCIpLCAiY29uZmlybS1wYXltZW50IHZhbGlkYXRlcyB0aGUgYW1vdW50IGFnYWluc3QgdGhlIG9yZGVyIHRvdGFsLCBuZXZlciB0aGUgY2xpZW50J3Mgd29yZCIpOwphc3NlcnQub2soY29uZmlybVJvdXRlLmluY2x1ZGVzKCJub3JtYWxpc2VQaG9uZShwaG9uZSkgIT09IG5vcm1hbGlzZVBob25lIiksICJjb25maXJtLXBheW1lbnQgdmFsaWRhdGVzIHRoZSBwaG9uZSBhZ2FpbnN0IHRoZSBvcmRlciIpOwphc3NlcnQub2soY29uZmlybVJvdXRlLmluY2x1ZGVzKCJzdGF0dXMgSU4gKCdhd2FpdGluZ192ZXJpZmljYXRpb24nLCAncGFpZCcpIiksICJvbmUgYWN0aXZlIHN1Ym1pc3Npb24gcGVyIG9yZGVyIik7CmFzc2VydC5vayhjb25maXJtUm91dGUuaW5jbHVkZXMoIldIRVJFIHJlY2VpcHRfaGFzaCA9ID8gTElNSVQgMSIpLCAidGhlIHNhbWUgcmVjZWlwdCBmaWxlIGNhbm5vdCBiZSByZXVzZWQgYWNyb3NzIG9yZGVycyIpOwoKY29uc29sZS5sb2coIlRyYWNraW5nL3BheW1lbnQgcmVncmVzc2lvbiBjaGVja3MgcGFzc2VkLiIpOwo=
+/*
+ * Regression tests for the payment / tracking rules that must never break again:
+ *  - Purchase fires only after an admin confirms payment, never on order creation or receipt upload.
+ *  - A test event ("sent_test") is never treated as a production Purchase ("sent").
+ *  - Mark-as-Paid is an atomic claim (conditional UPDATE), so concurrent confirmations cannot double-send.
+ *  - Purchase event ids are stable per order, so retries are deduplicated by Meta / TikTok.
+ * Run with: node tests/tracking-regression.mjs   (no server needed)
+ */
+import fs from "node:fs";
+import assert from "node:assert/strict";
+
+const read = (f) => fs.readFileSync(f, "utf8");
+const admin = read("src/app/admin/actions.ts");
+const confActions = read("src/app/admin/confirmation-actions.ts");
+const meta = read("src/lib/meta.ts");
+const capiFunnel = read("src/lib/capi-funnel.ts");
+const metaConf = read("src/lib/meta-confirmation.ts");
+const ordersRoute = read("src/app/api/orders/route.ts");
+const funnelRoute = read("src/app/api/funnel/order/route.ts");
+const orderPaymentRoute = read("src/app/api/orders/[number]/payment/route.ts");
+const confirmRoute = read("src/app/api/confirm-payment/route.ts");
+const pixel = read("src/components/pixel.tsx");
+const tiktok = read("src/components/tiktok.tsx");
+const envExample = read(".env.example");
+
+// --- test vs production separation ---
+assert.ok(!/startsWith\("sent"\)/.test(admin), "admin actions must not treat sent_test as sent (startsWith)");
+assert.ok(!/\.startsWith\("sent"\)/.test(confActions), "confirmation actions must not treat sent_test as sent");
+assert.match(confActions, /ev\.status === "sent"/, "confirmation message keys on exact production status");
+assert.match(confActions, /ev\.status === "sent_test"/, "confirmation message distinguishes test events");
+assert.match(metaConf, /test \? "sent_test" : "sent"/, "confirmation Purchase keeps test/prod statuses distinct");
+assert.match(capiFunnel, /test \? "sent_test" : "sent"/, "funnel Meta Purchase keeps test/prod statuses distinct");
+
+// --- atomic, idempotent mark-as-paid ---
+assert.match(admin, /WHERE id = \? AND payment_status != 'paid'/, "order verify uses a conditional UPDATE claim");
+assert.match(admin, /Number\(claimed\.changes\) !== 1/, "order verify aborts when the claim was already taken");
+assert.match(confActions, /WHERE id = \? AND status != 'paid'/, "confirmation mark-paid uses a conditional UPDATE claim");
+assert.match(confActions, /Number\(claimed\.changes\) !== 1/, "confirmation mark-paid aborts when already claimed");
+
+// --- stable event ids (platform deduplication) ---
+assert.match(meta, /eventId = "pu_" \+ o\.number/, "store Purchase event id is stable per order");
+assert.ok(!/eventId = "pu_" \+ Date\.now/.test(meta), "store Purchase event id must not be random per call");
+assert.match(capiFunnel, /eventId: "pu_" \+ o\.number/, "funnel Purchase event id is stable per order");
+assert.match(metaConf, /eventId = "pc_" \+ c\.id/, "confirmation Purchase event id is stable per submission");
+assert.match(capiFunnel, /Promise\.resolve\("already_sent"\)/, "skipped platforms never report a fresh 'sent'");
+
+// --- Purchase only after admin confirmation ---
+assert.ok(!/Purchase/.test(ordersRoute), "store order creation route never sends a Purchase");
+assert.ok(!/name: "Purchase"/.test(funnelRoute) && !/sendFunnelPurchase/.test(funnelRoute), "funnel order route sends no Purchase");
+assert.match(funnelRoute, /name: "Lead"/, "funnel order creation sends Lead only");
+assert.ok(!/payment_status = 'paid'/.test(orderPaymentRoute), "customer payment route can never mark an order paid");
+assert.match(orderPaymentRoute, /awaiting_verification/, "customer payment route only moves orders to awaiting_verification");
+assert.ok(!/status = 'paid'/.test(confirmRoute), "confirm-payment route can never mark a submission paid");
+
+// --- receipt duplicate protection ---
+assert.match(confirmRoute, /receipt_hash/, "confirm-payment stores a receipt hash");
+assert.match(confirmRoute, /status: 409/, "duplicate receipt submission is rejected");
+
+// --- pixels: single init, no browser Purchase ---
+assert.strictEqual((pixel.match(/fbq\('init'/g) || []).length, 1, "exactly one Meta Pixel init in the store pixel component");
+assert.ok(!/track\("Purchase"/.test(pixel) && !/track\("Purchase"/.test(tiktok), "browser pixels never fire Purchase");
+assert.match(tiktok, /NEXT_PUBLIC_TIKTOK_PIXEL_CODE/, "TikTok browser pixel is env-gated");
+
+// --- env documentation ---
+for (const v of ["META_STORE_CAPI_TOKEN", "META_CAPI_ACCESS_TOKEN_WHATSAPP", "META_PIXEL_ID_WHATSAPP", "META_PURCHASE_TEST_EVENT_CODE", "TIKTOK_PIXEL_CODE", "TIKTOK_EVENTS_ACCESS_TOKEN", "TIKTOK_TEST_EVENT_CODE", "ADMIN_SESSION_SECRET", "NEXT_PUBLIC_TIKTOK_PIXEL_CODE"]) {
+  assert.ok(envExample.includes(v + "="), `.env.example documents ${v}`);
+}
+
+// TikTok Purchase completion: store orders and payment confirmations.
+assert.ok(admin.includes("purchase_events_tiktok") && admin.includes('eventId: "pu_" + o.number'), "store orders send a TikTok Purchase at Mark-as-Paid with the stable pu_ event id");
+assert.ok(confActions.includes("sendTikTokPurchase") && confActions.includes('number: "PC" + id'), "payment confirmations send a TikTok Purchase at Mark-as-Paid");
+assert.ok(confActions.includes("tiktok_event_status"), "confirmation TikTok status is stored separately from Meta");
+
+// Payment confirmations are bound to a real order.
+assert.ok(confirmRoute.includes("getOrderByNumber") && confirmRoute.includes("errors.orderReference"), "confirm-payment requires and validates an order reference server-side");
+assert.ok(confirmRoute.includes("matchedOrder.total ?? matchedOrder.subtotal"), "confirm-payment validates the amount against the order total, never the client's word");
+assert.ok(confirmRoute.includes("normalisePhone(phone) !== normalisePhone"), "confirm-payment validates the phone against the order");
+assert.ok(confirmRoute.includes("status IN ('awaiting_verification', 'paid')"), "one active submission per order");
+assert.ok(confirmRoute.includes("WHERE receipt_hash = ? LIMIT 1"), "the same receipt file cannot be reused across orders");
+
+console.log("Tracking/payment regression checks passed.");
