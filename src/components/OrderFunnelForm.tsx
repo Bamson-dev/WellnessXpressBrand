@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NIGERIAN_STATES } from "@/lib/site";
 
-const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "ttclid"];
+const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "ttclid", "fbp", "fbc", "ttp"];
 
 export default function OrderFunnelForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
