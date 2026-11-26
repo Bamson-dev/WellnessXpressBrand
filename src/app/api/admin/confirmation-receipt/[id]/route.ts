@@ -1,1 +1,24 @@
-aW1wb3J0IHBhdGggZnJvbSAicGF0aCI7CmltcG9ydCB7IHByb21pc2VzIGFzIGZzIH0gZnJvbSAiZnMiOwppbXBvcnQgeyBSRUNFSVBUX0RJUiB9IGZyb20gIkAvbGliL2RiIjsKaW1wb3J0IHsgY29uZmlybWF0aW9uc0RiIH0gZnJvbSAiQC9saWIvcGF5bWVudC1jb25maXJtYXRpb25zIjsKaW1wb3J0IHsgY2FuLCBjdXJyZW50QWRtaW4gfSBmcm9tICJAL2xpYi9hdXRoIjsKCmV4cG9ydCBjb25zdCBkeW5hbWljID0gImZvcmNlLWR5bmFtaWMiOwpjb25zdCBUWVBFUzogUmVjb3JkPHN0cmluZywgc3RyaW5nPiA9IHsganBnOiAiaW1hZ2UvanBlZyIsIHBuZzogImltYWdlL3BuZyIsIHBkZjogImFwcGxpY2F0aW9uL3BkZiIgfTsKCi8qKiBQYXltZW50LWNvbmZpcm1hdGlvbiByZWNlaXB0cyBhcmUgcHJpdmF0ZS4gT25seSBzaWduZWQtaW4gYWRtaW5zIHdpdGggcGF5bWVudCBhY2Nlc3MgY2FuIG9wZW4gdGhlbS4gKi8KZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIEdFVChfcmVxOiBSZXF1ZXN0LCBwcm9wczogeyBwYXJhbXM6IFByb21pc2U8eyBpZDogc3RyaW5nIH0+IH0pIHsKICBjb25zdCBwYXJhbXMgPSBhd2FpdCBwcm9wcy5wYXJhbXM7CiAgaWYgKCFjYW4oYXdhaXQgY3VycmVudEFkbWluKCksICJwYXltZW50cyIpKSByZXR1cm4gbmV3IFJlc3BvbnNlKCJOb3QgZm91bmQiLCB7IHN0YXR1czogNDA0IH0pOwogIGNvbnN0IHJvdyA9IGNvbmZpcm1hdGlvbnNEYigpLnByZXBhcmUoIlNFTEVDVCByZWNlaXB0X3BhdGggRlJPTSBwYXltZW50X2NvbmZpcm1hdGlvbnMgV0hFUkUgaWQgPSA/IikuZ2V0KE51bWJlcihwYXJhbXMuaWQpKTsKICBjb25zdCBuYW1lID0gU3RyaW5nKHJvdz8ucmVjZWlwdF9wYXRoIHx8ICIiKTsKICBpZiAoIS9eUENcZCstW2EtZjAtOV17MTJ9XC4oanBnfHBuZ3xwZGYpJC8udGVzdChuYW1lKSkgcmV0dXJuIG5ldyBSZXNwb25zZSgiTm90IGZvdW5kIiwgeyBzdGF0dXM6IDQwNCB9KTsKICB0cnkgewogICAgY29uc3QgYnVmID0gYXdhaXQgZnMucmVhZEZpbGUocGF0aC5qb2luKFJFQ0VJUFRfRElSLCBuYW1lKSk7CiAgICBjb25zdCBleHQgPSBuYW1lLnNwbGl0KCIuIikucG9wKCkgYXMgc3RyaW5nOwogICAgcmV0dXJuIG5ldyBSZXNwb25zZShidWYsIHsgaGVhZGVyczogeyAiQ29udGVudC1UeXBlIjogVFlQRVNbZXh0XSwgIkNhY2hlLUNvbnRyb2wiOiAicHJpdmF0ZSwgbm8tc3RvcmUiLCAiWC1Db250ZW50LVR5cGUtT3B0aW9ucyI6ICJub3NuaWZmIiwgIkNvbnRlbnQtRGlzcG9zaXRpb24iOiBgJHtleHQgPT09ICJwZGYiID8gImF0dGFjaG1lbnQiIDogImlubGluZSJ9OyBmaWxlbmFtZT0iJHtuYW1lfSJgIH0gfSk7CiAgfSBjYXRjaCB7CiAgICByZXR1cm4gbmV3IFJlc3BvbnNlKCJOb3QgZm91bmQiLCB7IHN0YXR1czogNDA0IH0pOwogIH0KfQo=
+import path from "path";
+import { promises as fs } from "fs";
+import { RECEIPT_DIR } from "@/lib/db";
+import { confirmationsDb } from "@/lib/payment-confirmations";
+import { can, currentAdmin } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+const TYPES: Record<string, string> = { jpg: "image/jpeg", png: "image/png", pdf: "application/pdf" };
+
+/** Payment-confirmation receipts are private. Only signed-in admins with payment access can open them. */
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  if (!can(await currentAdmin(), "payments")) return new Response("Not found", { status: 404 });
+  const row = confirmationsDb().prepare("SELECT receipt_path FROM payment_confirmations WHERE id = ?").get(Number(params.id));
+  const name = String(row?.receipt_path || "");
+  if (!/^PC\d+-[a-f0-9]{12}\.(jpg|png|pdf)$/.test(name)) return new Response("Not found", { status: 404 });
+  try {
+    const buf = await fs.readFile(path.join(RECEIPT_DIR, name));
+    const ext = name.split(".").pop() as string;
+    return new Response(buf, { headers: { "Content-Type": TYPES[ext], "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": `${ext === "pdf" ? "attachment" : "inline"}; filename="${name}"` } });
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
+}
