@@ -1,1 +1,76 @@
-aW1wb3J0ICJzZXJ2ZXItb25seSI7CmltcG9ydCB7IGNyZWF0ZUhhc2ggfSBmcm9tICJjcnlwdG8iOwoKLyoKICogU2VydmVyLXNpZGUgZXZlbnRzIGZvciBmdW5uZWwgb3JkZXJzLiBNZXRhIHVzZXMgdGhlIFdoYXRzQXBwIGZ1bm5lbCBkYXRhc2V0IChFZGl0aCBQaXhlbCAxKSBhbmQgaXRzIHRva2VuLgogKiBUaWtUb2sgdXNlcyBpdHMgb3duIFBpeGVsIGNvZGUgYW5kIEV2ZW50cyBBUEkgdG9rZW4gKFRJS1RPS19QSVhFTF9DT0RFLCBUSUtUT0tfRVZFTlRTX0FDQ0VTU19UT0tFTikuIE5vdGhpbmcgaXMgc2VudCB3aGVuIGEgdG9rZW4gaXMgbWlzc2luZy4KICogUHVyY2hhc2UgaXMgY2FsbGVkIG9ubHkgZnJvbSB0aGUgYWRtaW4gImNvbmZpcm0gcGF5bWVudCIgYWN0aW9uLiBMZWFkIGlzIGNhbGxlZCB3aGVuIHRoZSBvcmRlciBpcyBjcmVhdGVkLgogKi8KY29uc3Qgc2hhID0gKHY6IHN0cmluZykgPT4gY3JlYXRlSGFzaCgic2hhMjU2IikudXBkYXRlKHYudHJpbSgpLnRvTG93ZXJDYXNlKCkpLmRpZ2VzdCgiaGV4Iik7CnR5cGUgRXYgPSB7IG5hbWU6ICJQdXJjaGFzZSIgfCAiTGVhZCI7IGV2ZW50SWQ6IHN0cmluZzsgbnVtYmVyOiBzdHJpbmc7IHBob25lOiBzdHJpbmc7IHZhbHVlOiBudW1iZXI7IHVybDogc3RyaW5nOyB0cmFja2luZzogc3RyaW5nIH07CnR5cGUgVHIgPSB7IGZicD86IHN0cmluZzsgZmJjPzogc3RyaW5nOyB0dHA/OiBzdHJpbmc7IHR0Y2xpZD86IHN0cmluZzsgdWE/OiBzdHJpbmc7IGlwPzogc3RyaW5nIH07CmNvbnN0IHBhcnNlID0gKHJhdzogc3RyaW5nKTogVHIgPT4geyB0cnkgeyByZXR1cm4gSlNPTi5wYXJzZShyYXcpIGFzIFRyOyB9IGNhdGNoIHsgcmV0dXJuIHt9OyB9IH07CgpleHBvcnQgYXN5bmMgZnVuY3Rpb24gc2VuZE1ldGFGdW5uZWwoZTogRXYpIHsKICBjb25zdCBwaXhlbCA9IHByb2Nlc3MuZW52Lk1FVEFfUElYRUxfSURfV0hBVFNBUFAgfHwgIjEyOTA4OTAxOTY0NzQ1MTciOwogIGNvbnN0IHRva2VuID0gcHJvY2Vzcy5lbnYuTUVUQV9DQVBJX0FDQ0VTU19UT0tFTl9XSEFUU0FQUDsKICBpZiAoIXRva2VuKSByZXR1cm4gIm5vdF9jb25maWd1cmVkIjsKICBjb25zdCB0ID0gcGFyc2UoZS50cmFja2luZyk7CiAgY29uc3QgdXNlcjogUmVjb3JkPHN0cmluZywgdW5rbm93bj4gPSB7IGNvdW50cnk6IFtzaGEoIm5nIildLCBleHRlcm5hbF9pZDogW3NoYSgib3JkZXI6IiArIGUubnVtYmVyKV0gfTsKICBpZiAoZS5waG9uZSkgdXNlci5waCA9IFtzaGEoZS5waG9uZSldOwogIGlmICh0LmZicCkgdXNlci5mYnAgPSB0LmZicDsKICBpZiAodC5mYmMpIHVzZXIuZmJjID0gdC5mYmM7CiAgaWYgKHQudWEpIHVzZXIuY2xpZW50X3VzZXJfYWdlbnQgPSB0LnVhOwogIGlmICh0LmlwKSB1c2VyLmNsaWVudF9pcF9hZGRyZXNzID0gdC5pcDsKICAvLyBUaGUgcHVyY2hhc2UgdGVzdCBjb2RlIGFwcGxpZXMgdG8gUHVyY2hhc2Ugb25seSDigJQgYSBMZWFkIG11c3QgbmV2ZXIgYmUgZGl2ZXJ0ZWQgdG8gVGVzdCBFdmVudHMgYnkgaXQuCiAgY29uc3QgdGVzdCA9IGUubmFtZSA9PT0gIlB1cmNoYXNlIiA/IHByb2Nlc3MuZW52Lk1FVEFfUFVSQ0hBU0VfVEVTVF9FVkVOVF9DT0RFIDogdW5kZWZpbmVkOwogIHRyeSB7CiAgICBjb25zdCByID0gYXdhaXQgZmV0Y2goYGh0dHBzOi8vZ3JhcGguZmFjZWJvb2suY29tLyR7cHJvY2Vzcy5lbnYuTUVUQV9HUkFQSF9WRVJTSU9OIHx8ICJ2MjEuMCJ9LyR7cGl4ZWx9L2V2ZW50c2AsIHsKICAgICAgbWV0aG9kOiAiUE9TVCIsIGhlYWRlcnM6IHsgIkNvbnRlbnQtVHlwZSI6ICJhcHBsaWNhdGlvbi9qc29uIiwgQXV0aG9yaXphdGlvbjogIkJlYXJlciAiICsgdG9rZW4gfSwKICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkoewogICAgICAgIGRhdGE6IFt7IGV2ZW50X25hbWU6IGUubmFtZSwgZXZlbnRfdGltZTogTWF0aC5mbG9vcihEYXRlLm5vdygpIC8gMTAwMCksIGV2ZW50X2lkOiBlLmV2ZW50SWQsIGFjdGlvbl9zb3VyY2U6ICJ3ZWJzaXRlIiwgZXZlbnRfc291cmNlX3VybDogZS51cmwsIHVzZXJfZGF0YTogdXNlciwKICAgICAgICAgIGN1c3RvbV9kYXRhOiB7IGN1cnJlbmN5OiAiTkdOIiwgdmFsdWU6IGUudmFsdWUsIGNvbnRlbnRfbmFtZTogIkdlbmVyYWwgRmF0IExvc3MgMy1pbi0xIENvbWJvIiwgY29udGVudF90eXBlOiAicHJvZHVjdCIsIG9yZGVyX2lkOiBlLm51bWJlciB9IH1dLAogICAgICAgIC4uLih0ZXN0ID8geyB0ZXN0X2V2ZW50X2NvZGU6IHRlc3QgfSA6IHt9KSwKICAgICAgfSksCiAgICAgIHNpZ25hbDogQWJvcnRTaWduYWwudGltZW91dCg4MDAwKSwKICAgIH0pOwogICAgcmV0dXJuIHIub2sgPyAodGVzdCA/ICJzZW50X3Rlc3QiIDogInNlbnQiKSA6ICJtZXRhX2Vycm9yXyIgKyByLnN0YXR1czsKICB9IGNhdGNoIHsgcmV0dXJuICJuZXR3b3JrX2Vycm9yIjsgfQp9CgovKiogVGlrVG9rIEV2ZW50cyBBUEkuIFVudmVyaWZpZWQgdW50aWwgeW91IHByb3ZpZGUgY3JlZGVudGlhbHMgYW5kIHNlZSB0aGUgZXZlbnQgaW4gVGlrVG9rIEV2ZW50cyBNYW5hZ2VyLiAqLwpleHBvcnQgYXN5bmMgZnVuY3Rpb24gc2VuZFRpa1Rva1B1cmNoYXNlKGU6IEV2KSB7CiAgY29uc3QgY29kZSA9IHByb2Nlc3MuZW52LlRJS1RPS19QSVhFTF9DT0RFLCB0b2tlbiA9IHByb2Nlc3MuZW52LlRJS1RPS19FVkVOVFNfQUNDRVNTX1RPS0VOOwogIGlmICghY29kZSB8fCAhdG9rZW4pIHJldHVybiAibm90X2NvbmZpZ3VyZWQiOwogIGNvbnN0IHQgPSBwYXJzZShlLnRyYWNraW5nKTsKICBjb25zdCB1c2VyOiBSZWNvcmQ8c3RyaW5nLCB1bmtub3duPiA9IHt9OwogIGlmIChlLnBob25lKSB1c2VyLnBob25lX251bWJlciA9IHNoYSgiKyIgKyBlLnBob25lLnJlcGxhY2UoL1xEL2csICIiKSk7CiAgdXNlci5leHRlcm5hbF9pZCA9IHNoYSgib3JkZXI6IiArIGUubnVtYmVyKTsKICBpZiAodC50dGNsaWQpIHVzZXIudHRjbGlkID0gdC50dGNsaWQ7CiAgaWYgKHQudHRwKSB1c2VyLnR0cCA9IHQudHRwOwogIGlmICh0LmlwKSB1c2VyLmlwID0gdC5pcDsKICBpZiAodC51YSkgdXNlci51c2VyX2FnZW50ID0gdC51YTsKICBjb25zdCB0ZXN0ID0gcHJvY2Vzcy5lbnYuVElLVE9LX1RFU1RfRVZFTlRfQ09ERTsKICB0cnkgewogICAgY29uc3QgciA9IGF3YWl0IGZldGNoKCJodHRwczovL2J1c2luZXNzLWFwaS50aWt0b2suY29tL29wZW5fYXBpL3YxLjMvZXZlbnQvdHJhY2svIiwgewogICAgICBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogeyAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iLCAiQWNjZXNzLVRva2VuIjogdG9rZW4gfSwKICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkoewogICAgICAgIGV2ZW50X3NvdXJjZTogIndlYiIsIGV2ZW50X3NvdXJjZV9pZDogY29kZSwgLi4uKHRlc3QgPyB7IHRlc3RfZXZlbnRfY29kZTogdGVzdCB9IDoge30pLAogICAgICAgIGRhdGE6IFt7IGV2ZW50OiAiUHVyY2hhc2UiLCBldmVudF90aW1lOiBNYXRoLmZsb29yKERhdGUubm93KCkgLyAxMDAwKSwgZXZlbnRfaWQ6IGUuZXZlbnRJZCwgdXNlciwgcGFnZTogeyB1cmw6IGUudXJsIH0sCiAgICAgICAgICBwcm9wZXJ0aWVzOiB7IGN1cnJlbmN5OiAiTkdOIiwgdmFsdWU6IGUudmFsdWUsIGNvbnRlbnRfdHlwZTogInByb2R1Y3QiLCBvcmRlcl9pZDogZS5udW1iZXIsIGNvbnRlbnRzOiBbeyBjb250ZW50X2lkOiAiV1gtM0lOMS1DT01CTyIsIGNvbnRlbnRfbmFtZTogIkdlbmVyYWwgRmF0IExvc3MgMy1pbi0xIENvbWJvIiwgcXVhbnRpdHk6IDEsIHByaWNlOiBlLnZhbHVlIH1dIH0gfV0sCiAgICAgIH0pLAogICAgICBzaWduYWw6IEFib3J0U2lnbmFsLnRpbWVvdXQoODAwMCksCiAgICB9KTsKICAgIGNvbnN0IGogPSAoYXdhaXQgci5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSkpIGFzIHsgY29kZT86IG51bWJlciB9OwogICAgcmV0dXJuIHIub2sgJiYgai5jb2RlID09PSAwID8gKHRlc3QgPyAic2VudF90ZXN0IiA6ICJzZW50IikgOiAidGlrdG9rX2Vycm9yXyIgKyAoai5jb2RlID8/IHIuc3RhdHVzKTsKICB9IGNhdGNoIHsgcmV0dXJuICJuZXR3b3JrX2Vycm9yIjsgfQp9CgovKiogQ2FsbGVkIGZyb20gdGhlIGFkbWluICJjb25maXJtIHBheW1lbnQiIGFjdGlvbiBmb3IgZnVubmVsIG9yZGVycy4gUmV0dXJucyB0aGUgTWV0YSBzdGF0dXMgYW5kIHRoZSBUaWtUb2sgc3RhdHVzLiAqLwpleHBvcnQgYXN5bmMgZnVuY3Rpb24gc2VuZEZ1bm5lbFB1cmNoYXNlKG86IHsgbnVtYmVyOiBzdHJpbmc7IHRvdGFsOiBudW1iZXI7IHBob25lOiBzdHJpbmc7IHRyYWNraW5nOiBzdHJpbmc7IHVybDogc3RyaW5nOyBza2lwTWV0YT86IGJvb2xlYW47IHNraXBUaWtUb2s/OiBib29sZWFuIH0pIHsKICBjb25zdCBlOiBFdiA9IHsgbmFtZTogIlB1cmNoYXNlIiwgZXZlbnRJZDogInB1XyIgKyBvLm51bWJlciwgbnVtYmVyOiBvLm51bWJlciwgcGhvbmU6IG8ucGhvbmUsIHZhbHVlOiBvLnRvdGFsLCB1cmw6IG8udXJsLCB0cmFja2luZzogby50cmFja2luZyB9OwogIC8vIFNraXBwZWQgcGxhdGZvcm1zIHJlcG9ydCAiYWxyZWFkeV9zZW50IiwgbmV2ZXIgInNlbnQiOiBub3RoaW5nIHdhcyBzZW50IGluIHRoaXMgY2FsbCwgYW5kIGNhbGxlcnMgbXVzdCBub3QKICAvLyByZWNvcmQgYSBmcmVzaCBwcm9kdWN0aW9uIHNlbmQgdGhhdCBkaWQgbm90IGhhcHBlbi4KICBjb25zdCBbbWV0YSwgdGlrdG9rXSA9IGF3YWl0IFByb21pc2UuYWxsKFtvLnNraXBNZXRhID8gUHJvbWlzZS5yZXNvbHZlKCJhbHJlYWR5X3NlbnQiKSA6IHNlbmRNZXRhRnVubmVsKGUpLCBvLnNraXBUaWtUb2sgPyBQcm9taXNlLnJlc29sdmUoImFscmVhZHlfc2VudCIpIDogc2VuZFRpa1Rva1B1cmNoYXNlKGUpXSk7CiAgcmV0dXJuIHsgZXZlbnRJZDogZS5ldmVudElkLCBtZXRhLCB0aWt0b2sgfTsKfQo=
+import "server-only";
+import { createHash } from "crypto";
+
+/*
+ * Server-side events for funnel orders. Meta uses the WhatsApp funnel dataset (Edith Pixel 1) and its token.
+ * TikTok uses its own Pixel code and Events API token (TIKTOK_PIXEL_CODE, TIKTOK_EVENTS_ACCESS_TOKEN). Nothing is sent when a token is missing.
+ * Purchase is called only from the admin "confirm payment" action. Lead is called when the order is created.
+ */
+const sha = (v: string) => createHash("sha256").update(v.trim().toLowerCase()).digest("hex");
+type Ev = { name: "Purchase" | "Lead"; eventId: string; number: string; phone: string; value: number; url: string; tracking: string };
+type Tr = { fbp?: string; fbc?: string; ttp?: string; ttclid?: string; ua?: string; ip?: string };
+const parse = (raw: string): Tr => { try { return JSON.parse(raw) as Tr; } catch { return {}; } };
+
+export async function sendMetaFunnel(e: Ev) {
+  const pixel = process.env.META_PIXEL_ID_WHATSAPP || "1290890196474517";
+  const token = process.env.META_CAPI_ACCESS_TOKEN_WHATSAPP;
+  if (!token) return "not_configured";
+  const t = parse(e.tracking);
+  const user: Record<string, unknown> = { country: [sha("ng")], external_id: [sha("order:" + e.number)] };
+  if (e.phone) user.ph = [sha(e.phone)];
+  if (t.fbp) user.fbp = t.fbp;
+  if (t.fbc) user.fbc = t.fbc;
+  if (t.ua) user.client_user_agent = t.ua;
+  if (t.ip) user.client_ip_address = t.ip;
+  // The purchase test code applies to Purchase only — a Lead must never be diverted to Test Events by it.
+  const test = e.name === "Purchase" ? process.env.META_PURCHASE_TEST_EVENT_CODE : undefined;
+  try {
+    const r = await fetch(`https://graph.facebook.com/${process.env.META_GRAPH_VERSION || "v21.0"}/${pixel}/events`, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({
+        data: [{ event_name: e.name, event_time: Math.floor(Date.now() / 1000), event_id: e.eventId, action_source: "website", event_source_url: e.url, user_data: user,
+          custom_data: { currency: "NGN", value: e.value, content_name: "General Fat Loss 3-in-1 Combo", content_type: "product", order_id: e.number } }],
+        ...(test ? { test_event_code: test } : {}),
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    return r.ok ? (test ? "sent_test" : "sent") : "meta_error_" + r.status;
+  } catch { return "network_error"; }
+}
+
+/** TikTok Events API. Unverified until you provide credentials and see the event in TikTok Events Manager. */
+export async function sendTikTokPurchase(e: Ev) {
+  const code = process.env.TIKTOK_PIXEL_CODE, token = process.env.TIKTOK_EVENTS_ACCESS_TOKEN;
+  if (!code || !token) return "not_configured";
+  const t = parse(e.tracking);
+  const user: Record<string, unknown> = {};
+  if (e.phone) user.phone_number = sha("+" + e.phone.replace(/\D/g, ""));
+  user.external_id = sha("order:" + e.number);
+  if (t.ttclid) user.ttclid = t.ttclid;
+  if (t.ttp) user.ttp = t.ttp;
+  if (t.ip) user.ip = t.ip;
+  if (t.ua) user.user_agent = t.ua;
+  const test = process.env.TIKTOK_TEST_EVENT_CODE;
+  try {
+    const r = await fetch("https://business-api.tiktok.com/open_api/v1.3/event/track/", {
+      method: "POST", headers: { "Content-Type": "application/json", "Access-Token": token },
+      body: JSON.stringify({
+        event_source: "web", event_source_id: code, ...(test ? { test_event_code: test } : {}),
+        data: [{ event: "Purchase", event_time: Math.floor(Date.now() / 1000), event_id: e.eventId, user, page: { url: e.url },
+          properties: { currency: "NGN", value: e.value, content_type: "product", order_id: e.number, contents: [{ content_id: "WX-3IN1-COMBO", content_name: "General Fat Loss 3-in-1 Combo", quantity: 1, price: e.value }] } }],
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const j = (await r.json().catch(() => ({}))) as { code?: number };
+    return r.ok && j.code === 0 ? (test ? "sent_test" : "sent") : "tiktok_error_" + (j.code ?? r.status);
+  } catch { return "network_error"; }
+}
+
+/** Called from the admin "confirm payment" action for funnel orders. Returns the Meta status and the TikTok status. */
+export async function sendFunnelPurchase(o: { number: string; total: number; phone: string; tracking: string; url: string; skipMeta?: boolean; skipTikTok?: boolean }) {
+  const e: Ev = { name: "Purchase", eventId: "pu_" + o.number, number: o.number, phone: o.phone, value: o.total, url: o.url, tracking: o.tracking };
+  // Skipped platforms report "already_sent", never "sent": nothing was sent in this call, and callers must not
+  // record a fresh production send that did not happen.
+  const [meta, tiktok] = await Promise.all([o.skipMeta ? Promise.resolve("already_sent") : sendMetaFunnel(e), o.skipTikTok ? Promise.resolve("already_sent") : sendTikTokPurchase(e)]);
+  return { eventId: e.eventId, meta, tiktok };
+}
