@@ -1,1 +1,95 @@
-Ly8gT3JkZXItcmVmZXJlbmNlIGludGVncmF0aW9uIHRlc3RzIGZvciAvYXBpL2NvbmZpcm0tcGF5bWVudC4gUnVuIGFnYWluc3QgYSBTRUNPTkQgZGlzcG9zYWJsZSBzZXJ2ZXIKLy8gaW5zdGFuY2UgKGl0cyBvd24gV1hfREFUQSBkaXIgYW5kIHBvcnQpIGJlY2F1c2UgdGhlIGVuZHBvaW50IGlzIHJhdGUtbGltaXRlZCBwZXIgSVAgYW5kIHRoaXMgc3VpdGUKLy8gbmVlZHMgbW9yZSBzdWJtaXNzaW9ucyB0aGFuIG9uZSBidWNrZXQgYWxsb3dzOyBkaXN0aW5jdCBjZi1jb25uZWN0aW5nLWlwIHZhbHVlcyBzdGFuZCBpbiBmb3IKLy8gZGlzdGluY3QgY3VzdG9tZXJzLiBObyByZWFsIHBheW1lbnQgZXZlbnRzIGNhbiBmaXJlOiBzdWJtaXNzaW9ucyBuZXZlciBtYXJrIGFueXRoaW5nIHBhaWQuCmltcG9ydCBmcyBmcm9tICJub2RlOmZzIjsKaW1wb3J0IHBhdGggZnJvbSAibm9kZTpwYXRoIjsKaW1wb3J0IHsgRGF0YWJhc2VTeW5jIH0gZnJvbSAibm9kZTpzcWxpdGUiOwoKY29uc3QgQiA9IHByb2Nlc3MuZW52LldYX0JBU0UgfHwgImh0dHA6Ly9sb2NhbGhvc3Q6MzMwMiI7CmNvbnN0IERBVEEgPSBwcm9jZXNzLmVudi5XWF9EQVRBOwppZiAoIURBVEEgfHwgL15cL2RhdGFcLz8kLy50ZXN0KERBVEEpKSB7IGNvbnNvbGUuZXJyb3IoIlNldCBXWF9EQVRBIHRvIHRoZSBkaXNwb3NhYmxlIHRlc3QgZGF0YSBkaXJlY3RvcnkuIik7IHByb2Nlc3MuZXhpdCgyKTsgfQpjb25zdCBkYiA9ICgpID0+IG5ldyBEYXRhYmFzZVN5bmMocGF0aC5qb2luKERBVEEsICJzdG9yZS5kYiIpKTsKY29uc3QgcTEgPSAocywgLi4ucCkgPT4geyBjb25zdCBkID0gZGIoKTsgdHJ5IHsgcmV0dXJuIGQucHJlcGFyZShzKS5nZXQoLi4ucCk7IH0gZmluYWxseSB7IGQuY2xvc2UoKTsgfSB9Owpjb25zdCBydW4gPSAocywgLi4ucCkgPT4geyBjb25zdCBkID0gZGIoKTsgdHJ5IHsgcmV0dXJuIGQucHJlcGFyZShzKS5ydW4oLi4ucCk7IH0gZmluYWxseSB7IGQuY2xvc2UoKTsgfSB9Owpjb25zdCBPUklHSU4gPSB7IG9yaWdpbjogQiB9OwoKbGV0IHBhc3MgPSAwLCBmYWlsID0gMDsKY29uc3Qgb2sgPSAoY29uZCwgbmFtZSkgPT4geyBjb25zb2xlLmxvZyhjb25kID8gIuKckyIgOiAi4pyXIiwgbmFtZSk7IGNvbmQgPyBwYXNzKysgOiBmYWlsKys7IH07CmNvbnN0IHN0ZXAgPSBhc3luYyAobmFtZSwgZm4pID0+IHsgdHJ5IHsgYXdhaXQgZm4oKTsgfSBjYXRjaCAoZSkgeyBvayhmYWxzZSwgYCR7bmFtZX0gdGhyZXc6ICR7U3RyaW5nKGUubWVzc2FnZSkuc3BsaXQoIlxuIilbMF19YCk7IH0gfTsKCmNvbnN0IGZ1bm5lbEJvZHkgPSAocGhvbmUsIGtleSkgPT4gKHsgbmFtZTogIlJlZiBUZXN0IEN1c3RvbWVyIiwgcGhvbmUsIHN0YXRlOiAiTGFnb3MiLCBhZGRyZXNzOiAiMTIgSW50ZWdyYXRpb24gQ2xvc2UsIElrZWphLCBMYWdvcyIsIGNsaWVudEtleToga2V5IH0pOwphc3luYyBmdW5jdGlvbiBtYWtlT3JkZXIocGhvbmUsIGtleSkgewogIGNvbnN0IHIgPSBhd2FpdCBmZXRjaChCICsgIi9hcGkvZnVubmVsL29yZGVyIiwgeyBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogeyAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iLCAuLi5PUklHSU4gfSwgYm9keTogSlNPTi5zdHJpbmdpZnkoZnVubmVsQm9keShwaG9uZSwga2V5KSkgfSk7CiAgY29uc3QgaiA9IGF3YWl0IHIuanNvbigpOwogIGlmICghai5udW1iZXIpIHRocm93IG5ldyBFcnJvcigib3JkZXIgY3JlYXRpb24gZmFpbGVkOiAiICsgSlNPTi5zdHJpbmdpZnkoaikpOwogIHJldHVybiBqLm51bWJlcjsKfQoKY29uc3QgcG5nID0gZnMucmVhZEZpbGVTeW5jKHBhdGguam9pbihwcm9jZXNzLmN3ZCgpLCAidGVzdHMvZml4dHVyZS1wcm9kdWN0LnBuZyIpKTsKY29uc3QgcG5nVmFyaWFudCA9ICh0YWcpID0+IG5ldyBCbG9iKFtCdWZmZXIuY29uY2F0KFtwbmcsIEJ1ZmZlci5mcm9tKHRhZyldKV0sIHsgdHlwZTogImltYWdlL3BuZyIgfSk7CmNvbnN0IHN1Ym1pdCA9IChpcCwgb3ZlciA9IHt9KSA9PiB7CiAgY29uc3QgZmQgPSBuZXcgRm9ybURhdGEoKTsKICBpZiAob3Zlci5vcmRlclJlZmVyZW5jZSAhPT0gbnVsbCkgZmQuc2V0KCJvcmRlclJlZmVyZW5jZSIsIG92ZXIub3JkZXJSZWZlcmVuY2UgPz8gIiIpOwogIGZkLnNldCgiZnVsbE5hbWUiLCBvdmVyLmZ1bGxOYW1lIHx8ICJSZWYgVGVzdCBDdXN0b21lciIpOwogIGZkLnNldCgicGhvbmUiLCBvdmVyLnBob25lIHx8ICIiKTsKICBmZC5zZXQoImFtb3VudCIsIG92ZXIuYW1vdW50IHx8ICIzMDAwMCIpOwogIGZkLnNldCgiYWRkcmVzcyIsIG92ZXIuYWRkcmVzcyB8fCAiMTIgSW50ZWdyYXRpb24gQ2xvc2UsIElrZWphIik7CiAgZmQuc2V0KCJzdGF0ZSIsIG92ZXIuc3RhdGUgfHwgIkxhZ29zIik7CiAgZmQuc2V0KCJyZWNlaXB0Iiwgb3Zlci5maWxlIHx8IG5ldyBCbG9iKFtwbmddLCB7IHR5cGU6ICJpbWFnZS9wbmciIH0pLCAicmVjZWlwdC5wbmciKTsKICByZXR1cm4gZmV0Y2goQiArICIvYXBpL2NvbmZpcm0tcGF5bWVudCIsIHsgbWV0aG9kOiAiUE9TVCIsIGhlYWRlcnM6IHsgLi4uT1JJR0lOLCAiY2YtY29ubmVjdGluZy1pcCI6IGlwIH0sIGJvZHk6IGZkIH0pOwp9OwoKY29uc3QgUDEgPSAiMDgwMzEwMDEwMDEiLCBQMiA9ICIwODAzMTAwMTAwMiIsIFAzID0gIjA4MDMxMDAxMDAzIiwgUDQgPSAiMDgwMzEwMDEwMDQiOwpsZXQgTzEsIE8yLCBPMywgTzQ7CmF3YWl0IHN0ZXAoInNldHVwIG9yZGVycyIsIGFzeW5jICgpID0+IHsKICBPMSA9IGF3YWl0IG1ha2VPcmRlcihQMSwgInJlZnRlc3QtbzEiKTsKICBPMiA9IGF3YWl0IG1ha2VPcmRlcihQMiwgInJlZnRlc3QtbzIiKTsKICBPMyA9IGF3YWl0IG1ha2VPcmRlcihQMywgInJlZnRlc3QtbzMiKTsKICBPNCA9IGF3YWl0IG1ha2VPcmRlcihQNCwgInJlZnRlc3QtbzQiKTsKICBydW4oIlVQREFURSBvcmRlcnMgU0VUIHBheW1lbnRfc3RhdHVzID0gJ3BhaWQnIFdIRVJFIG51bWJlciA9ID8iLCBPMyk7CiAgcnVuKCJVUERBVEUgb3JkZXJzIFNFVCBmdWxmaWxtZW50X3N0YXR1cyA9ICdjYW5jZWxsZWQnIFdIRVJFIG51bWJlciA9ID8iLCBPNCk7CiAgb2soISFPMSAmJiAhIU8yICYmICEhTzMgJiYgISFPNCwgImZvdXIgdGVzdCBvcmRlcnMgY3JlYXRlZCIpOwp9KTsKCmF3YWl0IHN0ZXAoInJlZmVyZW5jZSB2YWxpZGF0aW9uIChidWNrZXQgQSkiLCBhc3luYyAoKSA9PiB7CiAgY29uc3QgaXAgPSAiMTAuMC4wLjEiOwogIGxldCByID0gYXdhaXQgc3VibWl0KGlwLCB7IG9yZGVyUmVmZXJlbmNlOiBudWxsLCBwaG9uZTogUDEgfSk7CiAgb2soci5zdGF0dXMgPT09IDQwMCwgIm1pc3Npbmcgb3JkZXIgcmVmZXJlbmNlIHJlamVjdGVkICg0MDApIik7CiAgciA9IGF3YWl0IHN1Ym1pdChpcCwgeyBvcmRlclJlZmVyZW5jZTogIk9SREVSLTEyMyIsIHBob25lOiBQMSB9KTsKICBvayhyLnN0YXR1cyA9PT0gNDAwLCAibWFsZm9ybWVkIG9yZGVyIHJlZmVyZW5jZSByZWplY3RlZCAoNDAwKSIpOwogIHIgPSBhd2FpdCBzdWJtaXQoaXAsIHsgb3JkZXJSZWZlcmVuY2U6ICJXWDk5MDEwMS1aWlpaWiIsIHBob25lOiBQMSB9KTsKICBjb25zdCBqID0gYXdhaXQgci5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgb2soci5zdGF0dXMgPT09IDQwMCAmJiAhIWouZXJyb3JzPy5vcmRlclJlZmVyZW5jZSwgIm5vbi1leGlzdGVudCBvcmRlciByZWZlcmVuY2UgcmVqZWN0ZWQgd2l0aCBhIGZpZWxkIGVycm9yICg0MDApIik7CiAgciA9IGF3YWl0IHN1Ym1pdChpcCwgeyBvcmRlclJlZmVyZW5jZTogTzEsIHBob25lOiBQMSwgYW1vdW50OiAiMjkwMDAiIH0pOwogIGNvbnN0IGoyID0gYXdhaXQgci5qc29uKCkuY2F0Y2goKCkgPT4gKHt9KSk7CiAgb2soci5zdGF0dXMgPT09IDQwMCAmJiAhIWoyLmVycm9ycz8uYW1vdW50LCAiYW1vdW50IHRoYXQgZG9lcyBub3QgbWF0Y2ggdGhlIG9yZGVyIHRvdGFsIHJlamVjdGVkICg0MDApIik7Cn0pOwoKYXdhaXQgc3RlcCgicGhvbmUgbWF0Y2hpbmcgYW5kIHRoZSB2YWxpZCBzdWJtaXNzaW9uIChidWNrZXQgQikiLCBhc3luYyAoKSA9PiB7CiAgY29uc3QgaXAgPSAiMTAuMC4wLjIiOwogIGxldCByID0gYXdhaXQgc3VibWl0KGlwLCB7IG9yZGVyUmVmZXJlbmNlOiBPMSwgcGhvbmU6ICIwODAzOTk5OTk5OSIgfSk7CiAgY29uc3QgaiA9IGF3YWl0IHIuanNvbigpLmNhdGNoKCgpID0+ICh7fSkpOwogIG9rKHIuc3RhdHVzID09PSA0MDAgJiYgISFqLmVycm9ycz8ucGhvbmUsICJwaG9uZSB0aGF0IGRvZXMgbm90IG1hdGNoIHRoZSBvcmRlciByZWplY3RlZCAoNDAwKSIpOwogIHIgPSBhd2FpdCBzdWJtaXQoaXAsIHsgb3JkZXJSZWZlcmVuY2U6IE8xLCBwaG9uZTogUDEgfSk7CiAgb2soci5zdGF0dXMgPT09IDIwMCwgInZhbGlkIHN1Ym1pc3Npb24gKG1hdGNoaW5nIHJlZmVyZW5jZSwgcGhvbmUsIGFtb3VudCkgYWNjZXB0ZWQiKTsKICBjb25zdCByb3cgPSBxMSgiU0VMRUNUIHN0YXR1cyBzLCBvcmRlcl9udW1iZXIgbiBGUk9NIHBheW1lbnRfY29uZmlybWF0aW9ucyBXSEVSRSBvcmRlcl9udW1iZXIgPSA/IiwgTzEpOwogIG9rKHJvdyAmJiByb3cucyA9PT0gImF3YWl0aW5nX3ZlcmlmaWNhdGlvbiIsICJzdWJtaXNzaW9uIHN0b3JlZCBhcyBhd2FpdGluZ192ZXJpZmljYXRpb24sIE5PVCBwYWlkIik7CiAgb2socTEoIlNFTEVDVCBwYXltZW50X3N0YXR1cyBzIEZST00gb3JkZXJzIFdIRVJFIG51bWJlciA9ID8iLCBPMSkucyA9PT0gInBlbmRpbmdfcGF5bWVudCIsICJ0aGUgb3JkZXIgaXRzZWxmIGlzIHN0aWxsIE5PVCBwYWlkIGFmdGVyIGV2aWRlbmNlIHN1Ym1pc3Npb24iKTsKICByID0gYXdhaXQgc3VibWl0KGlwLCB7IG9yZGVyUmVmZXJlbmNlOiBPMSwgcGhvbmU6IFAxLCBmaWxlOiBwbmdWYXJpYW50KCJkaWZmZXJlbnQtcmVjZWlwdCIpIH0pOwogIG9rKHIuc3RhdHVzID09PSA0MDksICJzZWNvbmQgc3VibWlzc2lvbiBmb3IgdGhlIHNhbWUgb3JkZXIgcmVqZWN0ZWQgKDQwOSksIGV2ZW4gd2l0aCBhIGRpZmZlcmVudCByZWNlaXB0Iik7Cn0pOwoKYXdhaXQgc3RlcCgicmVjZWlwdCByZXVzZSBhbmQgY2xvc2VkIG9yZGVycyAoYnVja2V0IEMpIiwgYXN5bmMgKCkgPT4gewogIGNvbnN0IGlwID0gIjEwLjAuMC4zIjsKICBsZXQgciA9IGF3YWl0IHN1Ym1pdChpcCwgeyBvcmRlclJlZmVyZW5jZTogTzIsIHBob25lOiBQMiB9KTsKICBvayhyLnN0YXR1cyA9PT0gNDA5LCAidGhlIHNhbWUgcmVjZWlwdCBmaWxlIHJldXNlZCBmb3IgYSBkaWZmZXJlbnQgb3JkZXIgcmVqZWN0ZWQgKDQwOSkiKTsKICByID0gYXdhaXQgc3VibWl0KGlwLCB7IG9yZGVyUmVmZXJlbmNlOiBPMywgcGhvbmU6IFAzLCBmaWxlOiBwbmdWYXJpYW50KCJwYWlkLW9yZGVyIikgfSk7CiAgb2soci5zdGF0dXMgPT09IDQwMCwgInN1Ym1pc3Npb24gZm9yIGFuIGFscmVhZHktcGFpZCBvcmRlciByZWplY3RlZCAoNDAwKSIpOwogIHIgPSBhd2FpdCBzdWJtaXQoaXAsIHsgb3JkZXJSZWZlcmVuY2U6IE80LCBwaG9uZTogUDQsIGZpbGU6IHBuZ1ZhcmlhbnQoImNhbmNlbGxlZC1vcmRlciIpIH0pOwogIG9rKHIuc3RhdHVzID09PSA0MDAsICJzdWJtaXNzaW9uIGZvciBhIGNhbmNlbGxlZCBvcmRlciByZWplY3RlZCAoNDAwKSIpOwogIG9rKHExKCJTRUxFQ1QgQ09VTlQoKikgYyBGUk9NIHBheW1lbnRfY29uZmlybWF0aW9ucyIpLmMgPT09IDEsICJleGFjdGx5IG9uZSBzdWJtaXNzaW9uIGV4aXN0cyBhZnRlciBhbGwgYXR0ZW1wdHMiKTsKfSk7Cgpjb25zb2xlLmxvZyhgXG4ke3Bhc3N9IHBhc3NlZCwgJHtmYWlsfSBmYWlsZWRgKTsKcHJvY2Vzcy5leGl0KGZhaWwgPyAxIDogMCk7Cg==
+// Order-reference integration tests for /api/confirm-payment. Run against a SECOND disposable server
+// instance (its own WX_DATA dir and port) because the endpoint is rate-limited per IP and this suite
+// needs more submissions than one bucket allows; distinct cf-connecting-ip values stand in for
+// distinct customers. No real payment events can fire: submissions never mark anything paid.
+import fs from "node:fs";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
+
+const B = process.env.WX_BASE || "http://localhost:3302";
+const DATA = process.env.WX_DATA;
+if (!DATA || /^\/data\/?$/.test(DATA)) { console.error("Set WX_DATA to the disposable test data directory."); process.exit(2); }
+const db = () => new DatabaseSync(path.join(DATA, "store.db"));
+const q1 = (s, ...p) => { const d = db(); try { return d.prepare(s).get(...p); } finally { d.close(); } };
+const run = (s, ...p) => { const d = db(); try { return d.prepare(s).run(...p); } finally { d.close(); } };
+const ORIGIN = { origin: B };
+
+let pass = 0, fail = 0;
+const ok = (cond, name) => { console.log(cond ? "✓" : "✗", name); cond ? pass++ : fail++; };
+const step = async (name, fn) => { try { await fn(); } catch (e) { ok(false, `${name} threw: ${String(e.message).split("\n")[0]}`); } };
+
+const funnelBody = (phone, key) => ({ name: "Ref Test Customer", phone, state: "Lagos", address: "12 Integration Close, Ikeja, Lagos", clientKey: key });
+async function makeOrder(phone, key) {
+  const r = await fetch(B + "/api/funnel/order", { method: "POST", headers: { "Content-Type": "application/json", ...ORIGIN }, body: JSON.stringify(funnelBody(phone, key)) });
+  const j = await r.json();
+  if (!j.number) throw new Error("order creation failed: " + JSON.stringify(j));
+  return j.number;
+}
+
+const png = fs.readFileSync(path.join(process.cwd(), "tests/fixture-product.png"));
+const pngVariant = (tag) => new Blob([Buffer.concat([png, Buffer.from(tag)])], { type: "image/png" });
+const submit = (ip, over = {}) => {
+  const fd = new FormData();
+  if (over.orderReference !== null) fd.set("orderReference", over.orderReference ?? "");
+  fd.set("fullName", over.fullName || "Ref Test Customer");
+  fd.set("phone", over.phone || "");
+  fd.set("amount", over.amount || "30000");
+  fd.set("address", over.address || "12 Integration Close, Ikeja");
+  fd.set("state", over.state || "Lagos");
+  fd.set("receipt", over.file || new Blob([png], { type: "image/png" }), "receipt.png");
+  return fetch(B + "/api/confirm-payment", { method: "POST", headers: { ...ORIGIN, "cf-connecting-ip": ip }, body: fd });
+};
+
+const P1 = "08031001001", P2 = "08031001002", P3 = "08031001003", P4 = "08031001004";
+let O1, O2, O3, O4;
+await step("setup orders", async () => {
+  O1 = await makeOrder(P1, "reftest-o1");
+  O2 = await makeOrder(P2, "reftest-o2");
+  O3 = await makeOrder(P3, "reftest-o3");
+  O4 = await makeOrder(P4, "reftest-o4");
+  run("UPDATE orders SET payment_status = 'paid' WHERE number = ?", O3);
+  run("UPDATE orders SET fulfilment_status = 'cancelled' WHERE number = ?", O4);
+  ok(!!O1 && !!O2 && !!O3 && !!O4, "four test orders created");
+});
+
+await step("reference validation (bucket A)", async () => {
+  const ip = "10.0.0.1";
+  let r = await submit(ip, { orderReference: null, phone: P1 });
+  ok(r.status === 400, "missing order reference rejected (400)");
+  r = await submit(ip, { orderReference: "ORDER-123", phone: P1 });
+  ok(r.status === 400, "malformed order reference rejected (400)");
+  r = await submit(ip, { orderReference: "WX990101-ZZZZZ", phone: P1 });
+  const j = await r.json().catch(() => ({}));
+  ok(r.status === 400 && !!j.errors?.orderReference, "non-existent order reference rejected with a field error (400)");
+  r = await submit(ip, { orderReference: O1, phone: P1, amount: "29000" });
+  const j2 = await r.json().catch(() => ({}));
+  ok(r.status === 400 && !!j2.errors?.amount, "amount that does not match the order total rejected (400)");
+});
+
+await step("phone matching and the valid submission (bucket B)", async () => {
+  const ip = "10.0.0.2";
+  let r = await submit(ip, { orderReference: O1, phone: "08039999999" });
+  const j = await r.json().catch(() => ({}));
+  ok(r.status === 400 && !!j.errors?.phone, "phone that does not match the order rejected (400)");
+  r = await submit(ip, { orderReference: O1, phone: P1 });
+  ok(r.status === 200, "valid submission (matching reference, phone, amount) accepted");
+  const row = q1("SELECT status s, order_number n FROM payment_confirmations WHERE order_number = ?", O1);
+  ok(row && row.s === "awaiting_verification", "submission stored as awaiting_verification, NOT paid");
+  ok(q1("SELECT payment_status s FROM orders WHERE number = ?", O1).s === "pending_payment", "the order itself is still NOT paid after evidence submission");
+  r = await submit(ip, { orderReference: O1, phone: P1, file: pngVariant("different-receipt") });
+  ok(r.status === 409, "second submission for the same order rejected (409), even with a different receipt");
+});
+
+await step("receipt reuse and closed orders (bucket C)", async () => {
+  const ip = "10.0.0.3";
+  let r = await submit(ip, { orderReference: O2, phone: P2 });
+  ok(r.status === 409, "the same receipt file reused for a different order rejected (409)");
+  r = await submit(ip, { orderReference: O3, phone: P3, file: pngVariant("paid-order") });
+  ok(r.status === 400, "submission for an already-paid order rejected (400)");
+  r = await submit(ip, { orderReference: O4, phone: P4, file: pngVariant("cancelled-order") });
+  ok(r.status === 400, "submission for a cancelled order rejected (400)");
+  ok(q1("SELECT COUNT(*) c FROM payment_confirmations").c === 1, "exactly one submission exists after all attempts");
+});
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);
