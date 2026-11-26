@@ -845,6 +845,9 @@ await step("meta tracking regression", async () => {
   const src = (f) => fs.readFileSync(path.join(FIX, "..", f), "utf8");
   ok(/track\("InitiateCheckout"/.test(src("src/components/CheckoutForm.tsx")) && /track\("AddToCart"/.test(src("src/components/CartProvider.tsx")) && /track\("PageView"\)/.test(src("src/components/pixel.tsx")), "Pixel event names unchanged (PageView, AddToCart, InitiateCheckout)");
   ok(/event_name: "Purchase"/.test(src("src/lib/meta.ts")) && /sendStorePurchase\(/.test(src("src/app/admin/actions.ts")), "CAPI Purchase still sent only from payment confirmation");
+  const funnelForm = src("src/components/OrderFunnelForm.tsx");
+  ok(/\[\["fbp", "_fbp"\], \["fbc", "_fbc"\], \["ttp", "_ttp"\]\]/.test(funnelForm) && /readCookie\(cookieName\)/.test(funnelForm), "3-in-1 order form falls back to first-party browser cookies for Meta and TikTok IDs");
+  ok(/attr\.fbc = `fb\.1\.\$\{Date\.now\(\)\}\.\$\{attr\.fbclid\}`/.test(funnelForm), "3-in-1 order form builds fbc from a transferred fbclid when missing");
   ok(metaRequests.length === 0, `no requests to Meta during the tests (${metaRequests.length})`);
 });
 

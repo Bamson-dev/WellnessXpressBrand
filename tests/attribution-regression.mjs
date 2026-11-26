@@ -1,0 +1,18 @@
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const form = fs.readFileSync("src/components/OrderFunnelForm.tsx", "utf8");
+const funnel = fs.readFileSync("src/lib/funnel.ts", "utf8");
+const api = fs.readFileSync("src/app/api/funnel/order/route.ts", "utf8");
+const admin = fs.readFileSync("src/app/admin/actions.ts", "utf8");
+assert.match(form, /KEYS\s*=\s*\[[^\]]*fbp[^\]]*fbc[^\]]*ttp/s, "form sends attribution identifiers");
+assert.match(form, /cookieName.*readCookie\(cookieName\)/s, "fallback reads Meta browser cookie");
+assert.match(form, /"_fbc"/, "Meta click cookie is in fallback list");
+assert.match(form, /"_ttp"/, "TikTok cookie is in fallback list");
+assert.match(form, /fb\.1\.\$\{Date\.now\(\)\}\.\$\{attr\.fbclid\}/, "form derives fbc when fbclid is available");
+assert.match(api, /sendMetaFunnel\(\{\s*name:\s*"Lead"/, "order submit sends Lead, not Purchase");
+assert.match(api, /createFunnelOrder/, "API creates normal funnel order");
+assert.match(funnel, /funnel:\s*FUNNEL\.slug/, "order tracking includes funnel marker");
+assert.match(admin, /const already = prevStatus === "sent";/, "test events are not considered production-sent");
+assert.match(admin, /skipTikTok: String\(trk\.tt_status \|\| ""\) === "sent"/, "TikTok test events do not suppress production sends");
+assert.match(admin, /if \(String\(trk\.tt_status \|\| ""\) !== "sent"\)/, "TikTok status stores test status distinctly");
+console.log("Attribution regression checks passed.");
