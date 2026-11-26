@@ -198,7 +198,7 @@ export function restoreStock(orderId: number, actor = "system") {
   tx((d) => releaseOrderStock(d, orderId, actor, "Order cancelled"));
 }
 
-export type OrderFilter = { payment?: string; fulfilment?: string; q?: string; limit?: number; offset?: number };
+export type OrderFilter = { payment?: string; fulfilment?: string; q?: string; source?: string; limit?: number; offset?: number };
 export function listOrders(f: OrderFilter = {}) {
   const w: string[] = [];
   const p: unknown[] = [];
@@ -206,6 +206,8 @@ export function listOrders(f: OrderFilter = {}) {
   else if (f.payment === "awaiting_fee") w.push("delivery_payment_status IN ('not_set','pending') AND fulfilment_status != 'cancelled'");
   else if (f.payment) { w.push("payment_status = ?"); p.push(f.payment); }
   if (f.fulfilment) { w.push("fulfilment_status = ?"); p.push(f.fulfilment); }
+  if (f.source === "store") w.push("json_extract(tracking,'$.funnel') IS NULL");
+  else if (f.source) { w.push("json_extract(tracking,'$.platform') = ?"); p.push(f.source); }
   if (f.q) {
     const like = "%" + f.q.replace(/[%_]/g, "") + "%";
     w.push("(number LIKE ? OR customer_name LIKE ? OR phone LIKE ? OR email LIKE ? OR payment_reference LIKE ?)");
