@@ -1,0 +1,42 @@
+import { site } from "@/lib/site";
+import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
+import { getCategories, getCategoryRedirect } from "@/lib/catalog";
+import ShopGrid from "@/components/ShopGrid";
+
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
+  const c = getCategories().find((x) => x.slug === params.slug);
+  if (!c) {
+    const target = getCategoryRedirect(params.slug);
+    if (target) redirect(`/category/${target}`);
+  }
+  // Short category blurbs make weak search snippets; extend them with what the page offers until a meta description is set in SEO settings.
+  const desc = c ? (c.metaDescription || (c.description.length >= 70 ? c.description : `${c.description.replace(/\.?\s*$/, ".")} Shop ${c.name.toLowerCase()} from WellnessXpressBrand online in Nigeria and pay by bank transfer.`.trim())) : "";
+  return c ? { title: c.seoTitle || c.name, description: desc, alternates: { canonical: `/category/${c.slug}` },
+    openGraph: { title: c.seoTitle || c.name, description: desc, url: `${site.url}/category/${c.slug}`, images: c.image ? [{ url: c.image, alt: c.name }] : undefined },
+    robots: c.noindex ? { index: false, follow: true } : undefined } : {};
+}
+
+export default async function Category(
+  props: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string>> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+  const c = getCategories().find((x) => x.slug === params.slug);
+  if (!c) {
+    const target = getCategoryRedirect(params.slug);
+    if (target) redirect(`/category/${target}`);
+  }
+  if (!c) notFound();
+  const crumbs = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: site.url },
+    { "@type": "ListItem", position: 2, name: c.name, item: `${site.url}/category/${c.slug}` },
+  ] };
+  return (
+    <>
+      <ShopGrid sp={searchParams} category={c.slug} basePath={`/category/${c.slug}`} title={c.name} intro={c.description} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(crumbs).replace(/</g, "\\u003c") }} />
+    </>
+  );
+}
