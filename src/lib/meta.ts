@@ -1,1 +1,48 @@
-aW1wb3J0ICJzZXJ2ZXItb25seSI7CgovKgogKiBNZXRhIHRyYWNraW5nIGZvciB0aGUgbWFpbiBzdG9yZSBvbmx5LiBJdCB1c2VzIGl0cyBvd24gZW52IHZhcnMgYW5kIG5ldmVyIHRvdWNoZXMgdGhlIGZ1bm5lbCBwaXhlbHMKICogKFdoYXRzQXBwIC8gVGVsZWdyYW0pIGhhbmRsZWQgYnkgL2FwaS9tZXRhLWNhcGkuCiAqICAgTkVYVF9QVUJMSUNfTUVUQV9QSVhFTF9JRCAgIGJyb3dzZXIgUGl4ZWwgZm9yIHRoZSBzdG9yZSAob3B0aW9uYWwpCiAqICAgTUVUQV9TVE9SRV9DQVBJX1RPS0VOICAgICAgIHNlcnZlciB0b2tlbiBmb3IgdGhlIHNhbWUgUGl4ZWwgKG9wdGlvbmFsKQogKiBQdXJjaGFzZSBpcyBzZW50IG9ubHkgZnJvbSB0aGUgYWRtaW4gInZlcmlmeSBwYXltZW50IiBhY3Rpb24sIG5ldmVyIHdoZW4gYW4gb3JkZXIgaXMgcGxhY2VkLgogKiBPbmx5IG9yZGVyIHZhbHVlLCBjdXJyZW5jeSBhbmQgU0tVcyBhcmUgc2VudC4gTm8gaGVhbHRoIG9yIHBlcnNvbmFsIGRldGFpbHMuCiAqLwpleHBvcnQgYXN5bmMgZnVuY3Rpb24gc2VuZFN0b3JlUHVyY2hhc2UobzogeyBudW1iZXI6IHN0cmluZzsgdG90YWw6IG51bWJlciB8IG51bGw7IHNrdXM6IHN0cmluZ1tdOyB1cmw6IHN0cmluZzsgdHJhY2tpbmc6IHN0cmluZyB9KSB7CiAgY29uc3QgcGl4ZWwgPSBwcm9jZXNzLmVudi5ORVhUX1BVQkxJQ19NRVRBX1BJWEVMX0lEOwogIGNvbnN0IHRva2VuID0gcHJvY2Vzcy5lbnYuTUVUQV9TVE9SRV9DQVBJX1RPS0VOOwogIGlmICghcGl4ZWwgfHwgIXRva2VuIHx8IG8udG90YWwgPT0gbnVsbCkgcmV0dXJuIHsgc3RhdHVzOiAibm90X2NvbmZpZ3VyZWQiLCBldmVudElkOiAiIiB9OwogIC8vIFN0YWJsZSBwZXItb3JkZXIgZXZlbnQgaWQ6IGEgcmV0cnkgb2YgdGhlIHNhbWUgb3JkZXIncyBQdXJjaGFzZSBpcyBkZWR1cGxpY2F0ZWQgYnkgTWV0YSBpbnN0ZWFkIG9mIGRvdWJsZS1jb3VudGluZy4KICBjb25zdCBldmVudElkID0gInB1XyIgKyBvLm51bWJlcjsKICB0cnkgewogICAgY29uc3QgciA9IGF3YWl0IGZldGNoKGBodHRwczovL2dyYXBoLmZhY2Vib29rLmNvbS8ke3Byb2Nlc3MuZW52Lk1FVEFfR1JBUEhfVkVSU0lPTiB8fCAidjIxLjAifS8ke3BpeGVsfS9ldmVudHNgLCB7CiAgICAgIG1ldGhvZDogIlBPU1QiLAogICAgICBoZWFkZXJzOiB7ICJDb250ZW50LVR5cGUiOiAiYXBwbGljYXRpb24vanNvbiIsIEF1dGhvcml6YXRpb246ICJCZWFyZXIgIiArIHRva2VuIH0sCiAgICAgIGJvZHk6IEpTT04uc3RyaW5naWZ5KHsKICAgICAgICBkYXRhOiBbewogICAgICAgICAgZXZlbnRfbmFtZTogIlB1cmNoYXNlIiwgZXZlbnRfdGltZTogTWF0aC5mbG9vcihEYXRlLm5vdygpIC8gMTAwMCksIGV2ZW50X2lkOiBldmVudElkLCBhY3Rpb25fc291cmNlOiAid2Vic2l0ZSIsCiAgICAgICAgICBldmVudF9zb3VyY2VfdXJsOiBvLnVybCwgdXNlcl9kYXRhOiB1c2VyRGF0YShvLnRyYWNraW5nKSwKICAgICAgICAgIGN1c3RvbV9kYXRhOiB7IGN1cnJlbmN5OiAiTkdOIiwgdmFsdWU6IG8udG90YWwsIGNvbnRlbnRfaWRzOiBvLnNrdXMsIGNvbnRlbnRfdHlwZTogInByb2R1Y3QiLCBvcmRlcl9pZDogby5udW1iZXIgfSwKICAgICAgICB9XSwKICAgICAgfSksCiAgICAgIHNpZ25hbDogQWJvcnRTaWduYWwudGltZW91dCg4MDAwKSwKICAgIH0pOwogICAgcmV0dXJuIHsgc3RhdHVzOiByLm9rID8gInNlbnQiIDogIm1ldGFfZXJyb3JfIiArIHIuc3RhdHVzLCBldmVudElkIH07CiAgfSBjYXRjaCB7CiAgICByZXR1cm4geyBzdGF0dXM6ICJuZXR3b3JrX2Vycm9yIiwgZXZlbnRJZCB9OwogIH0KfQoKZnVuY3Rpb24gdXNlckRhdGEocmF3OiBzdHJpbmcpIHsKICB0cnkgewogICAgY29uc3QgdCA9IEpTT04ucGFyc2UocmF3KSBhcyB7IGZicD86IHN0cmluZzsgZmJjPzogc3RyaW5nOyB1YT86IHN0cmluZzsgaXA/OiBzdHJpbmcgfTsKICAgIGNvbnN0IHU6IFJlY29yZDxzdHJpbmcsIHN0cmluZz4gPSB7fTsKICAgIGlmICh0LmZicCkgdS5mYnAgPSB0LmZicDsKICAgIGlmICh0LmZiYykgdS5mYmMgPSB0LmZiYzsKICAgIGlmICh0LnVhKSB1LmNsaWVudF91c2VyX2FnZW50ID0gdC51YTsKICAgIGlmICh0LmlwKSB1LmNsaWVudF9pcF9hZGRyZXNzID0gdC5pcDsKICAgIHJldHVybiB1OwogIH0gY2F0Y2ggewogICAgcmV0dXJuIHt9OwogIH0KfQo=
+import "server-only";
+
+/*
+ * Meta tracking for the main store only. It uses its own env vars and never touches the funnel pixels
+ * (WhatsApp / Telegram) handled by /api/meta-capi.
+ *   NEXT_PUBLIC_META_PIXEL_ID   browser Pixel for the store (optional)
+ *   META_STORE_CAPI_TOKEN       server token for the same Pixel (optional)
+ * Purchase is sent only from the admin "verify payment" action, never when an order is placed.
+ * Only order value, currency and SKUs are sent. No health or personal details.
+ */
+export async function sendStorePurchase(o: { number: string; total: number | null; skus: string[]; url: string; tracking: string }) {
+  const pixel = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const token = process.env.META_STORE_CAPI_TOKEN;
+  if (!pixel || !token || o.total == null) return { status: "not_configured", eventId: "" };
+  // Stable per-order event id: a retry of the same order's Purchase is deduplicated by Meta instead of double-counting.
+  const eventId = "pu_" + o.number;
+  try {
+    const r = await fetch(`https://graph.facebook.com/${process.env.META_GRAPH_VERSION || "v21.0"}/${pixel}/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({
+        data: [{
+          event_name: "Purchase", event_time: Math.floor(Date.now() / 1000), event_id: eventId, action_source: "website",
+          event_source_url: o.url, user_data: userData(o.tracking),
+          custom_data: { currency: "NGN", value: o.total, content_ids: o.skus, content_type: "product", order_id: o.number },
+        }],
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    return { status: r.ok ? "sent" : "meta_error_" + r.status, eventId };
+  } catch {
+    return { status: "network_error", eventId };
+  }
+}
+
+function userData(raw: string) {
+  try {
+    const t = JSON.parse(raw) as { fbp?: string; fbc?: string; ua?: string; ip?: string };
+    const u: Record<string, string> = {};
+    if (t.fbp) u.fbp = t.fbp;
+    if (t.fbc) u.fbc = t.fbc;
+    if (t.ua) u.client_user_agent = t.ua;
+    if (t.ip) u.client_ip_address = t.ip;
+    return u;
+  } catch {
+    return {};
+  }
+}
