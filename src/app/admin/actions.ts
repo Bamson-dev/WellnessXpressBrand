@@ -13,6 +13,7 @@ import { adjustStock, recordMovement, releaseOrderStock, reserveOrderStock, type
 import { deliveryZones, setSetting } from "@/lib/settings";
 import { deleteMedia, getMedia, saveImageUpload } from "@/lib/media";
 import { sendStorePurchase } from "@/lib/meta";
+import { sendFunnelPurchase } from "@/lib/capi-funnel";
 import { clean, isEmail, sniffType } from "@/lib/validate";
 import { ipOf, limited } from "@/lib/ratelimit";
 import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
@@ -93,7 +94,19 @@ export async function verifyPaymentAction(f: FormData) {
   ensureInvoice(id, a.email);
   const skus = orderItems(id).map((i) => i.sku);
   // One Purchase per order: if an owner undid and re-confirmed the payment, the original event already reached Meta.
-  const already = String((o as { purchase_event_status?: unknown }).purchase_event_status || "") === "sent";
+  const prevStatus = String((o as { purchase_event_status?: unknown }).purchase_event_status || "");
+  const already = prevStatus.startsWith("sent");
+  let trk: Record<string, unknown> = {};
+  try { trk = JSON.parse(String(o.tracking || "{}")); } catch {}
+  if (trk.funnel) {
+    // Landing-page funnel order: Purchase goes to Meta (Edith Pixel 1) and TikTok, once each, only now that an admin confirmed the payment.
+    const fr = await sendFunnelPurchase({ number: o.number, total: Number(o.total ?? o.subtotal), phone: String(o.phone), tracking: JSON.stringify(trk), url: `${site.url}/order/${o.number}`, skipMeta: already, skipTikTok: String(trk.tt_status || "").startsWith("sent") });
+    if (!already) db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(fr.eventId, fr.meta, id);
+    if (!String(trk.tt_status || "").startsWith("sent")) db().prepare("UPDATE orders SET tracking = ? WHERE id = ?").run(JSON.stringify({ ...trk, tt_status: fr.tiktok }), id);
+    logEvent(id, "system", "purchase_events", `Meta: ${already ? "already sent" : fr.meta}. TikTok: ${String(trk.tt_status || "").startsWith("sent") ? "already sent" : fr.tiktok}.`);
+    revalidatePath("/admin");
+    return back(`/admin/orders/${id}`, "Payment confirmed. The order is now Paid.");
+  }
   const ev = already
     ? { eventId: String((o as { purchase_event_id?: unknown }).purchase_event_id || ""), status: "sent" }
     : await sendStorePurchase({ number: o.number, total: o.delivery_fee_source === "included_in_order" ? Number(o.total) : o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });

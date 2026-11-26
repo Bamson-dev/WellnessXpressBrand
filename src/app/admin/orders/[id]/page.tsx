@@ -7,6 +7,7 @@ import { DELIVERY_PAYMENT_STATUS, FULFILMENT_STATUS, PAYMENT_STATUS, displayPhon
 import Flash from "@/components/admin/Flash";
 import { markDeliveryPaidAction, saveDispatchAction, markPaymentFailedAction, saveNotesAction, setDeliveryFeeAction, setFulfilmentAction, unverifyPaymentAction, verifyPaymentAction } from "@/app/admin/actions";
 import AdminForm from "@/components/admin/AdminForm";
+import AttributionBox from "@/components/admin/AttributionBox";
 
 export const metadata = { title: "Order" };
 
@@ -196,6 +197,7 @@ export default async function OrderDetail(
         </div>
 
         <div className="space-y-5">
+          <AttributionBox o={o} />
           <section className="rounded-xl border border-neutral-200 bg-white p-5">
             <h2 className="text-lg">Customer</h2>
             <dl className="mt-2 text-sm">

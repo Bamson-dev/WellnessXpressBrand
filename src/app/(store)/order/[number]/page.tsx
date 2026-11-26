@@ -55,6 +55,7 @@ export default async function OrderPage(
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-700 text-white"><IconCheck className="h-6 w-6" /></span>
           <div>
             <h1 className="text-2xl">Thank you. We have received your order.</h1>
+            <p className="mt-1 font-semibold text-neutral-900">Your order has been received. Your payment is not yet confirmed. Please complete your payment and submit your receipt for verification.</p>
             <p className="mt-1 text-neutral-700">This page is saved on this phone or computer. Bookmark it to come back and check your order. Keep your order number for WhatsApp support.</p>
           </div>
         </div>
