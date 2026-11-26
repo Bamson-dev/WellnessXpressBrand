@@ -1,1 +1,27 @@
-InVzZSBjbGllbnQiOwppbXBvcnQgU2NyaXB0IGZyb20gIm5leHQvc2NyaXB0IjsKaW1wb3J0IHsgdXNlUGF0aG5hbWUgfSBmcm9tICJuZXh0L25hdmlnYXRpb24iOwppbXBvcnQgeyB1c2VFZmZlY3QgfSBmcm9tICJyZWFjdCI7CgovKgogKiBUaWtUb2sgYnJvd3NlciBQaXhlbC4gTG9hZHMgb25seSB3aGVuIE5FWFRfUFVCTElDX1RJS1RPS19QSVhFTF9DT0RFIGlzIHNldCAocHVibGljIHBpeGVsIGNvZGUsIG5vdCB0aGUKICogRXZlbnRzIEFQSSBhY2Nlc3MgdG9rZW4sIHdoaWNoIHN0YXlzIHNlcnZlci1zaWRlKS4gRmlyZXMgUGFnZVZpZXcgb24gcm91dGUgY2hhbmdlcyBvbmx5LgogKiBQdXJjaGFzZSBpcyBORVZFUiBmaXJlZCBmcm9tIHRoZSBicm93c2VyOiBpdCBpcyBzZW50IHNlcnZlci1zaWRlIGZyb20gdGhlIGFkbWluIHBheW1lbnQgY29uZmlybWF0aW9uCiAqIGFjdGlvbiAoc2VlIHNyYy9saWIvY2FwaS1mdW5uZWwudHMpLCB3aXRoIHRoZSBzYW1lIGV2ZW50IGlkIGZvcm1hdCBUaWtUb2sgdXNlcyBmb3IgZGVkdXBsaWNhdGlvbi4KICovCmNvbnN0IFBJWEVMID0gcHJvY2Vzcy5lbnYuTkVYVF9QVUJMSUNfVElLVE9LX1BJWEVMX0NPREUgfHwgIiI7Cgp0eXBlIFR0cSA9IHsgcGFnZT86ICgpID0+IHZvaWQgfTsKCmV4cG9ydCBmdW5jdGlvbiBUaWtUb2tQaXhlbCgpIHsKICBjb25zdCBwYXRoID0gdXNlUGF0aG5hbWUoKTsKICB1c2VFZmZlY3QoKCkgPT4gewogICAgaWYgKCFQSVhFTCkgcmV0dXJuOwogICAgY29uc3QgdCA9ICh3aW5kb3cgYXMgdW5rbm93biBhcyB7IHR0cT86IFR0cSB9KS50dHE7CiAgICB0cnkgeyB0Py5wYWdlPy4oKTsgfSBjYXRjaCB7IC8qIHBpeGVsIG5vdCByZWFkeSB5ZXQ7IHRoZSBzbmlwcGV0IHF1ZXVlcyBpdHMgb3duIGluaXRpYWwgcGFnZSB2aWV3ICovIH0KICB9LCBbcGF0aF0pOwogIGlmICghUElYRUwgfHwgIS9eW0EtWjAtOV17MTAsMzJ9JC9pLnRlc3QoUElYRUwpKSByZXR1cm4gbnVsbDsKICByZXR1cm4gKAogICAgPFNjcmlwdCBpZD0idGlrdG9rLXBpeGVsIiBzdHJhdGVneT0iYWZ0ZXJJbnRlcmFjdGl2ZSI+e2AhZnVuY3Rpb24odyxkLHQpe3cuVGlrdG9rQW5hbHl0aWNzT2JqZWN0PXQ7dmFyIHR0cT13W3RdPXdbdF18fFtdO3R0cS5tZXRob2RzPVsidHJhY2siLCJwYWdlIiwiaWRlbnRpZnkiLCJpbnN0YW5jZXMiLCJkZWJ1ZyIsIm9uIiwib2ZmIiwib25jZSIsInJlYWR5IiwiYWxpYXMiLCJncm91cCIsImVuYWJsZUNvb2tpZSIsImRpc2FibGVDb29raWUiXTt0dHEuZmFjdG9yeT1mdW5jdGlvbih0KXtyZXR1cm4gZnVuY3Rpb24oKXt2YXIgZT1bdF0uY29uY2F0KEFycmF5LnByb3RvdHlwZS5zbGljZS5jYWxsKGFyZ3VtZW50cywwKSk7dHRxLnB1c2goZSl9fTtmb3IodmFyIGk9MDtpPHR0cS5tZXRob2RzLmxlbmd0aDtpKyspdHRxLnNldEFuZERlZmVyKHR0cSx0dHEubWV0aG9kc1tpXSk7dHRxLmluc3RhbmNlPWZ1bmN0aW9uKHQpe2Zvcih2YXIgZT10dHEuX2lbdF18fFtdLG49MDtuPHR0cS5tZXRob2RzLmxlbmd0aDtuKyspdHRxLnNldEFuZERlZmVyKGUsdHRxLm1ldGhvZHNbbl0pO3JldHVybiBlfTt0dHEubG9hZD1mdW5jdGlvbihlLG4pe3ZhciByPSJodHRwczovL2FuYWx5dGljcy50aWt0b2suY29tL2kxOG4vcGl4ZWwvZXZlbnRzLmpzIjt0dHEuX2k9dHRxLl9pfHx7fTt0dHEuX2lbZV09W107dHRxLl9pW2VdLl91PXI7dHRxLl90PXR0cS5fdHx8e307dHRxLl90W2VdPStuZXcgRGF0ZTt0dHEuX289dHRxLl9vfHx7fTt0dHEuX29bZV09bnx8e307dmFyIG89ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgic2NyaXB0Iik7by50eXBlPSJ0ZXh0L2phdmFzY3JpcHQiO28uYXN5bmM9ITA7by5zcmM9cisiP3Nka2lkPSIrZSsiJmxpYj0iK3Q7dmFyIGE9ZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoInNjcmlwdCIpWzBdO2EucGFyZW50Tm9kZS5pbnNlcnRCZWZvcmUobyxhKX07dHRxLmxvYWQoJyR7UElYRUx9Jyk7dHRxLnBhZ2UoKTt9KHdpbmRvdyxkb2N1bWVudCwndHRxJyk7YH08L1NjcmlwdD4KICApOwp9Cg==
+"use client";
+import Script from "next/script";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+
+/*
+ * TikTok browser Pixel. Loads only when NEXT_PUBLIC_TIKTOK_PIXEL_CODE is set (public pixel code, not the
+ * Events API access token, which stays server-side). Fires PageView on route changes only.
+ * Purchase is NEVER fired from the browser: it is sent server-side from the admin payment confirmation
+ * action (see src/lib/capi-funnel.ts), with the same event id format TikTok uses for deduplication.
+ */
+const PIXEL = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_CODE || "";
+
+type Ttq = { page?: () => void };
+
+export function TikTokPixel() {
+  const path = usePathname();
+  useEffect(() => {
+    if (!PIXEL) return;
+    const t = (window as unknown as { ttq?: Ttq }).ttq;
+    try { t?.page?.(); } catch { /* pixel not ready yet; the snippet queues its own initial page view */ }
+  }, [path]);
+  if (!PIXEL || !/^[A-Z0-9]{10,32}$/i.test(PIXEL)) return null;
+  return (
+    <Script id="tiktok-pixel" strategy="afterInteractive">{`!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["track","page","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];ttq.factory=function(t){return function(){var e=[t].concat(Array.prototype.slice.call(arguments,0));ttq.push(e)}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=r;ttq._t=ttq._t||{};ttq._t[e]=+new Date;ttq._o=ttq._o||{};ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript";o.async=!0;o.src=r+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('${PIXEL}');ttq.page();}(window,document,'ttq');`}</Script>
+  );
+}
