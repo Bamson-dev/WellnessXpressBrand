@@ -28,7 +28,7 @@ function orderNumber() {
   return `WX${ymd}-${s}`;
 }
 
-export type Touch = { source?: string; medium?: string; campaign?: string; content?: string; term?: string; fbclid?: string; ttclid?: string; at?: string };
+export type Touch = { source?: string; medium?: string; campaign?: string; content?: string; term?: string; fbclid?: string; ttclid?: string; fbp?: string; fbc?: string; ttp?: string; at?: string };
 export type Platform = "facebook" | "tiktok" | "organic" | "direct" | "unknown";
 const T = (v: unknown, n = 100) => { const s = clean(v, n); return s || undefined; };
 const CLICK = /^[\w.-]{5,300}$/;
@@ -41,6 +41,9 @@ export function cleanTouch(raw: unknown): Touch | null {
     content: T(r.content ?? r.utm_content), term: T(r.term ?? r.utm_term),
     fbclid: typeof r.fbclid === "string" && CLICK.test(r.fbclid) ? r.fbclid : undefined,
     ttclid: typeof r.ttclid === "string" && CLICK.test(r.ttclid) ? r.ttclid : undefined,
+    fbp: typeof r.fbp === "string" && /^fb\.\d\.\d+\.[\w-]{5,300}$/.test(r.fbp) ? r.fbp : undefined,
+    fbc: typeof r.fbc === "string" && /^fb\.\d\.\d+\.[\w-]{5,300}$/.test(r.fbc) ? r.fbc : undefined,
+    ttp: typeof r.ttp === "string" && /^[\w.-]{5,100}$/.test(r.ttp) ? r.ttp : undefined,
     at: T(r.at, 30),
   };
   return t;
@@ -94,12 +97,12 @@ export function createFunnelOrder(input: FunnelInput) {
   const first = input.attr.first, last = input.attr.last || input.attr.first;
   const platform = platformOf(empty(last) && !input.attr.present ? null : last);
   const ok = (v: unknown) => typeof v === "string" && /^fb\.\d\.\d+\.[\w-]+$/.test(v) ? v : undefined;
-  let fbc = ok(input.ids.fbc);
+  let fbc = ok(input.ids.fbc) || ok(last?.fbc) || ok(first?.fbc);
   const fbclid = last?.fbclid || first?.fbclid;
   if (!fbc && fbclid) fbc = `fb.1.${Date.now()}.${fbclid}`;
   const tracking = {
     funnel: FUNNEL.slug, platform, first, last,
-    fbp: ok(input.ids.fbp), fbc, ttp: input.ids.ttp && /^[\w.-]{5,100}$/.test(input.ids.ttp) ? input.ids.ttp : undefined,
+    fbp: ok(input.ids.fbp) || ok(last?.fbp) || ok(first?.fbp), fbc, ttp: (input.ids.ttp && /^[\w.-]{5,100}$/.test(input.ids.ttp) ? input.ids.ttp : undefined) || last?.ttp || first?.ttp,
     ttclid: last?.ttclid || first?.ttclid, ua: clean(input.ids.ua, 400) || undefined, ip: clean(input.ids.ip, 45) || undefined,
   };
   const bank = getBank();
