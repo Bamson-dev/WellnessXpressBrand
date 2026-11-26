@@ -1,1 +1,68 @@
-InVzZSBjbGllbnQiOwppbXBvcnQgeyB1c2VFZmZlY3QsIHVzZVJlZiwgdXNlU3RhdGUsIHR5cGUgRm9ybUV2ZW50IH0gZnJvbSAicmVhY3QiOwppbXBvcnQgeyBOSUdFUklBTl9TVEFURVMgfSBmcm9tICJAL2xpYi9zaXRlIjsKCmNvbnN0IEtFWVMgPSBbInV0bV9zb3VyY2UiLCAidXRtX21lZGl1bSIsICJ1dG1fY2FtcGFpZ24iLCAidXRtX2NvbnRlbnQiLCAidXRtX3Rlcm0iLCAiZmJjbGlkIiwgInR0Y2xpZCIsICJmYnAiLCAiZmJjIiwgInR0cCJdOwoKLyoqIEZpcnN0LXBhcnR5IGJyb3dzZXIgY29va2llcyBzZXQgYnkgdGhlIE1ldGEgLyBUaWtUb2sgcGl4ZWxzLCB1c2VkIHdoZW4gdGhlIFVSTCBjYXJyaWVzIG5vIElEcy4gKi8KY29uc3QgQ09PS0lFX0ZBTExCQUNLOiBbc3RyaW5nLCBzdHJpbmddW10gPSBbWyJmYnAiLCAiX2ZicCJdLCBbImZiYyIsICJfZmJjIl0sIFsidHRwIiwgIl90dHAiXV07CmZ1bmN0aW9uIHJlYWRDb29raWUoY29va2llTmFtZTogc3RyaW5nKSB7CiAgY29uc3QgbSA9IG5ldyBSZWdFeHAoIig/Ol58O1xccyopIiArIGNvb2tpZU5hbWUgKyAiPShbXjtdKykiKS5leGVjKGRvY3VtZW50LmNvb2tpZSB8fCAiIik7CiAgcmV0dXJuIG0gPyBkZWNvZGVVUklDb21wb25lbnQobVsxXSkgOiAiIjsKfQoKZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gT3JkZXJGdW5uZWxGb3JtKCkgewogIGNvbnN0IFtlcnJvcnMsIHNldEVycm9yc10gPSB1c2VTdGF0ZTxSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+Pih7fSk7CiAgY29uc3QgW2J1c3ksIHNldEJ1c3ldID0gdXNlU3RhdGUoZmFsc2UpOwogIGNvbnN0IFttc2csIHNldE1zZ10gPSB1c2VTdGF0ZSgiIik7CiAgY29uc3Qga2V5ID0gdXNlUmVmKCIiKTsKICB1c2VFZmZlY3QoKCkgPT4geyBrZXkuY3VycmVudCA9IChjcnlwdG8ucmFuZG9tVVVJRD8uKCkgfHwgU3RyaW5nKE1hdGgucmFuZG9tKCkpLnNsaWNlKDIpICsgRGF0ZS5ub3coKSkucmVwbGFjZSgvW15BLVphLXowLTlfLV0vZywgIiIpLnBhZEVuZCgxNiwgIngiKS5zbGljZSgwLCA0MCk7IH0sIFtdKTsKCiAgYXN5bmMgZnVuY3Rpb24gc3VibWl0KGU6IEZvcm1FdmVudDxIVE1MRm9ybUVsZW1lbnQ+KSB7CiAgICBlLnByZXZlbnREZWZhdWx0KCk7CiAgICBpZiAoYnVzeSkgcmV0dXJuOwogICAgY29uc3QgZmQgPSBuZXcgRm9ybURhdGEoZS5jdXJyZW50VGFyZ2V0KTsKICAgIGNvbnN0IGJvZHk6IFJlY29yZDxzdHJpbmcsIHVua25vd24+ID0gT2JqZWN0LmZyb21FbnRyaWVzKGZkLmVudHJpZXMoKSk7CiAgICBjb25zdCBsb2NhbDogUmVjb3JkPHN0cmluZywgc3RyaW5nPiA9IHt9OwogICAgaWYgKFN0cmluZyhib2R5Lm5hbWUgfHwgIiIpLnRyaW0oKS5sZW5ndGggPCAyKSBsb2NhbC5uYW1lID0gIkVudGVyIHlvdXIgZnVsbCBuYW1lLiI7CiAgICBpZiAoIS9eKFwrPzIzNHwwKT9bNzg5XVswMV1cZHs4fSQvLnRlc3QoU3RyaW5nKGJvZHkucGhvbmUgfHwgIiIpLnJlcGxhY2UoL1tccy1dL2csICIiKSkpIGxvY2FsLnBob25lID0gIkVudGVyIGEgdmFsaWQgTmlnZXJpYW4gV2hhdHNBcHAgbnVtYmVyLCBmb3IgZXhhbXBsZSAwODAzIDEyMyA0NTY3LiI7CiAgICBpZiAoIWJvZHkuc3RhdGUpIGxvY2FsLnN0YXRlID0gIkNob29zZSB5b3VyIHN0YXRlLiI7CiAgICBpZiAoU3RyaW5nKGJvZHkuYWRkcmVzcyB8fCAiIikudHJpbSgpLmxlbmd0aCA8IDgpIGxvY2FsLmFkZHJlc3MgPSAiRW50ZXIgeW91ciBmdWxsIGRlbGl2ZXJ5IGFkZHJlc3MuIjsKICAgIHNldEVycm9ycyhsb2NhbCk7CiAgICBpZiAoT2JqZWN0LmtleXMobG9jYWwpLmxlbmd0aCkgcmV0dXJuOwogICAgc2V0QnVzeSh0cnVlKTsgc2V0TXNnKCIiKTsKICAgIGNvbnN0IHEgPSBuZXcgVVJMU2VhcmNoUGFyYW1zKGxvY2F0aW9uLnNlYXJjaCk7CiAgICBjb25zdCBhdHRyOiBSZWNvcmQ8c3RyaW5nLCBzdHJpbmc+ID0ge307CiAgICBmb3IgKGNvbnN0IGsgb2YgS0VZUykgeyBjb25zdCB2ID0gcS5nZXQoayk7IGlmICh2KSBhdHRyW2tdID0gdjsgfQogICAgLy8gRmFsbGJhY2s6IGlmIHRoZSBVUkwgY2FycmllcyBubyBwaXhlbCBJRHMgKGUuZy4gYWZ0ZXIgdGhlIGNyb3NzLWRvbWFpbiBob3AgZnJvbSB0aGUgbGFuZGluZyBwYWdlKSwKICAgIC8vIHVzZSB0aGUgZmlyc3QtcGFydHkgY29va2llcyB0aGUgcGl4ZWxzIHNldCBvbiB0aGlzIGRvbWFpbi4gTmV2ZXIgb3ZlcndyaXRlIGEgVVJMIHZhbHVlIHdpdGggYSBjb29raWUuCiAgICBmb3IgKGNvbnN0IFthdHRyS2V5LCBjb29raWVOYW1lXSBvZiBDT09LSUVfRkFMTEJBQ0spIHsKICAgICAgaWYgKCFhdHRyW2F0dHJLZXldKSB7IGNvbnN0IHYgPSByZWFkQ29va2llKGNvb2tpZU5hbWUpOyBpZiAodikgYXR0clthdHRyS2V5XSA9IHY7IH0KICAgIH0KICAgIC8vIElmIHdlIGhhdmUgdGhlIGNsaWNrIGlkIGJ1dCBubyBmYmMsIGJ1aWxkIGZiYyBpbiBNZXRhJ3MgZm9ybWF0OiBmYi4xLjx0aW1lc3RhbXA+LjxmYmNsaWQ+CiAgICBpZiAoIWF0dHIuZmJjICYmIGF0dHIuZmJjbGlkKSBhdHRyLmZiYyA9IGBmYi4xLiR7RGF0ZS5ub3coKX0uJHthdHRyLmZiY2xpZH1gOwogICAgdHJ5IHsKICAgICAgY29uc3QgciA9IGF3YWl0IGZldGNoKCIvYXBpL2Z1bm5lbC9vcmRlciIsIHsgbWV0aG9kOiAiUE9TVCIsIGhlYWRlcnM6IHsgIkNvbnRlbnQtVHlwZSI6ICJhcHBsaWNhdGlvbi9qc29uIiB9LCBib2R5OiBKU09OLnN0cmluZ2lmeSh7IC4uLmJvZHksIGNsaWVudEtleToga2V5LmN1cnJlbnQsIGF0dHI6IE9iamVjdC5rZXlzKGF0dHIpLmxlbmd0aCA/IGF0dHIgOiB1bmRlZmluZWQgfSkgfSk7CiAgICAgIGNvbnN0IGogPSBhd2FpdCByLmpzb24oKS5jYXRjaCgoKSA9PiAoe30pKTsKICAgICAgaWYgKHIub2sgJiYgai5udW1iZXIpIHsgbG9jYXRpb24uaHJlZiA9IGAvb3JkZXIvJHtlbmNvZGVVUklDb21wb25lbnQoai5udW1iZXIpfT90PSR7ZW5jb2RlVVJJQ29tcG9uZW50KGoudG9rZW4pfSZuZXc9MWA7IHJldHVybjsgfQogICAgICBpZiAoai5lcnJvcnMpIHNldEVycm9ycyhqLmVycm9ycyk7CiAgICAgIHNldE1zZyhqLmVycm9yIHx8ICJDaGVjayB0aGUgaGlnaGxpZ2h0ZWQgZmllbGRzLiIpOwogICAgfSBjYXRjaCB7IHNldE1zZygiV2UgY291bGQgbm90IHJlYWNoIHRoZSBzZXJ2ZXIuIFRyeSBhZ2Fpbiwgb3IgbWVzc2FnZSB1cyBvbiBXaGF0c0FwcC4iKTsgfQogICAgc2V0QnVzeShmYWxzZSk7CiAgfQoKICBjb25zdCBlcnIgPSAoazogc3RyaW5nKSA9PiAoZXJyb3JzW2tdID8gPHAgY2xhc3NOYW1lPSJlcnIiPntlcnJvcnNba119PC9wPiA6IG51bGwpOwogIHJldHVybiAoCiAgICA8Zm9ybSBvblN1Ym1pdD17c3VibWl0fSBjbGFzc05hbWU9ImNhcmQgc3BhY2UteS01IHAtNSBzbTpwLTYiIG5vVmFsaWRhdGU+CiAgICAgIDxkaXY+PGxhYmVsIGh0bWxGb3I9Im5hbWUiIGNsYXNzTmFtZT0ibGFiZWwiPkZ1bGwgbmFtZTwvbGFiZWw+PGlucHV0IGlkPSJuYW1lIiBuYW1lPSJuYW1lIiBjbGFzc05hbWU9ImZpZWxkIiBhdXRvQ29tcGxldGU9Im5hbWUiIG1heExlbmd0aD17MTAwfSBhcmlhLWludmFsaWQ9eyEhZXJyb3JzLm5hbWV9IC8+e2VycigibmFtZSIpfTwvZGl2PgogICAgICA8ZGl2PjxsYWJlbCBodG1sRm9yPSJwaG9uZSIgY2xhc3NOYW1lPSJsYWJlbCI+V2hhdHNBcHAgcGhvbmUgbnVtYmVyPC9sYWJlbD48aW5wdXQgaWQ9InBob25lIiBuYW1lPSJwaG9uZSIgdHlwZT0idGVsIiBpbnB1dE1vZGU9InRlbCIgY2xhc3NOYW1lPSJmaWVsZCIgYXV0b0NvbXBsZXRlPSJ0ZWwiIG1heExlbmd0aD17MjB9IGFyaWEtaW52YWxpZD17ISFlcnJvcnMucGhvbmV9IC8+e2VycigicGhvbmUiKX08L2Rpdj4KICAgICAgPGRpdj48bGFiZWwgaHRtbEZvcj0ic3RhdGUiIGNsYXNzTmFtZT0ibGFiZWwiPlN0YXRlPC9sYWJlbD4KICAgICAgICA8c2VsZWN0IGlkPSJzdGF0ZSIgbmFtZT0ic3RhdGUiIGNsYXNzTmFtZT0iZmllbGQiIGRlZmF1bHRWYWx1ZT0iIiBhcmlhLWludmFsaWQ9eyEhZXJyb3JzLnN0YXRlfT48b3B0aW9uIHZhbHVlPSIiIGRpc2FibGVkPlNlbGVjdCB5b3VyIHN0YXRlPC9vcHRpb24+e05JR0VSSUFOX1NUQVRFUy5tYXAoKHMpID0+IDxvcHRpb24ga2V5PXtzfSB2YWx1ZT17c30+e3N9PC9vcHRpb24+KX08L3NlbGVjdD57ZXJyKCJzdGF0ZSIpfTwvZGl2PgogICAgICA8ZGl2PjxsYWJlbCBodG1sRm9yPSJhZGRyZXNzIiBjbGFzc05hbWU9ImxhYmVsIj5EZWxpdmVyeSBhZGRyZXNzPC9sYWJlbD48dGV4dGFyZWEgaWQ9ImFkZHJlc3MiIG5hbWU9ImFkZHJlc3MiIHJvd3M9ezN9IGNsYXNzTmFtZT0iZmllbGQiIG1heExlbmd0aD17MzAwfSBhdXRvQ29tcGxldGU9InN0cmVldC1hZGRyZXNzIiBhcmlhLWludmFsaWQ9eyEhZXJyb3JzLmFkZHJlc3N9IC8+e2VycigiYWRkcmVzcyIpfTwvZGl2PgogICAgICA8ZGl2IGNsYXNzTmFtZT0iaGlkZGVuIiBhcmlhLWhpZGRlbj0idHJ1ZSI+PGxhYmVsPkNvbXBhbnk8aW5wdXQgbmFtZT0iY29tcGFueSIgdGFiSW5kZXg9ey0xfSBhdXRvQ29tcGxldGU9Im9mZiIgLz48L2xhYmVsPjwvZGl2PgogICAgICB7bXNnID8gPHAgY2xhc3NOYW1lPSJlcnIiIHJvbGU9ImFsZXJ0Ij57bXNnfTwvcD4gOiBudWxsfQogICAgICA8YnV0dG9uIGNsYXNzTmFtZT0iYnRuIGJ0bi1wcmltYXJ5IHctZnVsbCB0ZXh0LWJhc2UiIGRpc2FibGVkPXtidXN5fT57YnVzeSA/ICJQbGFjaW5nIHlvdXIgb3JkZXIuLi4iIDogIlBMQUNFIE1ZIE9SREVSIn08L2J1dHRvbj4KICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LXNtIHRleHQtbmV1dHJhbC01MDAiPlBsYWNpbmcgYW4gb3JkZXIgZG9lcyBub3QgdGFrZSBhbnkgcGF5bWVudC4gWW91ciBvcmRlciBpcyBvbmx5IGNvbmZpcm1lZCBhZnRlciB5b3UgcGF5IGJ5IGJhbmsgdHJhbnNmZXIgYW5kIHdlIHZlcmlmeSBpdC48L3A+CiAgICA8L2Zvcm0+CiAgKTsKfQo=
+"use client";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { NIGERIAN_STATES } from "@/lib/site";
+
+const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "ttclid", "fbp", "fbc", "ttp"];
+
+/** First-party browser cookies set by the Meta / TikTok pixels, used when the URL carries no IDs. */
+const COOKIE_FALLBACK: [string, string][] = [["fbp", "_fbp"], ["fbc", "_fbc"], ["ttp", "_ttp"]];
+function readCookie(cookieName: string) {
+  const m = new RegExp("(?:^|;\\s*)" + cookieName + "=([^;]+)").exec(document.cookie || "");
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+export default function OrderFunnelForm() {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const key = useRef("");
+  useEffect(() => { key.current = (crypto.randomUUID?.() || String(Math.random()).slice(2) + Date.now()).replace(/[^A-Za-z0-9_-]/g, "").padEnd(16, "x").slice(0, 40); }, []);
+
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (busy) return;
+    const fd = new FormData(e.currentTarget);
+    const body: Record<string, unknown> = Object.fromEntries(fd.entries());
+    const local: Record<string, string> = {};
+    if (String(body.name || "").trim().length < 2) local.name = "Enter your full name.";
+    if (!/^(\+?234|0)?[789][01]\d{8}$/.test(String(body.phone || "").replace(/[\s-]/g, ""))) local.phone = "Enter a valid Nigerian WhatsApp number, for example 0803 123 4567.";
+    if (!body.state) local.state = "Choose your state.";
+    if (String(body.address || "").trim().length < 8) local.address = "Enter your full delivery address.";
+    setErrors(local);
+    if (Object.keys(local).length) return;
+    setBusy(true); setMsg("");
+    const q = new URLSearchParams(location.search);
+    const attr: Record<string, string> = {};
+    for (const k of KEYS) { const v = q.get(k); if (v) attr[k] = v; }
+    // Fallback: if the URL carries no pixel IDs (e.g. after the cross-domain hop from the landing page),
+    // use the first-party cookies the pixels set on this domain. Never overwrite a URL value with a cookie.
+    for (const [attrKey, cookieName] of COOKIE_FALLBACK) {
+      if (!attr[attrKey]) { const v = readCookie(cookieName); if (v) attr[attrKey] = v; }
+    }
+    // If we have the click id but no fbc, build fbc in Meta's format: fb.1.<timestamp>.<fbclid>
+    if (!attr.fbc && attr.fbclid) attr.fbc = `fb.1.${Date.now()}.${attr.fbclid}`;
+    try {
+      const r = await fetch("/api/funnel/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, clientKey: key.current, attr: Object.keys(attr).length ? attr : undefined }) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.number) { location.href = `/order/${encodeURIComponent(j.number)}?t=${encodeURIComponent(j.token)}&new=1`; return; }
+      if (j.errors) setErrors(j.errors);
+      setMsg(j.error || "Check the highlighted fields.");
+    } catch { setMsg("We could not reach the server. Try again, or message us on WhatsApp."); }
+    setBusy(false);
+  }
+
+  const err = (k: string) => (errors[k] ? <p className="err">{errors[k]}</p> : null);
+  return (
+    <form onSubmit={submit} className="card space-y-5 p-5 sm:p-6" noValidate>
+      <div><label htmlFor="name" className="label">Full name</label><input id="name" name="name" className="field" autoComplete="name" maxLength={100} aria-invalid={!!errors.name} />{err("name")}</div>
+      <div><label htmlFor="phone" className="label">WhatsApp phone number</label><input id="phone" name="phone" type="tel" inputMode="tel" className="field" autoComplete="tel" maxLength={20} aria-invalid={!!errors.phone} />{err("phone")}</div>
+      <div><label htmlFor="state" className="label">State</label>
+        <select id="state" name="state" className="field" defaultValue="" aria-invalid={!!errors.state}><option value="" disabled>Select your state</option>{NIGERIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}</select>{err("state")}</div>
+      <div><label htmlFor="address" className="label">Delivery address</label><textarea id="address" name="address" rows={3} className="field" maxLength={300} autoComplete="street-address" aria-invalid={!!errors.address} />{err("address")}</div>
+      <div className="hidden" aria-hidden="true"><label>Company<input name="company" tabIndex={-1} autoComplete="off" /></label></div>
+      {msg ? <p className="err" role="alert">{msg}</p> : null}
+      <button className="btn btn-primary w-full text-base" disabled={busy}>{busy ? "Placing your order..." : "PLACE MY ORDER"}</button>
+      <p className="text-sm text-neutral-500">Placing an order does not take any payment. Your order is only confirmed after you pay by bank transfer and we verify it.</p>
+    </form>
+  );
+}
