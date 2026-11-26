@@ -1,1 +1,44 @@
-aW1wb3J0ICJzZXJ2ZXItb25seSI7CmltcG9ydCB7IGRiLCB0eXBlIERCIH0gZnJvbSAiQC9saWIvZGIiOwoKLyoKICogUGF5bWVudCBjb25maXJtYXRpb24gZm9ybSBzdWJtaXNzaW9ucyAoY3VzdG9tZXJzIHdobyBhbHJlYWR5IHBhaWQpLiBSb3dzIHN0YXJ0IGFzIGF3YWl0aW5nX3ZlcmlmaWNhdGlvbiBhbmQgYmVjb21lCiAqIHBhaWQgb25seSB3aGVuIGFuIGFkbWluIG1hcmtzIHRoZW0gc28gYWZ0ZXIgY2hlY2tpbmcgdGhlIGJhbmsgYWNjb3VudC4gVGhlIHRhYmxlIGlzIGNyZWF0ZWQgaGVyZSwgb25jZSBwZXIgcHJvY2VzcywKICogd2l0aCBDUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUywgc28gdGhlIGV4aXN0aW5nIG9yZGVyIHRhYmxlcyBhbmQgbWlncmF0aW9ucyBhcmUgdW50b3VjaGVkLgogKi8KbGV0IHJlYWR5ID0gZmFsc2U7CmV4cG9ydCBmdW5jdGlvbiBjb25maXJtYXRpb25zRGIoKTogREIgewogIGNvbnN0IGQgPSBkYigpOwogIGlmICghcmVhZHkpIHsKICAgIGQuZXhlYyhgQ1JFQVRFIFRBQkxFIElGIE5PVCBFWElTVFMgcGF5bWVudF9jb25maXJtYXRpb25zICgKICAgICAgaWQgSU5URUdFUiBQUklNQVJZIEtFWSBBVVRPSU5DUkVNRU5ULAogICAgICBmdWxsX25hbWUgVEVYVCBOT1QgTlVMTCwKICAgICAgcGhvbmUgVEVYVCBOT1QgTlVMTCwKICAgICAgYW1vdW50X3BhaWQgSU5URUdFUiBOT1QgTlVMTCwKICAgICAgYWRkcmVzcyBURVhUIE5PVCBOVUxMLAogICAgICBzdGF0ZSBURVhUIE5PVCBOVUxMLAogICAgICByZWNlaXB0X3BhdGggVEVYVCBOT1QgTlVMTCBERUZBVUxUICcnLAogICAgICBzdGF0dXMgVEVYVCBOT1QgTlVMTCBERUZBVUxUICdhd2FpdGluZ192ZXJpZmljYXRpb24nLAogICAgICB2ZXJpZmllZF9hbW91bnQgSU5URUdFUiwKICAgICAgdmVyaWZpZWRfYnkgVEVYVCBOT1QgTlVMTCBERUZBVUxUICcnLAogICAgICBwYWlkX2F0IFRFWFQsCiAgICAgIGFkbWluX25vdGUgVEVYVCBOT1QgTlVMTCBERUZBVUxUICcnLAogICAgICB0cmFja2luZyBURVhUIE5PVCBOVUxMIERFRkFVTFQgJ3t9JywKICAgICAgcHVyY2hhc2VfZXZlbnRfaWQgVEVYVCBOT1QgTlVMTCBERUZBVUxUICcnLAogICAgICBwdXJjaGFzZV9ldmVudF9zdGF0dXMgVEVYVCBOT1QgTlVMTCBERUZBVUxUICcnLAogICAgICBzdWJtaXR0ZWRfYXQgVEVYVCBOT1QgTlVMTCBERUZBVUxUIChkYXRldGltZSgnbm93JykpCiAgICApOwogICAgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3BheW1lbnRfY29uZmlybWF0aW9uc19zdGF0dXMgT04gcGF5bWVudF9jb25maXJtYXRpb25zKHN0YXR1cywgaWQgREVTQyk7YCk7CiAgICAvLyBBZGRlZCBsYXRlcjogaGFzaCBvZiB0aGUgdXBsb2FkZWQgcmVjZWlwdCBieXRlcywgdXNlZCB0byByZWplY3QgZXhhY3QgZHVwbGljYXRlIHN1Ym1pc3Npb25zLgogICAgLy8gTm9uLWRlc3RydWN0aXZlOiBleGlzdGluZyByb3dzIGtlZXAgdGhlIGVtcHR5IGRlZmF1bHQgYW5kIGFyZSBuZXZlciBkZWxldGVkIG9yIHJld3JpdHRlbi4KICAgIHRyeSB7IGQuZXhlYygiQUxURVIgVEFCTEUgcGF5bWVudF9jb25maXJtYXRpb25zIEFERCBDT0xVTU4gcmVjZWlwdF9oYXNoIFRFWFQgTk9UIE5VTEwgREVGQVVMVCAnJyIpOyB9IGNhdGNoIHsgLyogY29sdW1uIGFscmVhZHkgZXhpc3RzICovIH0KICAgIHRyeSB7IGQuZXhlYygiQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3BheW1lbnRfY29uZmlybWF0aW9uc19yZWNlaXB0X2hhc2ggT04gcGF5bWVudF9jb25maXJtYXRpb25zKHJlY2VpcHRfaGFzaCkiKTsgfSBjYXRjaCB7IC8qIGluZGV4IGFscmVhZHkgZXhpc3RzICovIH0KICAgIC8vIEFkZGVkIGxhdGVyOiB0aGUgb3JkZXIgdGhpcyBzdWJtaXNzaW9uIGNsYWltcyB0byBwYXkgZm9yLCBhbmQgdGhlIFRpa1RvayBQdXJjaGFzZSBzdGF0dXMga2VwdAogICAgLy8gc2VwYXJhdGUgZnJvbSB0aGUgTWV0YSBzdGF0dXMuIFNhbWUgbm9uLWRlc3RydWN0aXZlIHBhdHRlcm47IGV4aXN0aW5nIHJvd3Mga2VlcCBlbXB0eSBkZWZhdWx0cy4KICAgIHRyeSB7IGQuZXhlYygiQUxURVIgVEFCTEUgcGF5bWVudF9jb25maXJtYXRpb25zIEFERCBDT0xVTU4gb3JkZXJfbnVtYmVyIFRFWFQgTk9UIE5VTEwgREVGQVVMVCAnJyIpOyB9IGNhdGNoIHsgLyogY29sdW1uIGFscmVhZHkgZXhpc3RzICovIH0KICAgIHRyeSB7IGQuZXhlYygiQUxURVIgVEFCTEUgcGF5bWVudF9jb25maXJtYXRpb25zIEFERCBDT0xVTU4gdGlrdG9rX2V2ZW50X3N0YXR1cyBURVhUIE5PVCBOVUxMIERFRkFVTFQgJyciKTsgfSBjYXRjaCB7IC8qIGNvbHVtbiBhbHJlYWR5IGV4aXN0cyAqLyB9CiAgICB0cnkgeyBkLmV4ZWMoIkNSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9wYXltZW50X2NvbmZpcm1hdGlvbnNfb3JkZXIgT04gcGF5bWVudF9jb25maXJtYXRpb25zKG9yZGVyX251bWJlcikiKTsgfSBjYXRjaCB7IC8qIGluZGV4IGFscmVhZHkgZXhpc3RzICovIH0KICAgIHJlYWR5ID0gdHJ1ZTsKICB9CiAgcmV0dXJuIGQ7Cn0K
+import "server-only";
+import { db, type DB } from "@/lib/db";
+
+/*
+ * Payment confirmation form submissions (customers who already paid). Rows start as awaiting_verification and become
+ * paid only when an admin marks them so after checking the bank account. The table is created here, once per process,
+ * with CREATE TABLE IF NOT EXISTS, so the existing order tables and migrations are untouched.
+ */
+let ready = false;
+export function confirmationsDb(): DB {
+  const d = db();
+  if (!ready) {
+    d.exec(`CREATE TABLE IF NOT EXISTS payment_confirmations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      amount_paid INTEGER NOT NULL,
+      address TEXT NOT NULL,
+      state TEXT NOT NULL,
+      receipt_path TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'awaiting_verification',
+      verified_amount INTEGER,
+      verified_by TEXT NOT NULL DEFAULT '',
+      paid_at TEXT,
+      admin_note TEXT NOT NULL DEFAULT '',
+      tracking TEXT NOT NULL DEFAULT '{}',
+      purchase_event_id TEXT NOT NULL DEFAULT '',
+      purchase_event_status TEXT NOT NULL DEFAULT '',
+      submitted_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_payment_confirmations_status ON payment_confirmations(status, id DESC);`);
+    // Added later: hash of the uploaded receipt bytes, used to reject exact duplicate submissions.
+    // Non-destructive: existing rows keep the empty default and are never deleted or rewritten.
+    try { d.exec("ALTER TABLE payment_confirmations ADD COLUMN receipt_hash TEXT NOT NULL DEFAULT ''"); } catch { /* column already exists */ }
+    try { d.exec("CREATE INDEX IF NOT EXISTS idx_payment_confirmations_receipt_hash ON payment_confirmations(receipt_hash)"); } catch { /* index already exists */ }
+    // Added later: the order this submission claims to pay for, and the TikTok Purchase status kept
+    // separate from the Meta status. Same non-destructive pattern; existing rows keep empty defaults.
+    try { d.exec("ALTER TABLE payment_confirmations ADD COLUMN order_number TEXT NOT NULL DEFAULT ''"); } catch { /* column already exists */ }
+    try { d.exec("ALTER TABLE payment_confirmations ADD COLUMN tiktok_event_status TEXT NOT NULL DEFAULT ''"); } catch { /* column already exists */ }
+    try { d.exec("CREATE INDEX IF NOT EXISTS idx_payment_confirmations_order ON payment_confirmations(order_number)"); } catch { /* index already exists */ }
+    ready = true;
+  }
+  return d;
+}
