@@ -1,1 +1,147 @@
-LyoKICogQVBJIGludGVncmF0aW9uIHRlc3RzIGZvciBvcmRlcnMsIHBheW1lbnQgZXZpZGVuY2UgYW5kIHRyYWNraW5nIHNhZmV0eS4KICogUnVucyBhZ2FpbnN0IGEgbG9jYWwgc2VydmVyIHRoYXQgdXNlcyBhIERJU1BPU0FCTEUgZGF0YSBkaXJlY3RvcnkuIE5ldmVyIHBvaW50IGl0IGF0IHByb2R1Y3Rpb24uCiAqCiAqICAgREFUQV9ESVI9L3RtcC93eC1hcGktdGVzdCBBRE1JTl9FTUFJTD1vd25lckB0ZXN0LmxvY2FsIEFETUlOX1BBU1NXT1JEPTxyZWRhY3RlZD4gXAogKiAgICAgQ09NSU5HX1NPT049ZmFsc2UgbnB4IG5leHQgc3RhcnQgLXAgMzMwMQogKiAgIFdYX0JBU0U9aHR0cDovL2xvY2FsaG9zdDozMzAxIFdYX0RBVEE9L3RtcC93eC1hcGktdGVzdCBub2RlIHRlc3RzL2FwaS1pbnRlZ3JhdGlvbi5tanMKICoKICogTm8gTWV0YS9UaWtUb2sgY3JlZGVudGlhbHMgYXJlIHNldCBpbiB0aGUgdGVzdCBlbnZpcm9ubWVudCwgc28gbm8gcmVhbCBQdXJjaGFzZSBjYW4gYmUgc2VudC4KICovCmltcG9ydCBmcyBmcm9tICJub2RlOmZzIjsKaW1wb3J0IHBhdGggZnJvbSAibm9kZTpwYXRoIjsKaW1wb3J0IHsgY3JlYXRlUmVxdWlyZSB9IGZyb20gIm1vZHVsZSI7CmNvbnN0IHJlcXVpcmUgPSBjcmVhdGVSZXF1aXJlKGltcG9ydC5tZXRhLnVybCk7CmNvbnN0IHsgRGF0YWJhc2VTeW5jIH0gPSByZXF1aXJlKCJub2RlOnNxbGl0ZSIpOwoKY29uc3QgQiA9IHByb2Nlc3MuZW52LldYX0JBU0UgfHwgImh0dHA6Ly9sb2NhbGhvc3Q6MzMwMSI7CmNvbnN0IERBVEEgPSBwcm9jZXNzLmVudi5XWF9EQVRBOwppZiAoIURBVEEgfHwgL15cL2RhdGFcLz8kLy50ZXN0KERBVEEpKSB7IGNvbnNvbGUuZXJyb3IoIlNldCBXWF9EQVRBIHRvIHRoZSBkaXNwb3NhYmxlIHRlc3QgZGF0YSBkaXJlY3RvcnkuIik7IHByb2Nlc3MuZXhpdCgyKTsgfQpjb25zdCBxMSA9IChzLCAuLi5wKSA9PiB7IGNvbnN0IGQgPSBuZXcgRGF0YWJhc2VTeW5jKHBhdGguam9pbihEQVRBLCAic3RvcmUuZGIiKSk7IHRyeSB7IHJldHVybiBkLnByZXBhcmUocykuZ2V0KC4uLnApOyB9IGZpbmFsbHkgeyBkLmNsb3NlKCk7IH0gfTsKY29uc3QgT1JJR0lOID0geyBvcmlnaW46IEIgfTsKCmxldCBwYXNzID0gMCwgZmFpbCA9IDA7CmNvbnN0IG9rID0gKGNvbmQsIG5hbWUpID0+IHsgY29uc29sZS5sb2coY29uZCA/ICLinJMiIDogIuKclyIsIG5hbWUpOyBjb25kID8gcGFzcysrIDogZmFpbCsrOyB9Owpjb25zdCBzdGVwID0gYXN5bmMgKG5hbWUsIGZuKSA9PiB7IHRyeSB7IGF3YWl0IGZuKCk7IH0gY2F0Y2ggKGUpIHsgb2soZmFsc2UsIGAke25hbWV9IHRocmV3OiAke1N0cmluZyhlLm1lc3NhZ2UpLnNwbGl0KCJcbiIpWzBdfWApOyB9IH07CmNvbnN0IHBvc3RKID0gKHUsIGJvZHksIGhlYWRlcnMgPSB7fSkgPT4gZmV0Y2goQiArIHUsIHsgbWV0aG9kOiAiUE9TVCIsIGhlYWRlcnM6IHsgIkNvbnRlbnQtVHlwZSI6ICJhcHBsaWNhdGlvbi9qc29uIiwgLi4uT1JJR0lOLCAuLi5oZWFkZXJzIH0sIGJvZHk6IEpTT04uc3RyaW5naWZ5KGJvZHkpIH0pOwoKY29uc3QgZnVubmVsQm9keSA9IChvdmVyID0ge30pID0+ICh7CiAgbmFtZTogIkFwaSBUZXN0IEN1c3RvbWVyIiwgcGhvbmU6ICIwODAzMTIzNDU2NyIsIHN0YXRlOiAiTGFnb3MiLAogIGFkZHJlc3M6ICIxMiBJbnRlZ3JhdGlvbiBDbG9zZSwgSWtlamEsIExhZ29zIiwgY2xpZW50S2V5OiAiYXBpdGVzdC0iICsgTWF0aC5yYW5kb20oKS50b1N0cmluZygzNikuc2xpY2UoMiwgMTQpICsgInh4IiwKICAuLi5vdmVyLAp9KTsKCi8vIC0tLS0tLS0tLS0tLS0tLS0gaGVhbHRoICYgY3Jvc3Mtc2l0ZSBwcm90ZWN0aW9uIC0tLS0tLS0tLS0tLS0tLS0KYXdhaXQgc3RlcCgiaGVhbHRoIiwgYXN5bmMgKCkgPT4gewogIGNvbnN0IHIgPSBhd2FpdCBmZXRjaChCICsgIi9hcGkvaGVhbHRoIik7CiAgb2soci5zdGF0dXMgPT09IDIwMCwgImhlYWx0aCBlbmRwb2ludCByZXR1cm5zIDIwMCIpOwp9KTsKYXdhaXQgc3RlcCgiY3Jvc3Mtc2l0ZSBwcm90ZWN0aW9uIiwgYXN5bmMgKCkgPT4gewogIGNvbnN0IHIgPSBhd2FpdCBwb3N0SigiL2FwaS9mdW5uZWwvb3JkZXIiLCBmdW5uZWxCb2R5KCksIHsgb3JpZ2luOiAiaHR0cHM6Ly9ldmlsLmV4YW1wbGUiIH0pOwogIG9rKHIuc3RhdHVzID09PSA0MDMsICJjcm9zcy1zaXRlIGZ1bm5lbCBvcmRlciBQT1NUIHJlamVjdGVkICg0MDMpIik7CiAgY29uc3QgcjIgPSBhd2FpdCBwb3N0SigiL2FwaS9vcmRlcnMiLCB7IG5hbWU6ICJ4IiB9LCB7IG9yaWdpbjogImh0dHBzOi8vZXZpbC5leGFtcGxlIiB9KTsKICBvayhyMi5zdGF0dXMgPT09IDQwMywgImNyb3NzLXNpdGUgc3RvcmUgb3JkZXIgUE9TVCByZWplY3RlZCAoNDAzKSIpOwp9KTsKCi8vIC0tLS0tLS0tLS0tLS0tLS0gZnVubmVsIG9yZGVycyAtLS0tLS0tLS0tLS0tLS0tCmxldCBvcmRlck51bWJlciA9ICIiLCBvcmRlclRva2VuID0gIiI7CmF3YWl0IHN0ZXAoImZ1bm5lbCBvcmRlciBjcmVhdGlvbiIsIGFzeW5jICgpID0+IHsKICBjb25zdCBrZXkgPSAiYXBpdGVzdC1maXhlZC1rZXktMDAwMSI7CiAgY29uc3QgciA9IGF3YWl0IHBvc3RKKCIvYXBpL2Z1bm5lbC9vcmRlciIsIGZ1bm5lbEJvZHkoeyBjbGllbnRLZXk6IGtleSwgcHJpY2U6IDEsIHRvdGFsOiAxIH0pKTsKICBjb25zdCBqID0gYXdhaXQgci5qc29uKCk7CiAgb2soci5zdGF0dXMgPT09IDIwMCAmJiBqLm9rICYmIGoubnVtYmVyLCAiZnVubmVsIG9yZGVyIGNyZWF0ZWQiKTsKICBvcmRlck51bWJlciA9IGoubnVtYmVyOyBvcmRlclRva2VuID0gai50b2tlbjsKICBjb25zdCByb3cgPSBxMSgiU0VMRUNUIHBheW1lbnRfc3RhdHVzIHMsIHRvdGFsIHQgRlJPTSBvcmRlcnMgV0hFUkUgbnVtYmVyID0gPyIsIG9yZGVyTnVtYmVyKTsKICBvayhyb3cucyA9PT0gInBlbmRpbmdfcGF5bWVudCIsICJuZXcgZnVubmVsIG9yZGVyIGlzIHBlbmRpbmdfcGF5bWVudCwgTk9UIHBhaWQiKTsKICBvayhyb3cudCA9PT0gMzAwMDAsIGBjbGllbnQtc3VwcGxpZWQgcHJpY2UgaWdub3JlZDsgc2VydmVyIHRvdGFsIGlzIDMwMDAwIChnb3QgJHtyb3cudH0pYCk7CiAgY29uc3QgcjIgPSBhd2FpdCBwb3N0SigiL2FwaS9mdW5uZWwvb3JkZXIiLCBmdW5uZWxCb2R5KHsgY2xpZW50S2V5OiBrZXkgfSkpOwogIGNvbnN0IGoyID0gYXdhaXQgcjIuanNvbigpOwogIG9rKGoyLmR1cGxpY2F0ZSA9PT0gdHJ1ZSAmJiBqMi5udW1iZXIgPT09IG9yZGVyTnVtYmVyLCAic2FtZSBjbGllbnRLZXkgcmV0dXJucyB0aGUgc2FtZSBvcmRlciAoZHVwbGljYXRlKSIpOwogIG9rKHExKCJTRUxFQ1QgQ09VTlQoKikgYyBGUk9NIG9yZGVycyBXSEVSRSBjbGllbnRfa2V5ID0gPyIsIGtleSkuYyA9PT0gMSwgImR1cGxpY2F0ZSBzdWJtaXNzaW9uIGNyZWF0ZWQgZXhhY3RseSBvbmUgb3JkZXIgcm93Iik7Cn0pOwphd2FpdCBzdGVwKCJmdW5uZWwgb3JkZXIgdmFsaWRhdGlvbiIsIGFzeW5jICgpID0+IHsKICBjb25zdCBiYWRQaG9uZSA9IGF3YWl0IChhd2FpdCBwb3N0SigiL2FwaS9mdW5uZWwvb3JkZXIiLCBmdW5uZWxCb2R5KHsgcGhvbmU6ICIxMjMiIH0pKSkuanNvbigpLmNhdGNoKCgpID0+ICh7fSkpOwogIG9rKCEhYmFkUGhvbmUuZXJyb3JzPy5waG9uZSwgImludmFsaWQgcGhvbmUgcmVqZWN0ZWQgd2l0aCBhIGZpZWxkIGVycm9yIik7CiAgY29uc3QgYmFkU3RhdGUgPSBhd2FpdCBwb3N0SigiL2FwaS9mdW5uZWwvb3JkZXIiLCBmdW5uZWxCb2R5KHsgc3RhdGU6ICJOb3RBU3RhdGUiIH0pKTsKICBvayhiYWRTdGF0ZS5zdGF0dXMgPT09IDQwMCwgImludmFsaWQgc3RhdGUgcmVqZWN0ZWQgKDQwMCkiKTsKICBjb25zdCBub05hbWUgPSBhd2FpdCBwb3N0SigiL2FwaS9mdW5uZWwvb3JkZXIiLCBmdW5uZWxCb2R5KHsgbmFtZTogIngiIH0pKTsKICBvayhub05hbWUuc3RhdHVzID09PSA0MDAsICJ0b28tc2hvcnQgbmFtZSByZWplY3RlZCAoNDAwKSIpOwp9KTsKCi8vIC0tLS0tLS0tLS0tLS0tLS0gc3RvcmUgb3JkZXIgdmFsaWRhdGlvbiAtLS0tLS0tLS0tLS0tLS0tCmF3YWl0IHN0ZXAoInN0b3JlIG9yZGVyIHZhbGlkYXRpb24iLCBhc3luYyAoKSA9PiB7CiAgY29uc3QgciA9IGF3YWl0IHBvc3RKKCIvYXBpL29yZGVycyIsIHsgbmFtZTogIngiLCBpdGVtczogW10gfSk7CiAgb2soci5zdGF0dXMgPT09IDQwMCwgImludmFsaWQgc3RvcmUgb3JkZXIgcmVqZWN0ZWQgKDQwMCkiKTsKICBjb25zdCByMiA9IGF3YWl0IHBvc3RKKCIvYXBpL29yZGVycyIsIHsgbmFtZTogIlZhbGlkIE5hbWUiLCBwaG9uZTogIjA4MDMxMjM0NTY3Iiwgc3RhdGU6ICJMYWdvcyIsIGNpdHk6ICJJa2VqYSIsIGFkZHJlc3M6ICIxMiBJbnRlZ3JhdGlvbiBDbG9zZSIsIGl0ZW1zOiBbeyB2YXJpYW50SWQ6IDk5OTk5OTk5LCBxdHk6IDEgfV0gfSk7CiAgb2socjIuc3RhdHVzID09PSA0MDAsICJvcmRlciBmb3IgYSBub24tZXhpc3RlbnQgdmFyaWFudCByZWplY3RlZCAoNDAwKSDigJQgcHJpY2VzL2lkcyBhcmUgc2VydmVyLXJlc29sdmVkIik7Cn0pOwoKLy8gLS0tLS0tLS0tLS0tLS0tLSBjdXN0b21lciBwYXltZW50IHN1Ym1pc3Npb24gKG9yZGVycykgLS0tLS0tLS0tLS0tLS0tLQphd2FpdCBzdGVwKCJvcmRlciBwYXltZW50IHN1Ym1pc3Npb24gbmV2ZXIgbWFya3MgcGFpZCIsIGFzeW5jICgpID0+IHsKICBjb25zdCBub1Rva2VuID0gYXdhaXQgZmV0Y2goQiArIGAvYXBpL29yZGVycy8ke29yZGVyTnVtYmVyfS9wYXltZW50YCwgeyBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogT1JJR0lOLCBib2R5OiBuZXcgRm9ybURhdGEoKSB9KTsKICBvayhub1Rva2VuLnN0YXR1cyA9PT0gNDA0LCAicGF5bWVudCBzdWJtaXNzaW9uIHdpdGhvdXQgdGhlIG9yZGVyIHRva2VuIGlzIDQwNCIpOwogIGNvbnN0IGZkID0gbmV3IEZvcm1EYXRhKCk7CiAgZmQuc2V0KCJ0Iiwgb3JkZXJUb2tlbik7CiAgZmQuc2V0KCJwYXllck5hbWUiLCAiQXBpIFRlc3QgQ3VzdG9tZXIiKTsKICBjb25zdCByID0gYXdhaXQgZmV0Y2goQiArIGAvYXBpL29yZGVycy8ke29yZGVyTnVtYmVyfS9wYXltZW50YCwgeyBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogT1JJR0lOLCBib2R5OiBmZCB9KTsKICBvayhyLnN0YXR1cyA9PT0gMjAwLCAicGF5bWVudCBzdWJtaXNzaW9uIHdpdGggdG9rZW4gYWNjZXB0ZWQiKTsKICBjb25zdCBzID0gcTEoIlNFTEVDVCBwYXltZW50X3N0YXR1cyBzIEZST00gb3JkZXJzIFdIRVJFIG51bWJlciA9ID8iLCBvcmRlck51bWJlcikuczsKICBvayhzID09PSAiYXdhaXRpbmdfdmVyaWZpY2F0aW9uIiwgYHBheW1lbnQgc3VibWlzc2lvbiDihpIgYXdhaXRpbmdfdmVyaWZpY2F0aW9uLCBOT1QgcGFpZCAoZ290ICR7c30pYCk7CiAgb2socTEoIlNFTEVDVCBwdXJjaGFzZV9ldmVudF9zdGF0dXMgcyBGUk9NIG9yZGVycyBXSEVSRSBudW1iZXIgPSA/Iiwgb3JkZXJOdW1iZXIpLnMgPT09ICIiLCAibm8gUHVyY2hhc2UgZXZlbnQgcmVjb3JkZWQgYmVmb3JlIGFkbWluIHZlcmlmaWNhdGlvbiIpOwp9KTsKCi8vIC0tLS0tLS0tLS0tLS0tLS0gY29uZmlybS1wYXltZW50IHN1Ym1pc3Npb25zIC0tLS0tLS0tLS0tLS0tLS0KY29uc3QgcG5nID0gZnMucmVhZEZpbGVTeW5jKHBhdGguam9pbihwcm9jZXNzLmN3ZCgpLCAidGVzdHMvZml4dHVyZS1wcm9kdWN0LnBuZyIpKTsKY29uc3QgY3BGb3JtID0gKG92ZXIgPSB7fSkgPT4gewogIGNvbnN0IGZkID0gbmV3IEZvcm1EYXRhKCk7CiAgZmQuc2V0KCJvcmRlclJlZmVyZW5jZSIsIG92ZXIub3JkZXJSZWZlcmVuY2UgPz8gb3JkZXJOdW1iZXIpOwogIGZkLnNldCgiZnVsbE5hbWUiLCBvdmVyLmZ1bGxOYW1lIHx8ICJBcGkgVGVzdCBDdXN0b21lciIpOwogIGZkLnNldCgicGhvbmUiLCBvdmVyLnBob25lIHx8ICIwODAzMTIzNDU2NyIpOwogIGZkLnNldCgiYW1vdW50Iiwgb3Zlci5hbW91bnQgfHwgIjMwMDAwIik7CiAgZmQuc2V0KCJhZGRyZXNzIiwgb3Zlci5hZGRyZXNzIHx8ICIxMiBJbnRlZ3JhdGlvbiBDbG9zZSwgSWtlamEiKTsKICBmZC5zZXQoInN0YXRlIiwgb3Zlci5zdGF0ZSB8fCAiTGFnb3MiKTsKICBpZiAob3Zlci5maWxlICE9PSBudWxsKSBmZC5zZXQoInJlY2VpcHQiLCBvdmVyLmZpbGUgfHwgbmV3IEJsb2IoW3BuZ10sIHsgdHlwZTogImltYWdlL3BuZyIgfSksIG92ZXIuZmlsZU5hbWUgfHwgInJlY2VpcHQucG5nIik7CiAgcmV0dXJuIGZkOwp9Owphd2FpdCBzdGVwKCJjb25maXJtLXBheW1lbnQgc3VibWlzc2lvbiIsIGFzeW5jICgpID0+IHsKICBjb25zdCByID0gYXdhaXQgZmV0Y2goQiArICIvYXBpL2NvbmZpcm0tcGF5bWVudCIsIHsgbWV0aG9kOiAiUE9TVCIsIGhlYWRlcnM6IE9SSUdJTiwgYm9keTogY3BGb3JtKCkgfSk7CiAgb2soci5zdGF0dXMgPT09IDIwMCwgInZhbGlkIGNvbmZpcm0tcGF5bWVudCBzdWJtaXNzaW9uIHdpdGggbWF0Y2hpbmcgb3JkZXIgcmVmZXJlbmNlIGFjY2VwdGVkIik7CiAgY29uc3Qgcm93ID0gcTEoIlNFTEVDVCBzdGF0dXMgcywgcmVjZWlwdF9oYXNoIGgsIG9yZGVyX251bWJlciBuIEZST00gcGF5bWVudF9jb25maXJtYXRpb25zIFdIRVJFIHBob25lID0gJzA4MDMxMjM0NTY3JyBPUkRFUiBCWSBpZCBERVNDIExJTUlUIDEiKTsKICBvayhyb3cucyA9PT0gImF3YWl0aW5nX3ZlcmlmaWNhdGlvbiIsICJzdWJtaXNzaW9uIHN0b3JlZCBhcyBhd2FpdGluZ192ZXJpZmljYXRpb24sIE5PVCBwYWlkIik7CiAgb2soISFyb3cuaCAmJiByb3cuaC5sZW5ndGggPT09IDY0LCAicmVjZWlwdCBoYXNoIHN0b3JlZCBmb3IgZHVwbGljYXRlIGRldGVjdGlvbiIpOwogIG9rKHJvdy5uID09PSBvcmRlck51bWJlciwgInN1Ym1pc3Npb24gbGlua2VkIHRvIHRoZSBtYXRjaGVkIG9yZGVyIG51bWJlciIpOwogIGNvbnN0IGR1cCA9IGF3YWl0IGZldGNoKEIgKyAiL2FwaS9jb25maXJtLXBheW1lbnQiLCB7IG1ldGhvZDogIlBPU1QiLCBoZWFkZXJzOiBPUklHSU4sIGJvZHk6IGNwRm9ybSgpIH0pOwogIG9rKGR1cC5zdGF0dXMgPT09IDQwOSwgImR1cGxpY2F0ZSBzdWJtaXNzaW9uIGZvciB0aGUgc2FtZSBvcmRlciByZWplY3RlZCAoNDA5KSIpOwogIG9rKHExKCJTRUxFQ1QgQ09VTlQoKikgYyBGUk9NIHBheW1lbnRfY29uZmlybWF0aW9ucyBXSEVSRSBwaG9uZSA9ICcwODAzMTIzNDU2NyciKS5jID09PSAxLCAiZHVwbGljYXRlIGNyZWF0ZWQgbm8gc2Vjb25kIHN1Ym1pc3Npb24iKTsKfSk7CmF3YWl0IHN0ZXAoImNvbmZpcm0tcGF5bWVudCB2YWxpZGF0aW9uIiwgYXN5bmMgKCkgPT4gewogIGNvbnN0IG1pc3NpbmcgPSBhd2FpdCBmZXRjaChCICsgIi9hcGkvY29uZmlybS1wYXltZW50IiwgeyBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogT1JJR0lOLCBib2R5OiBjcEZvcm0oeyBmaWxlOiBudWxsIH0pIH0pOwogIG9rKG1pc3Npbmcuc3RhdHVzID09PSA0MDAsICJtaXNzaW5nIHJlY2VpcHQgcmVqZWN0ZWQgKDQwMCkiKTsKICBjb25zdCBub3RJbWFnZSA9IG5ldyBCbG9iKFtCdWZmZXIuZnJvbSgidGhpcyBpcyBub3QgYW4gaW1hZ2UgYXQgYWxsIildLCB7IHR5cGU6ICJpbWFnZS9wbmciIH0pOwogIGNvbnN0IGJhZCA9IGF3YWl0IGZldGNoKEIgKyAiL2FwaS9jb25maXJtLXBheW1lbnQiLCB7IG1ldGhvZDogIlBPU1QiLCBoZWFkZXJzOiBPUklHSU4sIGJvZHk6IGNwRm9ybSh7IHBob25lOiAiMDgwMzExMTIyMzMiLCBmaWxlOiBub3RJbWFnZSwgZmlsZU5hbWU6ICJmYWtlLnBuZyIgfSkgfSk7CiAgb2soYmFkLnN0YXR1cyA9PT0gNDAwLCAiZmFrZSBpbWFnZSAoYmFkIG1hZ2ljIGJ5dGVzKSByZWplY3RlZCAoNDAwKSIpOwogIGNvbnN0IGJpZyA9IG5ldyBCbG9iKFtCdWZmZXIuY29uY2F0KFtwbmcsIEJ1ZmZlci5hbGxvYyg2ICogMTAyNCAqIDEwMjQpXSldLCB7IHR5cGU6ICJpbWFnZS9wbmciIH0pOwogIGNvbnN0IGh1Z2UgPSBhd2FpdCBmZXRjaChCICsgIi9hcGkvY29uZmlybS1wYXltZW50IiwgeyBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogT1JJR0lOLCBib2R5OiBjcEZvcm0oeyBwaG9uZTogIjA4MDM0NDQ1NTY2IiwgZmlsZTogYmlnLCBmaWxlTmFtZTogImJpZy5wbmciIH0pIH0pOwogIG9rKGh1Z2Uuc3RhdHVzID09PSA0MDAsICJvdmVyc2l6ZWQgcmVjZWlwdCAoPjVNQikgcmVqZWN0ZWQgKDQwMCkiKTsKICBjb25zdCBiYWRBbW91bnQgPSBhd2FpdCBmZXRjaChCICsgIi9hcGkvY29uZmlybS1wYXltZW50IiwgeyBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogT1JJR0lOLCBib2R5OiBjcEZvcm0oeyBwaG9uZTogIjA4MDM3Nzc4ODk5IiwgYW1vdW50OiAiNTAiIH0pIH0pOwogIG9rKGJhZEFtb3VudC5zdGF0dXMgPT09IDQwMCwgImltcGxhdXNpYmxlIGFtb3VudCByZWplY3RlZCAoNDAwKSIpOwp9KTsKCi8vIC0tLS0tLS0tLS0tLS0tLS0gYWRtaW4gc3VyZmFjZSBzdGF5cyBwcml2YXRlIC0tLS0tLS0tLS0tLS0tLS0KYXdhaXQgc3RlcCgiYWRtaW4gZW5kcG9pbnRzIGhpZGRlbiB3aGVuIHNpZ25lZCBvdXQiLCBhc3luYyAoKSA9PiB7CiAgZm9yIChjb25zdCB1IG9mIFsiL2FwaS9hZG1pbi9leHBvcnQiLCAiL2FwaS9hZG1pbi9yZWNlaXB0LzEiLCAiL2FwaS9hZG1pbi9jb25maXJtYXRpb24tcmVjZWlwdC8xIiwgIi9hcGkvYWRtaW4vY3VzdG9tZXJzLWV4cG9ydCJdKSB7CiAgICBjb25zdCByID0gYXdhaXQgZmV0Y2goQiArIHUpOwogICAgb2soci5zdGF0dXMgPT09IDQwNCwgYHNpZ25lZC1vdXQgJHt1fSDihpIgNDA0YCk7CiAgfQp9KTsKCi8vIC0tLS0tLS0tLS0tLS0tLS0gbWV0YS1jYXBpIHJlbGF5IGNhbm5vdCBiZSBhYnVzZWQgLS0tLS0tLS0tLS0tLS0tLQphd2FpdCBzdGVwKCJtZXRhLWNhcGkgcmVsYXkgcmVzdHJpY3Rpb25zIiwgYXN5bmMgKCkgPT4gewogIGNvbnN0IHB1cmNoYXNlID0gYXdhaXQgZmV0Y2goQiArICIvYXBpL21ldGEtY2FwaSIsIHsgbWV0aG9kOiAiUE9TVCIsIGhlYWRlcnM6IHsgIkNvbnRlbnQtVHlwZSI6ICJhcHBsaWNhdGlvbi9qc29uIiwgb3JpZ2luOiAiaHR0cHM6Ly93ZWxsbmVzc3hwcmVzc2JyYW5kLmNvbSIgfSwgYm9keTogSlNPTi5zdHJpbmdpZnkoeyBldmVudF9uYW1lOiAiUHVyY2hhc2UiLCBldmVudF9pZDogInB1XzEyMzQ1Njc4OTBfYWJjZCIsIGV2ZW50X3NvdXJjZV91cmw6ICJodHRwczovL3dlbGxuZXNzeHByZXNzYnJhbmQuY29tL3doYXRzYXBwLXdlaWdodGxvc3MvIiB9KSB9KTsKICBvayhwdXJjaGFzZS5zdGF0dXMgPT09IDQwMCwgInJlbGF5IHJlZnVzZXMgUHVyY2hhc2UgZXZlbnRzIGZyb20gdGhlIGJyb3dzZXIgKDQwMCkiKTsKICBjb25zdCBiYWRPcmlnaW4gPSBhd2FpdCBmZXRjaChCICsgIi9hcGkvbWV0YS1jYXBpIiwgeyBtZXRob2Q6ICJQT1NUIiwgaGVhZGVyczogeyAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iLCBvcmlnaW46ICJodHRwczovL2V2aWwuZXhhbXBsZSIgfSwgYm9keTogSlNPTi5zdHJpbmdpZnkoeyBldmVudF9uYW1lOiAiUGFnZVZpZXciLCBldmVudF9pZDogInB2XzEyMzQ1Njc4OTBfYWJjZCIsIGV2ZW50X3NvdXJjZV91cmw6ICJodHRwczovL3dlbGxuZXNzeHByZXNzYnJhbmQuY29tLyIgfSkgfSk7CiAgb2soYmFkT3JpZ2luLnN0YXR1cyA9PT0gNDAzLCAicmVsYXkgcmVqZWN0cyBub24tYWxsb3dsaXN0ZWQgb3JpZ2lucyAoNDAzKSIpOwp9KTsKCmNvbnNvbGUubG9nKGBcbiR7cGFzc30gcGFzc2VkLCAke2ZhaWx9IGZhaWxlZGApOwpwcm9jZXNzLmV4aXQoZmFpbCA/IDEgOiAwKTsK
+/*
+ * API integration tests for orders, payment evidence and tracking safety.
+ * Runs against a local server that uses a DISPOSABLE data directory. Never point it at production.
+ *
+ *   DATA_DIR=/tmp/wx-api-test ADMIN_EMAIL=owner@test.local ADMIN_PASSWORD=<redacted> \
+ *     COMING_SOON=false npx next start -p 3301
+ *   WX_BASE=http://localhost:3301 WX_DATA=/tmp/wx-api-test node tests/api-integration.mjs
+ *
+ * No Meta/TikTok credentials are set in the test environment, so no real Purchase can be sent.
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const { DatabaseSync } = require("node:sqlite");
+
+const B = process.env.WX_BASE || "http://localhost:3301";
+const DATA = process.env.WX_DATA;
+if (!DATA || /^\/data\/?$/.test(DATA)) { console.error("Set WX_DATA to the disposable test data directory."); process.exit(2); }
+const q1 = (s, ...p) => { const d = new DatabaseSync(path.join(DATA, "store.db")); try { return d.prepare(s).get(...p); } finally { d.close(); } };
+const ORIGIN = { origin: B };
+
+let pass = 0, fail = 0;
+const ok = (cond, name) => { console.log(cond ? "✓" : "✗", name); cond ? pass++ : fail++; };
+const step = async (name, fn) => { try { await fn(); } catch (e) { ok(false, `${name} threw: ${String(e.message).split("\n")[0]}`); } };
+const postJ = (u, body, headers = {}) => fetch(B + u, { method: "POST", headers: { "Content-Type": "application/json", ...ORIGIN, ...headers }, body: JSON.stringify(body) });
+
+const funnelBody = (over = {}) => ({
+  name: "Api Test Customer", phone: "08031234567", state: "Lagos",
+  address: "12 Integration Close, Ikeja, Lagos", clientKey: "apitest-" + Math.random().toString(36).slice(2, 14) + "xx",
+  ...over,
+});
+
+// ---------------- health & cross-site protection ----------------
+await step("health", async () => {
+  const r = await fetch(B + "/api/health");
+  ok(r.status === 200, "health endpoint returns 200");
+});
+await step("cross-site protection", async () => {
+  const r = await postJ("/api/funnel/order", funnelBody(), { origin: "https://evil.example" });
+  ok(r.status === 403, "cross-site funnel order POST rejected (403)");
+  const r2 = await postJ("/api/orders", { name: "x" }, { origin: "https://evil.example" });
+  ok(r2.status === 403, "cross-site store order POST rejected (403)");
+});
+
+// ---------------- funnel orders ----------------
+let orderNumber = "", orderToken = "";
+await step("funnel order creation", async () => {
+  const key = "apitest-fixed-key-0001";
+  const r = await postJ("/api/funnel/order", funnelBody({ clientKey: key, price: 1, total: 1 }));
+  const j = await r.json();
+  ok(r.status === 200 && j.ok && j.number, "funnel order created");
+  orderNumber = j.number; orderToken = j.token;
+  const row = q1("SELECT payment_status s, total t FROM orders WHERE number = ?", orderNumber);
+  ok(row.s === "pending_payment", "new funnel order is pending_payment, NOT paid");
+  ok(row.t === 30000, `client-supplied price ignored; server total is 30000 (got ${row.t})`);
+  const r2 = await postJ("/api/funnel/order", funnelBody({ clientKey: key }));
+  const j2 = await r2.json();
+  ok(j2.duplicate === true && j2.number === orderNumber, "same clientKey returns the same order (duplicate)");
+  ok(q1("SELECT COUNT(*) c FROM orders WHERE client_key = ?", key).c === 1, "duplicate submission created exactly one order row");
+});
+await step("funnel order validation", async () => {
+  const badPhone = await (await postJ("/api/funnel/order", funnelBody({ phone: "123" }))).json().catch(() => ({}));
+  ok(!!badPhone.errors?.phone, "invalid phone rejected with a field error");
+  const badState = await postJ("/api/funnel/order", funnelBody({ state: "NotAState" }));
+  ok(badState.status === 400, "invalid state rejected (400)");
+  const noName = await postJ("/api/funnel/order", funnelBody({ name: "x" }));
+  ok(noName.status === 400, "too-short name rejected (400)");
+});
+
+// ---------------- store order validation ----------------
+await step("store order validation", async () => {
+  const r = await postJ("/api/orders", { name: "x", items: [] });
+  ok(r.status === 400, "invalid store order rejected (400)");
+  const r2 = await postJ("/api/orders", { name: "Valid Name", phone: "08031234567", state: "Lagos", city: "Ikeja", address: "12 Integration Close", items: [{ variantId: 99999999, qty: 1 }] });
+  ok(r2.status === 400, "order for a non-existent variant rejected (400) — prices/ids are server-resolved");
+});
+
+// ---------------- customer payment submission (orders) ----------------
+await step("order payment submission never marks paid", async () => {
+  const noToken = await fetch(B + `/api/orders/${orderNumber}/payment`, { method: "POST", headers: ORIGIN, body: new FormData() });
+  ok(noToken.status === 404, "payment submission without the order token is 404");
+  const fd = new FormData();
+  fd.set("t", orderToken);
+  fd.set("payerName", "Api Test Customer");
+  const r = await fetch(B + `/api/orders/${orderNumber}/payment`, { method: "POST", headers: ORIGIN, body: fd });
+  ok(r.status === 200, "payment submission with token accepted");
+  const s = q1("SELECT payment_status s FROM orders WHERE number = ?", orderNumber).s;
+  ok(s === "awaiting_verification", `payment submission → awaiting_verification, NOT paid (got ${s})`);
+  ok(q1("SELECT purchase_event_status s FROM orders WHERE number = ?", orderNumber).s === "", "no Purchase event recorded before admin verification");
+});
+
+// ---------------- confirm-payment submissions ----------------
+const png = fs.readFileSync(path.join(process.cwd(), "tests/fixture-product.png"));
+const cpForm = (over = {}) => {
+  const fd = new FormData();
+  fd.set("orderReference", over.orderReference ?? orderNumber);
+  fd.set("fullName", over.fullName || "Api Test Customer");
+  fd.set("phone", over.phone || "08031234567");
+  fd.set("amount", over.amount || "30000");
+  fd.set("address", over.address || "12 Integration Close, Ikeja");
+  fd.set("state", over.state || "Lagos");
+  if (over.file !== null) fd.set("receipt", over.file || new Blob([png], { type: "image/png" }), over.fileName || "receipt.png");
+  return fd;
+};
+await step("confirm-payment submission", async () => {
+  const r = await fetch(B + "/api/confirm-payment", { method: "POST", headers: ORIGIN, body: cpForm() });
+  ok(r.status === 200, "valid confirm-payment submission with matching order reference accepted");
+  const row = q1("SELECT status s, receipt_hash h, order_number n FROM payment_confirmations WHERE phone = '08031234567' ORDER BY id DESC LIMIT 1");
+  ok(row.s === "awaiting_verification", "submission stored as awaiting_verification, NOT paid");
+  ok(!!row.h && row.h.length === 64, "receipt hash stored for duplicate detection");
+  ok(row.n === orderNumber, "submission linked to the matched order number");
+  const dup = await fetch(B + "/api/confirm-payment", { method: "POST", headers: ORIGIN, body: cpForm() });
+  ok(dup.status === 409, "duplicate submission for the same order rejected (409)");
+  ok(q1("SELECT COUNT(*) c FROM payment_confirmations WHERE phone = '08031234567'").c === 1, "duplicate created no second submission");
+});
+await step("confirm-payment validation", async () => {
+  const missing = await fetch(B + "/api/confirm-payment", { method: "POST", headers: ORIGIN, body: cpForm({ file: null }) });
+  ok(missing.status === 400, "missing receipt rejected (400)");
+  const notImage = new Blob([Buffer.from("this is not an image at all")], { type: "image/png" });
+  const bad = await fetch(B + "/api/confirm-payment", { method: "POST", headers: ORIGIN, body: cpForm({ phone: "08031112233", file: notImage, fileName: "fake.png" }) });
+  ok(bad.status === 400, "fake image (bad magic bytes) rejected (400)");
+  const big = new Blob([Buffer.concat([png, Buffer.alloc(6 * 1024 * 1024)])], { type: "image/png" });
+  const huge = await fetch(B + "/api/confirm-payment", { method: "POST", headers: ORIGIN, body: cpForm({ phone: "08034445566", file: big, fileName: "big.png" }) });
+  ok(huge.status === 400, "oversized receipt (>5MB) rejected (400)");
+  const badAmount = await fetch(B + "/api/confirm-payment", { method: "POST", headers: ORIGIN, body: cpForm({ phone: "08037778899", amount: "50" }) });
+  ok(badAmount.status === 400, "implausible amount rejected (400)");
+});
+
+// ---------------- admin surface stays private ----------------
+await step("admin endpoints hidden when signed out", async () => {
+  for (const u of ["/api/admin/export", "/api/admin/receipt/1", "/api/admin/confirmation-receipt/1", "/api/admin/customers-export"]) {
+    const r = await fetch(B + u);
+    ok(r.status === 404, `signed-out ${u} → 404`);
+  }
+});
+
+// ---------------- meta-capi relay cannot be abused ----------------
+await step("meta-capi relay restrictions", async () => {
+  const purchase = await fetch(B + "/api/meta-capi", { method: "POST", headers: { "Content-Type": "application/json", origin: "https://wellnessxpressbrand.com" }, body: JSON.stringify({ event_name: "Purchase", event_id: "pu_1234567890_abcd", event_source_url: "https://wellnessxpressbrand.com/whatsapp-weightloss/" }) });
+  ok(purchase.status === 400, "relay refuses Purchase events from the browser (400)");
+  const badOrigin = await fetch(B + "/api/meta-capi", { method: "POST", headers: { "Content-Type": "application/json", origin: "https://evil.example" }, body: JSON.stringify({ event_name: "PageView", event_id: "pv_1234567890_abcd", event_source_url: "https://wellnessxpressbrand.com/" }) });
+  ok(badOrigin.status === 403, "relay rejects non-allowlisted origins (403)");
+});
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);
