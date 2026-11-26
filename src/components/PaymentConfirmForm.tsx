@@ -35,9 +35,14 @@ export default function PaymentConfirmForm({ number, token }: { number: string; 
         <input id="payerName" name="payerName" className="field" autoComplete="name" aria-invalid={!!errors.payerName} required />
         {errors.payerName ? <p className="err">{errors.payerName}</p> : null}
       </div>
+      <div>
+        <label htmlFor="receipt" className="label">Payment receipt (JPG, PNG or PDF, up to 5 MB)</label>
+        <input id="receipt" name="receipt" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" className="field" aria-invalid={!!errors.receipt} />
+        {errors.receipt ? <p className="err">{errors.receipt}</p> : null}
+      </div>
       {fail ? <p className="err" role="alert">{fail}</p> : null}
       <button className="btn btn-primary w-full text-base sm:w-auto" disabled={busy}>{busy ? "Sending..." : "Submit payment confirmation"}</button>
-      <p className="text-sm text-neutral-500">We will confirm your payment after checking our bank account. You do not need to upload anything.</p>
+      <p className="text-sm text-neutral-500">We will confirm your payment after checking our bank account. Uploading your receipt helps us verify faster.</p>
     </form>
   );
 }
