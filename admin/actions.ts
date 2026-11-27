@@ -109,7 +109,7 @@ export async function verifyPaymentAction(f: FormData) {
   }
   const ev = already
     ? { eventId: String((o as { purchase_event_id?: unknown }).purchase_event_id || ""), status: "sent" }
-    : await sendStorePurchase({ number: o.number, total: o.delivery_fee_source === "included_in_order" ? Number(o.total) : o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
+    : await sendStorePurchase({ number: o.number, total: o.delivery_fee_source === "included_in_order" ? Number(o.total) : o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}"), phone: String(o.phone) });
   db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
   revalidatePath("/admin");
   back(`/admin/orders/${id}`, "Payment confirmed. The order is now Paid.");

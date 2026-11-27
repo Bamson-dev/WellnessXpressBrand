@@ -123,7 +123,7 @@ export async function verifyPaymentAction(f: FormData) {
   // When a production Purchase was already sent, keep the original event id and status untouched.
   const storeValue = o.delivery_fee_source === "included_in_order" ? Number(o.total) : o.subtotal;
   if (!already) {
-    const ev = await sendStorePurchase({ number: o.number, total: storeValue, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
+    const ev = await sendStorePurchase({ number: o.number, total: storeValue, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}"), phone: String(o.phone) });
     db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
   }
   // Store orders also send a server-side TikTok Purchase with the same stable event id ("pu_<order number>").
