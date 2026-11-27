@@ -7,7 +7,7 @@ import { createHash } from "crypto";
  * Purchase is called only from the admin "confirm payment" action. Lead is called when the order is created.
  */
 const sha = (v: string) => createHash("sha256").update(v.trim().toLowerCase()).digest("hex");
-type Ev = { name: "Purchase" | "Lead"; eventId: string; number: string; phone: string; value: number; url: string; tracking: string };
+type Ev = { name: "Purchase" | "Lead"; eventId: string; number: string; phone: string; value: number; url: string; tracking: string; items?: { id: string; name: string; price: number; qty: number }[] };
 type Tr = { fbp?: string; fbc?: string; ttp?: string; ttclid?: string; ua?: string; ip?: string };
 const parse = (raw: string): Tr => { try { return JSON.parse(raw) as Tr; } catch { return {}; } };
 
@@ -57,7 +57,9 @@ export async function sendTikTokPurchase(e: Ev) {
       body: JSON.stringify({
         event_source: "web", event_source_id: code, ...(test ? { test_event_code: test } : {}),
         data: [{ event: "Purchase", event_time: Math.floor(Date.now() / 1000), event_id: e.eventId, user, page: { url: e.url },
-          properties: { currency: "NGN", value: e.value, content_type: "product", order_id: e.number, contents: [{ content_id: "WX-3IN1-COMBO", content_name: "General Fat Loss 3-in-1 Combo", quantity: 1, price: e.value }] } }],
+          // Contents describe what was actually bought when the caller knows the items (store orders);
+          // the combo default remains for funnel orders, which sell only the 3-in-1 combo.
+          properties: { currency: "NGN", value: e.value, content_type: "product", order_id: e.number, contents: e.items?.length ? e.items.map((i) => ({ content_id: i.id, content_name: i.name, quantity: i.qty, price: i.price })) : [{ content_id: "WX-3IN1-COMBO", content_name: "General Fat Loss 3-in-1 Combo", quantity: 1, price: e.value }] } }],
       }),
       signal: AbortSignal.timeout(8000),
     });
@@ -67,8 +69,8 @@ export async function sendTikTokPurchase(e: Ev) {
 }
 
 /** Called from the admin "confirm payment" action for funnel orders. Returns the Meta status and the TikTok status. */
-export async function sendFunnelPurchase(o: { number: string; total: number; phone: string; tracking: string; url: string; skipMeta?: boolean; skipTikTok?: boolean }) {
-  const e: Ev = { name: "Purchase", eventId: "pu_" + o.number, number: o.number, phone: o.phone, value: o.total, url: o.url, tracking: o.tracking };
+export async function sendFunnelPurchase(o: { number: string; total: number; phone: string; tracking: string; url: string; skipMeta?: boolean; skipTikTok?: boolean; items?: { id: string; name: string; price: number; qty: number }[] }) {
+  const e: Ev = { name: "Purchase", eventId: "pu_" + o.number, number: o.number, phone: o.phone, value: o.total, url: o.url, tracking: o.tracking, items: o.items };
   // Skipped platforms report "already_sent", never "sent": nothing was sent in this call, and callers must not
   // record a fresh production send that did not happen.
   const [meta, tiktok] = await Promise.all([o.skipMeta ? Promise.resolve("already_sent") : sendMetaFunnel(e), o.skipTikTok ? Promise.resolve("already_sent") : sendTikTokPurchase(e)]);

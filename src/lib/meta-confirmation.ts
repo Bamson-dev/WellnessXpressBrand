@@ -31,7 +31,7 @@ export function normalizePhone(raw: string) {
  * phone number and any Meta cookies the customer's browser had. The event id is fixed per submission, so a repeat
  * send is deduplicated by Meta. If META_PURCHASE_TEST_EVENT_CODE is set, events go to Meta Test Events only.
  */
-export async function sendConfirmationPurchase(c: { id: number; phone: string; amount: number; tracking: string; url: string }) {
+export async function sendConfirmationPurchase(c: { id: number; phone: string; amount: number; tracking: string; url: string; contentName?: string }) {
   const pixel = process.env.META_PIXEL_ID_WHATSAPP || "1290890196474517";
   const token = process.env.META_CAPI_ACCESS_TOKEN_WHATSAPP;
   const eventId = "pc_" + c.id;
@@ -40,7 +40,7 @@ export async function sendConfirmationPurchase(c: { id: number; phone: string; a
   const user: Record<string, unknown> = { country: [sha("ng")], external_id: [sha("pc" + c.id)] };
   if (ph.length >= 10) user.ph = [sha(ph)];
   Object.assign(user, userData(c.tracking));
-  const test = process.env.META_PURCHASE_TEST_EVENT_CODE;
+  const test = process.env.META_PURCHASE_TEST_EVENT_CODE || process.env.META_CAPI_TEST_EVENT_CODE;
   try {
     const r = await fetch(`https://graph.facebook.com/${process.env.META_GRAPH_VERSION || "v21.0"}/${pixel}/events`, {
       method: "POST",
@@ -49,7 +49,7 @@ export async function sendConfirmationPurchase(c: { id: number; phone: string; a
         data: [{
           event_name: "Purchase", event_time: Math.floor(Date.now() / 1000), event_id: eventId, action_source: "website",
           event_source_url: c.url, user_data: user,
-          custom_data: { currency: "NGN", value: c.amount, content_name: "General Fat Loss 3-in-1 Combo", content_type: "product", order_id: "PC" + c.id },
+          custom_data: { currency: "NGN", value: c.amount, content_name: c.contentName || "General Fat Loss 3-in-1 Combo", content_type: "product", order_id: "PC" + c.id },
         }],
         ...(test ? { test_event_code: test } : {}),
       }),
