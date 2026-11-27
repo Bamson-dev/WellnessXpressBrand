@@ -12,7 +12,9 @@ assert.match(form, /fb\.1\.\$\{Date\.now\(\)\}\.\$\{attr\.fbclid\}/, "form deriv
 assert.match(api, /sendMetaFunnel\(\{\s*name:\s*"Lead"/, "order submit sends Lead, not Purchase");
 assert.match(api, /createFunnelOrder/, "API creates normal funnel order");
 assert.match(funnel, /funnel:\s*FUNNEL\.slug/, "order tracking includes funnel marker");
-assert.match(admin, /const already = prevStatus === "sent";/, "test events are not considered production-sent");
+assert.match(admin, /const already = prevStatus === "sent" \|\| confMetaSent;/, "test events are not considered production-sent");
+assert.match(admin, /const confMetaSent = confRows\.some\(\(c\) => c\.purchase_event_status === "sent"\);/, "cross-path guard counts only production-sent confirmations (Meta)");
+assert.match(admin, /const confTtSent = confRows\.some\(\(c\) => c\.tiktok_event_status === "sent"\);/, "cross-path guard counts only production-sent confirmations (TikTok)");
 assert.match(admin, /skipTikTok: String\(trk\.tt_status \|\| ""\) === "sent"/, "TikTok test events do not suppress production sends");
 assert.match(admin, /if \(String\(trk\.tt_status \|\| ""\) !== "sent"\)/, "TikTok status stores test status distinctly");
 console.log("Attribution regression checks passed.");

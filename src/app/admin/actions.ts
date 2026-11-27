@@ -14,6 +14,7 @@ import { deliveryZones, setSetting } from "@/lib/settings";
 import { deleteMedia, getMedia, saveImageUpload } from "@/lib/media";
 import { sendStorePurchase } from "@/lib/meta";
 import { sendFunnelPurchase, sendTikTokPurchase } from "@/lib/capi-funnel";
+import { confirmationsDb } from "@/lib/payment-confirmations";
 import { clean, isEmail, sniffType } from "@/lib/validate";
 import { ipOf, limited } from "@/lib/ratelimit";
 import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
@@ -95,16 +96,24 @@ export async function verifyPaymentAction(f: FormData) {
   if (Number(claimed.changes) !== 1) return fail(`/admin/orders/${id}`, "Payment is already confirmed.");
   logEvent(id, a.email, "payment_verified", s(f, "note", 300));
   ensureInvoice(id, a.email);
-  const skus = orderItems(id).map((i) => i.sku);
+  const items = orderItems(id);
+  const skus = items.map((i) => i.sku);
+  const eventItems = items.map((i) => ({ id: i.sku, name: i.name, price: Number(i.unit_price), qty: Number(i.qty) }));
+  // Cross-path guard: the payment-confirmation screen can verify the same payment as this order screen.
+  // If a paid confirmation for this order already sent a production Purchase to a platform, that platform
+  // must not receive a second one from here — the two screens are two views of one payment.
+  const confRows = confirmationsDb().prepare("SELECT purchase_event_status, tiktok_event_status FROM payment_confirmations WHERE order_number = ? AND status = 'paid'").all(o.number) as { purchase_event_status?: string; tiktok_event_status?: string }[];
+  const confMetaSent = confRows.some((c) => c.purchase_event_status === "sent");
+  const confTtSent = confRows.some((c) => c.tiktok_event_status === "sent");
   // One PRODUCTION Purchase per order: only an exact "sent" counts. A "sent_test" event went to Meta Test Events
   // only, so it must never suppress the real production Purchase (nor be rewritten as if it were production).
   const prevStatus = String((o as { purchase_event_status?: unknown }).purchase_event_status || "");
-  const already = prevStatus === "sent";
+  const already = prevStatus === "sent" || confMetaSent;
   let trk: Record<string, unknown> = {};
   try { trk = JSON.parse(String(o.tracking || "{}")); } catch {}
   if (trk.funnel) {
     // Landing-page funnel order: Purchase goes to Meta (Edith Pixel 1) and TikTok, once each, only now that an admin confirmed the payment.
-    const fr = await sendFunnelPurchase({ number: o.number, total: Number(o.total ?? o.subtotal), phone: String(o.phone), tracking: JSON.stringify(trk), url: `${site.url}/order/${o.number}`, skipMeta: already, skipTikTok: String(trk.tt_status || "") === "sent" });
+    const fr = await sendFunnelPurchase({ number: o.number, total: Number(o.total ?? o.subtotal), phone: String(o.phone), tracking: JSON.stringify(trk), url: `${site.url}/order/${o.number}`, skipMeta: already, skipTikTok: String(trk.tt_status || "") === "sent" || confTtSent, items: eventItems });
     if (!already) db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(fr.eventId, fr.meta, id);
     if (String(trk.tt_status || "") !== "sent") db().prepare("UPDATE orders SET tracking = ? WHERE id = ?").run(JSON.stringify({ ...trk, tt_status: fr.tiktok }), id);
     logEvent(id, "system", "purchase_events", `Meta: ${already ? "already sent" : fr.meta}. TikTok: ${String(trk.tt_status || "") === "sent" ? "already sent" : fr.tiktok}.`);
@@ -120,8 +129,8 @@ export async function verifyPaymentAction(f: FormData) {
   // Store orders also send a server-side TikTok Purchase with the same stable event id ("pu_<order number>").
   // The TikTok browser pixel fires PageView only, so there is no browser/server duplicate. Its status is kept
   // separately in the order's tracking JSON, and a TikTok failure never affects the payment or the Meta result.
-  if (String(trk.tt_status || "") !== "sent") {
-    const tt = await sendTikTokPurchase({ name: "Purchase", eventId: "pu_" + o.number, number: o.number, phone: String(o.phone), value: storeValue, url: `${site.url}/order/${o.number}`, tracking: JSON.stringify(trk) });
+  if (String(trk.tt_status || "") !== "sent" && !confTtSent) {
+    const tt = await sendTikTokPurchase({ name: "Purchase", eventId: "pu_" + o.number, number: o.number, phone: String(o.phone), value: storeValue, url: `${site.url}/order/${o.number}`, tracking: JSON.stringify(trk), items: eventItems });
     db().prepare("UPDATE orders SET tracking = ? WHERE id = ?").run(JSON.stringify({ ...trk, tt_status: tt }), id);
     logEvent(id, "system", "purchase_events_tiktok", `TikTok: ${tt}.`);
   }
