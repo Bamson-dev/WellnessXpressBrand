@@ -170,9 +170,7 @@ export async function POST(req: NextRequest) {
   const payload: Record<string, unknown> = { data: [event] };
   if (testCode) payload.test_event_code = testCode;
 
-  const ver = process.env.META_GRAPH_VERSION
-    ? "/" + process.env.META_GRAPH_VERSION
-    : "";
+  const ver = "/" + (process.env.META_GRAPH_VERSION || "v21.0");
 
   const r = await fetch(
     "https://graph.facebook.com" + ver + "/" + resolvedPixelId + "/events",

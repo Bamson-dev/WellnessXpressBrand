@@ -4,6 +4,13 @@ import { NIGERIAN_STATES } from "@/lib/site";
 
 const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "ttclid", "fbp", "fbc", "ttp"];
 
+/** First-party browser cookies set by the Meta / TikTok pixels, used when the URL carries no IDs. */
+const COOKIE_FALLBACK: [string, string][] = [["fbp", "_fbp"], ["fbc", "_fbc"], ["ttp", "_ttp"]];
+function readCookie(cookieName: string) {
+  const m = new RegExp("(?:^|;\\s*)" + cookieName + "=([^;]+)").exec(document.cookie || "");
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
 export default function OrderFunnelForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -27,6 +34,13 @@ export default function OrderFunnelForm() {
     const q = new URLSearchParams(location.search);
     const attr: Record<string, string> = {};
     for (const k of KEYS) { const v = q.get(k); if (v) attr[k] = v; }
+    // Fallback: if the URL carries no pixel IDs (e.g. after the cross-domain hop from the landing page),
+    // use the first-party cookies the pixels set on this domain. Never overwrite a URL value with a cookie.
+    for (const [attrKey, cookieName] of COOKIE_FALLBACK) {
+      if (!attr[attrKey]) { const v = readCookie(cookieName); if (v) attr[attrKey] = v; }
+    }
+    // If we have the click id but no fbc, build fbc in Meta's format: fb.1.<timestamp>.<fbclid>
+    if (!attr.fbc && attr.fbclid) attr.fbc = `fb.1.${Date.now()}.${attr.fbclid}`;
     try {
       const r = await fetch("/api/funnel/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, clientKey: key.current, attr: Object.keys(attr).length ? attr : undefined }) });
       const j = await r.json().catch(() => ({}));

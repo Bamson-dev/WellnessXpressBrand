@@ -17,7 +17,7 @@ export async function GET(_req: Request, props: { params: Promise<{ id: string }
   try {
     const buf = await fs.readFile(path.join(RECEIPT_DIR, name));
     const ext = name.split(".").pop() as string;
-    return new Response(buf, { headers: { "Content-Type": TYPES[ext], "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": `inline; filename="${name}"` } });
+    return new Response(buf, { headers: { "Content-Type": TYPES[ext], "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": `${ext === "pdf" ? "attachment" : "inline"}; filename="${name}"` } });
   } catch {
     return new Response("Not found", { status: 404 });
   }

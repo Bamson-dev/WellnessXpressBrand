@@ -33,7 +33,7 @@ export type CheckoutInput = {
   items: unknown;
   clientKey?: unknown;
   couponCode?: unknown;
-  tracking?: { fbp?: string; fbc?: string; ua?: string; ip?: string };
+  tracking?: { fbp?: string; fbc?: string; ttp?: string; ua?: string; ip?: string };
 };
 
 export function createOrder(input: CheckoutInput) {
@@ -154,10 +154,11 @@ export function createOrder(input: CheckoutInput) {
 }
 
 function trackingOf(i: CheckoutInput) {
-  if (!process.env.NEXT_PUBLIC_META_PIXEL_ID) return {};
+  // Attribution is stored whether or not a Pixel is currently configured: losing fbp/fbc/ttp at order time
+  // would make later server-side Purchase matching impossible if the Pixel is enabled afterwards.
   const t = i.tracking || {};
   const ok = (v: unknown) => typeof v === "string" && /^fb\.\d\.\d+\.[\w-]+$/.test(v) ? v : undefined;
-  return { fbp: ok(t.fbp), fbc: ok(t.fbc), ua: clean(t.ua, 400) || undefined, ip: clean(t.ip, 45) || undefined };
+  return { fbp: ok(t.fbp), fbc: ok(t.fbc), ttp: typeof t.ttp === "string" && /^[\w.-]{5,100}$/.test(t.ttp) ? t.ttp : undefined, ua: clean(t.ua, 400) || undefined, ip: clean(t.ip, 45) || undefined };
 }
 
 export function getOrderByNumber(number: string) {
@@ -227,8 +228,9 @@ export function dashboardStats() {
     awaitingFee: q("SELECT COUNT(*) c FROM orders WHERE delivery_fee IS NULL AND fulfilment_status!='cancelled'").c,
     awaitingDeliveryPayment: q("SELECT COUNT(*) c FROM orders WHERE delivery_payment_status='pending' AND fulfilment_status!='cancelled'").c,
     awaiting: q("SELECT COUNT(*) c FROM orders WHERE payment_status='awaiting_verification'").c,
-    paid: q("SELECT COUNT(*) c FROM orders WHERE payment_status='paid'").c,
-    sales: q("SELECT COALESCE(SUM(subtotal),0) s FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled'").s,
+    paid: q("SELECT COUNT(*) c FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled'").c,
+    // Sales = money actually collected on paid orders: the full order total (products + delivery the customer paid).
+    sales: q("SELECT COALESCE(SUM(COALESCE(total, subtotal)),0) s FROM orders WHERE payment_status='paid' AND fulfilment_status!='cancelled'").s,
     customers: q("SELECT COUNT(DISTINCT phone) c FROM orders").c,
   };
 }

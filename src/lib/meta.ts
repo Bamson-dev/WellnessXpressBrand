@@ -1,5 +1,4 @@
 import "server-only";
-import { randomBytes } from "crypto";
 
 /*
  * Meta tracking for the main store only. It uses its own env vars and never touches the funnel pixels
@@ -13,7 +12,8 @@ export async function sendStorePurchase(o: { number: string; total: number | nul
   const pixel = process.env.NEXT_PUBLIC_META_PIXEL_ID;
   const token = process.env.META_STORE_CAPI_TOKEN;
   if (!pixel || !token || o.total == null) return { status: "not_configured", eventId: "" };
-  const eventId = "pu_" + Date.now() + "_" + randomBytes(4).toString("hex");
+  // Stable per-order event id: a retry of the same order's Purchase is deduplicated by Meta instead of double-counting.
+  const eventId = "pu_" + o.number;
   try {
     const r = await fetch(`https://graph.facebook.com/${process.env.META_GRAPH_VERSION || "v21.0"}/${pixel}/events`, {
       method: "POST",

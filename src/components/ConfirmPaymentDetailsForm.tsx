@@ -47,6 +47,10 @@ export default function ConfirmPaymentDetailsForm() {
   );
   return (
     <form onSubmit={submit} className="card space-y-5 p-5 sm:p-6" noValidate>
+      <div>
+        {input("orderReference", "Order number", { autoComplete: "off", maxLength: 20, placeholder: "e.g. WX251126-ABCDE", style: { textTransform: "uppercase" } })}
+        <p className="mt-1 text-xs text-neutral-500">Your order number is shown on your order page and in your order confirmation. The amount and phone number below must match that order.</p>
+      </div>
       {input("fullName", "Full name", { autoComplete: "name", maxLength: 100 })}
       {input("phone", "WhatsApp phone number", { type: "tel", inputMode: "tel", autoComplete: "tel", maxLength: 16 })}
       {input("amount", "Amount paid (₦)", { inputMode: "numeric", defaultValue: "30000" })}

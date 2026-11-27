@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requirePerm } from "@/lib/auth";
 import { confirmationsDb } from "@/lib/payment-confirmations";
 import { sendConfirmationPurchase } from "@/lib/meta-confirmation";
+import { sendTikTokPurchase } from "@/lib/capi-funnel";
 import { logAdminActivity } from "@/lib/admin-events";
 import { site } from "@/lib/site";
 
@@ -25,10 +26,24 @@ export async function markConfirmationPaidAction(f: FormData) {
   const amount = Math.round(Number(String(f.get("verifiedAmount") ?? "").replace(/[₦,\s]/g, "")));
   if (!Number.isFinite(amount) || amount < 1 || amount > 100_000_000) return go("Enter the amount you verified in the bank account.");
   const note = String(f.get("note") ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 300);
-  d.prepare("UPDATE payment_confirmations SET status = 'paid', verified_amount = ?, verified_by = ?, paid_at = datetime('now'), admin_note = ? WHERE id = ?").run(amount, a.email, note, id);
+  // Atomic claim: only the first Mark-as-Paid wins; a concurrent duplicate gets changes=0 and sends no Purchase.
+  const claimed = d.prepare("UPDATE payment_confirmations SET status = 'paid', verified_amount = ?, verified_by = ?, paid_at = datetime('now'), admin_note = ? WHERE id = ? AND status != 'paid'").run(amount, a.email, note, id);
+  if (Number(claimed.changes) !== 1) return go("This submission is already marked paid.");
   logAdminActivity(a.email, "confirmation_marked_paid", "payment_confirmation", id, `Verified ₦${amount}`);
   const ev = await sendConfirmationPurchase({ id, phone: String(row.phone), amount, tracking: String(row.tracking || "{}"), url: `${site.url}/confirm-payment` });
   d.prepare("UPDATE payment_confirmations SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
+  // TikTok Purchase for this submission too, with the same stable event id as Meta ("pc_<id>"), tracked in its
+  // own column so the two platforms never overwrite each other. Only an exact prior "sent" suppresses a resend;
+  // a TikTok failure never affects the payment confirmation or the Meta result.
+  let ttStatus = String(row.tiktok_event_status || "");
+  if (ttStatus !== "sent") {
+    const tt = await sendTikTokPurchase({ name: "Purchase", eventId: ev.eventId, number: "PC" + id, phone: String(row.phone), value: amount, url: `${site.url}/confirm-payment`, tracking: String(row.tracking || "{}") });
+    ttStatus = tt;
+    d.prepare("UPDATE payment_confirmations SET tiktok_event_status = ? WHERE id = ?").run(ttStatus, id);
+  }
   revalidatePath(URL_LIST);
-  go(ev.status.startsWith("sent") ? "Marked as PAID. Purchase sent to Meta." : ev.status === "not_configured" ? "Marked as PAID. Meta Purchase not sent: the Conversions API token is not set." : "Marked as PAID. Meta Purchase failed (" + ev.status + ").");
+  // Strict status matching: "sent" is a production Purchase; "sent_test" went to Meta Test Events only and is NOT a real purchase.
+  const metaMsg = ev.status === "sent" ? "Purchase sent to Meta." : ev.status === "sent_test" ? "Purchase sent to Meta TEST Events only (META_PURCHASE_TEST_EVENT_CODE is set) — this is not a production purchase." : ev.status === "not_configured" ? "Meta Purchase not sent: the Conversions API token is not set." : "Meta Purchase failed (" + ev.status + ").";
+  const ttMsg = ttStatus === "sent" ? " Purchase sent to TikTok." : ttStatus === "sent_test" ? " TikTok event went to TikTok TEST events only." : ttStatus === "not_configured" ? " TikTok Purchase not sent: TikTok is not configured." : " TikTok Purchase failed (" + ttStatus + ").";
+  go("Marked as PAID. " + metaMsg + ttMsg);
 }

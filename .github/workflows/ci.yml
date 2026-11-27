@@ -1,0 +1,71 @@
+name: CI
+
+# Full gate: install, typecheck, unit/regression tests, API integration tests against a
+# disposable database, and a production build. No production secrets, no production data,
+# and no real Meta/TikTok events: the test server runs with no tracking tokens configured,
+# so every Purchase path reports "not_configured" instead of sending.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - name: Unit and regression tests (attribution, tracking, payment rules)
+        run: npm run test:unit
+      - name: Guide quality gate
+        run: node --experimental-strip-types scripts/content-check.mjs
+      - name: Production build
+        env:
+          NEXT_DEPLOYMENT_ID: ci-${{ github.sha }}
+          NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          NEXT_PUBLIC_SITE_URL: https://wellnessxpressbrand.com
+        run: npm run build
+      - name: API integration tests (disposable data dir, no tracking credentials)
+        env:
+          DATA_DIR: /tmp/wx-api-test
+          ADMIN_EMAIL: owner@test.local
+          ADMIN_PASSWORD: <redacted>
+          ADMIN_SESSION_SECRET: <redacted>
+          COMING_SOON: "false"
+          WX_BASE: http://localhost:3301
+          WX_DATA: /tmp/wx-api-test
+        run: |
+          PORT=3301 HOSTNAME=127.0.0.1 node .next/standalone/server.js > /tmp/wx-server.log 2>&1 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID" EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3301/api/health > /dev/null; then break; fi
+            sleep 2
+          done
+          npm run test:api
+      - name: Confirm-payment order-reference tests (second disposable instance)
+        env:
+          DATA_DIR: /tmp/wx-cp-test
+          ADMIN_EMAIL: owner@test.local
+          ADMIN_PASSWORD: <redacted>
+          ADMIN_SESSION_SECRET: <redacted>
+          COMING_SOON: "false"
+          WX_BASE: http://localhost:3302
+          WX_DATA: /tmp/wx-cp-test
+        run: |
+          PORT=3302 HOSTNAME=127.0.0.1 node .next/standalone/server.js > /tmp/wx-server2.log 2>&1 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID" EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3302/api/health > /dev/null; then break; fi
+            sleep 2
+          done
+          npm run test:confirm

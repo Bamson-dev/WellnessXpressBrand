@@ -13,7 +13,7 @@ import { adjustStock, recordMovement, releaseOrderStock, reserveOrderStock, type
 import { deliveryZones, setSetting } from "@/lib/settings";
 import { deleteMedia, getMedia, saveImageUpload } from "@/lib/media";
 import { sendStorePurchase } from "@/lib/meta";
-import { sendFunnelPurchase } from "@/lib/capi-funnel";
+import { sendFunnelPurchase, sendTikTokPurchase } from "@/lib/capi-funnel";
 import { clean, isEmail, sniffType } from "@/lib/validate";
 import { ipOf, limited } from "@/lib/ratelimit";
 import { NIGERIAN_STATES, normalisePhone, site } from "@/lib/site";
@@ -89,28 +89,42 @@ export async function verifyPaymentAction(f: FormData) {
   if (!o) return fail("/admin/orders");
   if (f.get("confirm") !== "yes") return fail(`/admin/orders/${id}`, "Tick the box to confirm you have seen the money in the bank account.", "confirm");
   if (o.payment_status === "paid") return fail(`/admin/orders/${id}`, "Payment is already confirmed.");
-  db().prepare("UPDATE orders SET payment_status = 'paid', paid_at = datetime('now'), verified_by = ?, updated_at = datetime('now') WHERE id = ?").run(a.email, id);
+  if (o.fulfilment_status === "cancelled") return fail(`/admin/orders/${id}`, "This order is cancelled. Reopen it before confirming a payment for it.");
+  // Atomic claim: only the first confirmation wins. A concurrent double-click gets changes=0 and sends nothing.
+  const claimed = db().prepare("UPDATE orders SET payment_status = 'paid', paid_at = datetime('now'), verified_by = ?, updated_at = datetime('now') WHERE id = ? AND payment_status != 'paid'").run(a.email, id);
+  if (Number(claimed.changes) !== 1) return fail(`/admin/orders/${id}`, "Payment is already confirmed.");
   logEvent(id, a.email, "payment_verified", s(f, "note", 300));
   ensureInvoice(id, a.email);
   const skus = orderItems(id).map((i) => i.sku);
-  // One Purchase per order: if an owner undid and re-confirmed the payment, the original event already reached Meta.
+  // One PRODUCTION Purchase per order: only an exact "sent" counts. A "sent_test" event went to Meta Test Events
+  // only, so it must never suppress the real production Purchase (nor be rewritten as if it were production).
   const prevStatus = String((o as { purchase_event_status?: unknown }).purchase_event_status || "");
-  const already = prevStatus.startsWith("sent");
+  const already = prevStatus === "sent";
   let trk: Record<string, unknown> = {};
   try { trk = JSON.parse(String(o.tracking || "{}")); } catch {}
   if (trk.funnel) {
     // Landing-page funnel order: Purchase goes to Meta (Edith Pixel 1) and TikTok, once each, only now that an admin confirmed the payment.
-    const fr = await sendFunnelPurchase({ number: o.number, total: Number(o.total ?? o.subtotal), phone: String(o.phone), tracking: JSON.stringify(trk), url: `${site.url}/order/${o.number}`, skipMeta: already, skipTikTok: String(trk.tt_status || "").startsWith("sent") });
+    const fr = await sendFunnelPurchase({ number: o.number, total: Number(o.total ?? o.subtotal), phone: String(o.phone), tracking: JSON.stringify(trk), url: `${site.url}/order/${o.number}`, skipMeta: already, skipTikTok: String(trk.tt_status || "") === "sent" });
     if (!already) db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(fr.eventId, fr.meta, id);
-    if (!String(trk.tt_status || "").startsWith("sent")) db().prepare("UPDATE orders SET tracking = ? WHERE id = ?").run(JSON.stringify({ ...trk, tt_status: fr.tiktok }), id);
-    logEvent(id, "system", "purchase_events", `Meta: ${already ? "already sent" : fr.meta}. TikTok: ${String(trk.tt_status || "").startsWith("sent") ? "already sent" : fr.tiktok}.`);
+    if (String(trk.tt_status || "") !== "sent") db().prepare("UPDATE orders SET tracking = ? WHERE id = ?").run(JSON.stringify({ ...trk, tt_status: fr.tiktok }), id);
+    logEvent(id, "system", "purchase_events", `Meta: ${already ? "already sent" : fr.meta}. TikTok: ${String(trk.tt_status || "") === "sent" ? "already sent" : fr.tiktok}.`);
     revalidatePath("/admin");
     return back(`/admin/orders/${id}`, "Payment confirmed. The order is now Paid.");
   }
-  const ev = already
-    ? { eventId: String((o as { purchase_event_id?: unknown }).purchase_event_id || ""), status: "sent" }
-    : await sendStorePurchase({ number: o.number, total: o.delivery_fee_source === "included_in_order" ? Number(o.total) : o.subtotal, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
-  db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
+  // When a production Purchase was already sent, keep the original event id and status untouched.
+  const storeValue = o.delivery_fee_source === "included_in_order" ? Number(o.total) : o.subtotal;
+  if (!already) {
+    const ev = await sendStorePurchase({ number: o.number, total: storeValue, skus, url: `${site.url}/order/${o.number}`, tracking: String(o.tracking || "{}") });
+    db().prepare("UPDATE orders SET purchase_event_id = ?, purchase_event_status = ? WHERE id = ?").run(ev.eventId, ev.status, id);
+  }
+  // Store orders also send a server-side TikTok Purchase with the same stable event id ("pu_<order number>").
+  // The TikTok browser pixel fires PageView only, so there is no browser/server duplicate. Its status is kept
+  // separately in the order's tracking JSON, and a TikTok failure never affects the payment or the Meta result.
+  if (String(trk.tt_status || "") !== "sent") {
+    const tt = await sendTikTokPurchase({ name: "Purchase", eventId: "pu_" + o.number, number: o.number, phone: String(o.phone), value: storeValue, url: `${site.url}/order/${o.number}`, tracking: JSON.stringify(trk) });
+    db().prepare("UPDATE orders SET tracking = ? WHERE id = ?").run(JSON.stringify({ ...trk, tt_status: tt }), id);
+    logEvent(id, "system", "purchase_events_tiktok", `TikTok: ${tt}.`);
+  }
   revalidatePath("/admin");
   back(`/admin/orders/${id}`, "Payment confirmed. The order is now Paid.");
 }

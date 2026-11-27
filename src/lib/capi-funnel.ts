@@ -22,7 +22,8 @@ export async function sendMetaFunnel(e: Ev) {
   if (t.fbc) user.fbc = t.fbc;
   if (t.ua) user.client_user_agent = t.ua;
   if (t.ip) user.client_ip_address = t.ip;
-  const test = process.env.META_PURCHASE_TEST_EVENT_CODE;
+  // The purchase test code applies to Purchase only — a Lead must never be diverted to Test Events by it.
+  const test = e.name === "Purchase" ? process.env.META_PURCHASE_TEST_EVENT_CODE : undefined;
   try {
     const r = await fetch(`https://graph.facebook.com/${process.env.META_GRAPH_VERSION || "v21.0"}/${pixel}/events`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
@@ -68,6 +69,8 @@ export async function sendTikTokPurchase(e: Ev) {
 /** Called from the admin "confirm payment" action for funnel orders. Returns the Meta status and the TikTok status. */
 export async function sendFunnelPurchase(o: { number: string; total: number; phone: string; tracking: string; url: string; skipMeta?: boolean; skipTikTok?: boolean }) {
   const e: Ev = { name: "Purchase", eventId: "pu_" + o.number, number: o.number, phone: o.phone, value: o.total, url: o.url, tracking: o.tracking };
-  const [meta, tiktok] = await Promise.all([o.skipMeta ? Promise.resolve("sent") : sendMetaFunnel(e), o.skipTikTok ? Promise.resolve("sent") : sendTikTokPurchase(e)]);
+  // Skipped platforms report "already_sent", never "sent": nothing was sent in this call, and callers must not
+  // record a fresh production send that did not happen.
+  const [meta, tiktok] = await Promise.all([o.skipMeta ? Promise.resolve("already_sent") : sendMetaFunnel(e), o.skipTikTok ? Promise.resolve("already_sent") : sendTikTokPurchase(e)]);
   return { eventId: e.eventId, meta, tiktok };
 }

@@ -28,11 +28,15 @@ export const ALL_PERMISSIONS = PERMISSIONS.map(([k]) => k) as Permission[];
 export const LEGACY_STAFF: Permission[] = ["dashboard", "orders", "payments", "customers", "notifications", "messages", "reviews"];
 export const isPermission = (x: string): x is Permission => (ALL_PERMISSIONS as string[]).includes(x);
 export function parsePermissions(raw: unknown): Permission[] {
+  // No saved value at all = a pre-permissions legacy account: keep its historical access.
   if (raw == null || raw === "") return [...LEGACY_STAFF];
   try {
     const v = JSON.parse(String(raw));
-    return Array.isArray(v) ? v.map(String).filter(isPermission) : [...LEGACY_STAFF];
+    // A saved value that is not an array, or unparseable JSON, is corruption — fail CLOSED (no permissions)
+    // rather than silently granting LEGACY_STAFF, which includes payment verification.
+    if (!Array.isArray(v)) return [];
+    return v.map(String).filter(isPermission);
   } catch {
-    return [...LEGACY_STAFF];
+    return [];
   }
 }

@@ -43,9 +43,14 @@ export async function POST(req: Request, props: { params: Promise<{ number: stri
     await fs.writeFile(path.join(RECEIPT_DIR, receiptPath), buf, { mode: 0o600 });
   }
 
+  const previousReceipt = String(order.receipt_path || "");
   db().prepare(
     `UPDATE orders SET payment_status = 'awaiting_verification', payer_name = ?, receipt_path = CASE WHEN ? != '' THEN ? ELSE receipt_path END, payment_submitted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
   ).run(payerName, receiptPath, receiptPath, order.id);
+  // A replaced receipt's old file is deleted so unreviewed receipt copies do not accumulate on disk.
+  if (receiptPath && previousReceipt && previousReceipt !== receiptPath && /^[A-Z0-9-]+-[a-f0-9]{12}\.(jpg|png|webp|pdf)$/.test(previousReceipt)) {
+    await fs.unlink(path.join(RECEIPT_DIR, previousReceipt)).catch(() => {});
+  }
   logEvent(order.id, "customer", "payment_confirmation_submitted", "Payer name submitted.");
   return Response.json({ ok: true });
 }

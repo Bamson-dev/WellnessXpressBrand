@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   try {
     const r = createOrder({
       ...b,
-      tracking: { fbp: c.get("_fbp")?.value, fbc: c.get("_fbc")?.value, ua: req.headers.get("user-agent") || "", ip: ipOf(req) },
+      tracking: { fbp: c.get("_fbp")?.value, fbc: c.get("_fbc")?.value, ttp: c.get("_ttp")?.value, ua: req.headers.get("user-agent") || "", ip: ipOf(req) },
     });
     if (!r.ok) return Response.json({ errors: r.errors }, { status: 400 });
     return Response.json({ ok: true, number: r.number, token: r.token, total: r.total, subtotal: r.subtotal, itemsSubtotal: r.itemsSubtotal, discountAmount: r.discountAmount, couponCode: r.couponCode, deliveryFee: r.fee, duplicate: r.duplicate });

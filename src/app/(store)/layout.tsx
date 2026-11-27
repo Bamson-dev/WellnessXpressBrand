@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import { CartProvider } from "@/components/CartProvider";
 import { StorePixel } from "@/components/pixel";
+import { TikTokPixel } from "@/components/tiktok";
 import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { getContact } from "@/lib/settings";
 import { GOOGLE_SITE_VERIFICATION, site } from "@/lib/site";
@@ -53,6 +54,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([org, website]).replace(/</g, "\\u003c") }} />
       <Analytics />
       <StorePixel />
+      <TikTokPixel />
     </div>
   );
 }

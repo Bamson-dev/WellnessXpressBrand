@@ -16,7 +16,7 @@ export default async function PaymentConfirmations(props: { searchParams: Promis
     <div>
       <Flash msg={searchParams.msg} />
       <h1 className="text-2xl">Payment confirmation forms</h1>
-      <p className="mt-1 text-sm text-neutral-600">{waiting} awaiting verification. Check the money in the bank account first, then mark the submission PAID. Marking PAID sends one Purchase event to Meta.</p>
+      <p className="mt-1 text-sm text-neutral-600">{waiting} awaiting verification. Each submission is matched to its order number, and the amount and phone were checked against that order. Check the money in the bank account first, then mark the submission PAID. Marking PAID sends one Purchase event to Meta and one to TikTok.</p>
       <div className="mt-4 space-y-3">
         {rows.length ? rows.map((r) => {
           const paid = r.status === "paid";
@@ -27,6 +27,7 @@ export default async function PaymentConfirmations(props: { searchParams: Promis
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${paid ? "bg-green-100 text-green-900" : "bg-amber-100 text-amber-900"}`}>{paid ? "PAID" : "AWAITING VERIFICATION"}</span>
               </div>
               <dl className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                <div><dt className="inline text-neutral-500">Order: </dt><dd className="inline">{String(r.order_number || "— (submitted before order matching)")}</dd></div>
                 <div><dt className="inline text-neutral-500">Phone: </dt><dd className="inline">{String(r.phone)}</dd></div>
                 <div><dt className="inline text-neutral-500">Amount paid: </dt><dd className="inline">{naira(r.amount_paid)}</dd></div>
                 <div><dt className="inline text-neutral-500">State: </dt><dd className="inline">{String(r.state)}</dd></div>
@@ -35,7 +36,7 @@ export default async function PaymentConfirmations(props: { searchParams: Promis
               </dl>
               <p className="mt-3"><a href={`/api/admin/confirmation-receipt/${r.id}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-700 underline">View payment receipt</a></p>
               {paid ? (
-                <p className="mt-3 text-neutral-600">Verified {naira(r.verified_amount)} by {String(r.verified_by)} on {String(r.paid_at)} UTC. Meta Purchase: {String(r.purchase_event_status) || "not sent"}.</p>
+                <p className="mt-3 text-neutral-600">Verified {naira(r.verified_amount)} by {String(r.verified_by)} on {String(r.paid_at)} UTC. Meta Purchase: {String(r.purchase_event_status) || "not sent"}. TikTok Purchase: {String(r.tiktok_event_status) || "not sent"}.</p>
               ) : (
                 <AdminForm action={markConfirmationPaidAction}>
                   <div className="mt-3 flex flex-wrap items-end gap-3 rounded-lg bg-neutral-50 p-3">
